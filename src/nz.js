@@ -1077,7 +1077,7 @@ class NZGameObject extends NZObject {
 	alarmUpdate() {
 		for (let i = this.alarm.length - 1; i >= 0; --i) {
 			if (this.alarm[i] !== -1) {
-				--this.alarm;
+				this.alarm[i] -= 1;
 				if (this.alarm[i] < 0) {
 					switch (i) {
 						case 0: this.alarm0(); break;
@@ -1103,9 +1103,13 @@ NZ.OBJ = {
 	ID: 0,
 	list: [],
 	names: [],
+	linkedClass: {},
 	add(name) {
 		this.list.push([]);
 		this.names.push(name);
+	},
+	link(name, cls) {
+		this.linkedClass[name] = cls;
 	},
 	update() {
 		for (let i = this.list.length - 1; i >= 0; --i) {
@@ -1138,6 +1142,16 @@ NZ.OBJ = {
 	take(name) {
 		return this.list[this.getIndex(name)];
 	},
+	count(name) {
+		return this.take(name).length;
+	},
+	countAll() {
+		let h = 0;
+		for (let i = this.list.length - 1; i >= 0; --i) {
+			h += this.list[i].length;
+		}
+		return h;
+	},
 	clear(name) {
 		this.list[this.getIndex(name)].length = 0;
 	},
@@ -1148,12 +1162,23 @@ NZ.OBJ = {
 		this.ID = 0;
 	},
 	push(name, instance) {
+		const i = this.getIndex(name);
+		if (i < 0) {
+			throw new Error(`Name not exists: '${name}'. Try insert "OBJ.add('${name}');" to your code.`);
+		}
 		instance.id = this.ID++;
-		this.list[this.getIndex(name)].push(instance);
+		this.list[i].push(instance);
 		instance.start();
 		return instance;
 	},
-	create(name, cls, ...payload) {
+	create(name, ...payload) {
+		if (this.getIndex(name) < 0) {
+			throw new Error(`Name not exists: '${name}'. Try insert "OBJ.add('${name}');" to your code.`);
+		}
+		const cls = this.linkedClass[name];
+		if (typeof cls !== 'function') {
+			throw new Error(`Class not found: '${name}'. Try insert "OBJ.link('${name}', [the name of the class]);" to your code.`);
+		}
 		const instance = new cls(...payload);
 		this.push(name, instance);
 	},
@@ -1234,7 +1259,7 @@ NZ.Room = {
 	start(name) {
 		const room = this.list[name];
 		if (!(room instanceof NZRoom)) {
-			throw new Error(`Room not found: ${name}`);
+			throw new Error(`Room not found: '${name}'`);
 		}
 		if (room !== this.current) {
 			this.previous = this.current;
