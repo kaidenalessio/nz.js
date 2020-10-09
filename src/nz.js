@@ -793,6 +793,7 @@ NZ.Draw = {
 	addImage(origin, name, img) {
 		img.origin = origin;
 		this.images[name] = img;
+		return this.images[name];
 	},
 	addSprite(origin, name, imgArray) {
 		this.sprites[name] = [];
@@ -800,17 +801,28 @@ NZ.Draw = {
 			i.origin = origin;
 			this.sprites[name].push(i);
 		}
+		return this.sprites[name];
 	},
 	addStrip(origin, name, img, strip) {
 		img.strip = strip;
 		img.origin = origin;
 		this.strips[name] = img;
+		return this.strips[name];
 	},
+	// Draw image element
+	imageEl(img, x, y, origin=Vec2.center) {
+		x -= img.width * origin.x;
+		y -= img.height * origin.y;
+		this.ctx.drawImage(img, x, y);
+	},
+	// Draw image from the list
 	image(name, x, y) {
-		this.ctx.drawImage(this.images[name], x, y);
+		const img = this.images[name];
+		this.imageEl(img, x, y, img.origin);
 	},
 	sprite(name, index, x, y) {
-		this.ctx.drawImage(this.sprites[name][index], x, y);
+		const img = this.sprites[name][index];
+		this.imageEl(img, x, y, img.origin);
 	},
 	strip(name, index, x, y) {
 		const img = this.strips[name];
@@ -818,6 +830,8 @@ NZ.Draw = {
 			w: img.width / img.strip,
 			h: img.height
 		};
+		x -= s.w * img.origin.x;
+		y -= s.h * img.origin.y;
 		this.ctx.drawImage(img, (index % img.strip) * s.w, 0, s.w, s.h, x, y, s.w, s.h);
 	},
 	fill() {
@@ -991,7 +1005,7 @@ NZ.Draw = {
 	star(x, y, r, isStroke=false) {
 		this.starRotated(x, y, r, 0, isStroke);
 	},
-	transform(x, y, xscale, yscale, angle, drawFn) {
+	onTransform(x, y, xscale, yscale, angle, drawFn) {
 		this.ctx.save();
 		this.ctx.translate(x, y);
 		this.ctx.rotate(Math.degtorad(angle));
@@ -1000,19 +1014,19 @@ NZ.Draw = {
 		this.ctx.restore();
 	},
 	textTransformed(x, y, text, xscale, yscale, angle) {
-		this.transform(x, y, xscale, yscale, angle, () => this.text(0, 0, text));
+		this.onTransform(x, y, xscale, yscale, angle, () => this.text(0, 0, text));
 	},
 	rectTransformed(x, y, w, h, isStroke, xscale, yscale, angle, origin=Vec2.center) {
-		this.transform(x, y, xscale, yscale, angle, () => this.rect(-w * origin.x, -h * origin.y, w, h, isStroke));
+		this.onTransform(x, y, xscale, yscale, angle, () => this.rect(-w * origin.x, -h * origin.y, w, h, isStroke));
 	},
 	starTransformed(x, y, r, isStroke, xscale, yscale, angle) {
-		this.transform(x, y, xscale, yscale, angle, () => this.star(0, 0, r, isStroke));
+		this.onTransform(x, y, xscale, yscale, angle, () => this.star(0, 0, r, isStroke));
 	},
 	starExtTransformed(x, y, pts, inner, outer, isStroke, xscale, yscale, angle) {
-		this.transform(x, y, xscale, yscale, angle, () => this.starExt(0, 0, pts, inner, outer, isStroke));
+		this.onTransform(x, y, xscale, yscale, angle, () => this.starExt(0, 0, pts, inner, outer, isStroke));
 	},
 	roundRectTransformed(x, y, w, h, r, isStroke, xscale, yscale, angle, origin=Vec2.center) {
-		this.transform(x, y, xscale, yscale, angle, () => this.roundRect(-w * origin.x, -h * origin.y, w, h, r, isStroke));
+		this.onTransform(x, y, xscale, yscale, angle, () => this.roundRect(-w * origin.x, -h * origin.y, w, h, r, isStroke));
 	},
 	textRotated(x, y, text, angle) {
 		this.textTransformed(x, y, text, 1, 1, angle);
@@ -1036,11 +1050,14 @@ NZ.Draw = {
 	},
 	textBackground(x, y, text, options={}) {
 		options.gap = options.gap || 5;
-		options.textColor = options.textColor || C.white;
+		options.origin = options.origin || Vec2.zero;
 		options.bgColor = options.bgColor || C.black;
 		options.isStroke = options.isStroke || false;
+		options.textColor = options.textColor || C.white;
 		const tw = this.getTextWidth(text) + options.gap * 2;
 		const th = this.getTextHeight(text) + options.gap * 2;
+		x -= tw * options.origin.x;
+		y -= th * options.origin.y;
 		this.setColor(options.bgColor);
 		this.rect(x, y, tw, th, options.isStroke);
 		this.setFill(options.textColor);
@@ -1111,13 +1128,17 @@ NZ.OBJ = {
 	link(name, cls) {
 		this.linkedClass[name] = cls;
 	},
+	addLink(name, cls) {
+		this.add(name);
+		this.link(name, cls);
+	},
 	update() {
 		for (let i = this.list.length - 1; i >= 0; --i) {
 			for (let j = this.list[i].length - 1; j >= 0; --j) {
 				if (this.list[i][j].active) {
 					this.list[i][j].preUpdate();
-					this.list[i][j].update();
-					this.list[i][j].postUpdate();
+					if (this.list[i][j]) this.list[i][j].update();
+					if (this.list[i][j]) this.list[i][j].postUpdate();
 				}
 			}
 		}
@@ -1180,7 +1201,7 @@ NZ.OBJ = {
 			throw new Error(`Class not found: '${name}'. Try insert "OBJ.link('${name}', [the name of the class]);" to your code.`);
 		}
 		const instance = new cls(...payload);
-		this.push(name, instance);
+		return this.push(name, instance);
 	},
 	get(id) {
 		for (let i = this.list.length - 1; i >= 0; --i) {
@@ -1240,6 +1261,12 @@ NZ.Room = {
 	list: {},
 	current: new NZRoom(),
 	previous: new NZRoom(),
+	get randomX() {
+		return Math.random() * this.size.x;
+	},
+	get randomY() {
+		return Math.random() * this.size.y;
+	},
 	add(name, room) {
 		if (typeof name === 'number') {
 			name += '';
@@ -1248,9 +1275,10 @@ NZ.Room = {
 			throw new TypeError('The provided value cannot be converted to string.');
 		}
 		this.list[name] = room;
+		return this.list[name];
 	},
 	create(name) {
-		NZ.Room.add(name, new NZRoom());
+		return NZ.Room.add(name, new NZRoom());
 	},
 	restart() {
 		NZ.OBJ.clearAll();
@@ -1337,6 +1365,12 @@ NZ.Time = {
 		const m = this.toClockMinutes(timeMs);
 		return `${(m < 10? '0' : '')}${m}`;
 	},
+	toClock(timeMs) {
+		return `${this.toClockMinutes(timeMs)}:${this.toClockSeconds(timeMs)}`;
+	},
+	toClockWithLeadingZero(timeMs) {
+		return `${this.toClockMinutesWithLeadingZero(timeMs)}:${this.toClockSecondsWithLeadingZero(timeMs)}`;
+	},
 	get s() {
 		return this.toSeconds(this.time);
 	},
@@ -1348,6 +1382,41 @@ NZ.Time = {
 	},
 	get mm() {
 		return this.toClockMinutesWithLeadingZero(this.time);
+	}
+};
+
+NZ.Loader = {
+	loaded: false,
+	loadAmount: 0,
+	loadedCount: 0,
+	get loadProgress() {
+		return this.loadedCount / Math.max(1, this.loadAmount);
+	},
+	setOnLoadEvent(img) {
+		this.loadAmount++; _this = this;
+		img.onload = () => { _this.loadedCount++; };
+	},
+	loadImage(origin, name, src) {
+		const img = new Image();
+		img.src = src;
+		NZ.Draw.addImage(origin, name, img);
+		this.setOnLoadEvent(img);
+	},
+	loadSprite(origin, name, srcArray) {
+		const imgArray = [];
+		for (const src of srcArray) {
+			const img = new Image();
+			img.src = src;
+			imgArray.push(img);
+			this.setOnLoadEvent(img);
+		}
+		NZ.Draw.addSprite(origin, name, imgArray);
+	},
+	loadStrip(origin, name, src, strip) {
+		const img = new Image();
+		img.src = src;
+		NZ.Draw.addStrip(origin, name, img, strip);
+		this.setOnLoadEvent(img);
 	}
 };
 
@@ -1406,6 +1475,7 @@ const C = NZ.C,
 	LineJoin = NZ.LineJoin,
 	Primitive = NZ.Primitive,
 	KeyCode = NZ.KeyCode,
+	Loader = NZ.Loader,
 	Input = NZ.Input,
 	Utils = NZ.Utils,
 	Draw = NZ.Draw,
