@@ -240,6 +240,39 @@ class Vec3 {
 		this.z = z;
 		this.w = 1;
 	}
+	get abs() {
+		return new Vec3(Math.abs(this.x), Math.abs(this.y), Math.abs(this.z));
+	}
+	get mid() {
+		return new Vec3(this.x * 0.5, this.y * 0.5, this.z * 0.5);
+	}
+	get sign() {
+		return new Vec3(Math.sign(this.x), Math.sign(this.y), Math.sign(this.z));
+	}
+	get length() {
+		return Math.sqrt(this.x*this.x + this.y*this.y + this.z*this.z);
+	}
+	set length(value) {
+		const l = this.length;
+		if (l !== 0) this.mul(value / l);
+	}
+	normalize() {
+		const l = this.length;
+		if (l !== 0) this.div(l);
+	}
+	distance(v) {
+		return Math.hypot(v.x-this.x, v.y-this.y);
+	}
+	direction(v) {
+		const d = 90 - Math.radtodeg(Math.atan2(v.x-this.x, v.y-this.y));
+		return d < 0? d + 360 : d;
+	}
+	equal(v) {
+		return this.x === v.x && this.y === v.y;
+	}
+	fuzzyEqual(v, epsilon=Math.EPSILON) {
+		return (Math.abs(this.x-v.x) <= epsilon && Math.abs(this.y-v.y) <= epsilon);
+	}
 	_checkOperArgs(x, y, z) {
 		// Check operation arguments
 		if (arguments.length < 1) {
@@ -292,6 +325,58 @@ class Vec3 {
 	}
 	clone() {
 		return new Vec3(this.x, this.y, this.z);
+	}
+	static fromObject(i) {
+		return new Vec3(i.x, i.y, i.z);
+	}
+	static _checkOperArgStatic(i) {
+		let v;
+		if (i instanceof Vec3) {
+			v = i.clone();
+		}
+		else if (typeof i === 'object') {
+			v = Vec3.fromObject(i);
+		}
+		else {
+			throw new TypeError('The provided value cannot be converted to Vec3.');
+		}
+		return v;
+	}
+	static add(v1, v2) {
+		const v = Vec3._checkOperArgStatic(v1);
+		v.add(v2);
+		return v;
+	}
+	static sub(v1, v2) {
+		const v = Vec3._checkOperArgStatic(v1);
+		v.sub(v2);
+		return v;
+	}
+	static mul(v1, v2) {
+		const v = Vec3._checkOperArgStatic(v1);
+		v.mul(v2);
+		return v;
+	}
+	static div(v1, v2) {
+		const v = Vec3._checkOperArgStatic(v1);
+		v.div(v2);
+		return v;
+	}
+	static dot(v1, v2) {
+		return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
+	}
+	static cross(v1, v2) {
+		return new Vec3(
+			v1.y * v2.z - v1.z * v2.y,
+			v1.z * v2.x - v1.x * v2.z,
+			v1.x * v2.y - v1.y * v2.x
+		);
+	}
+	static reset(v) {
+		v.x = 0; v.y = 0; v.z = 0;
+	}
+	static clone(v) {
+		return new Vec3(v.x, v.y, v.z);
 	}
 	static get up() {
 		return new Vec3(0, -1, 0);
@@ -867,11 +952,55 @@ NZ.C = {
 		if (b === undefined) b = r;
 		if (a === undefined) a = 1;
 		return `rgba(${r}, ${g}, ${b}, ${a})`;
+	},
+	componentToHEX(c) {
+		const hex = Math.ceil(c).toString(16);
+		return hex.length < 2? `0${hex}` : hex;
+	},
+	RGBToRGBComponent(rgb) {
+		rgb = rgb.replace('rgb(', '').replace(')', '').split(',').map(x => +x);
+		return {
+			r: rgb[0],
+			g: rgb[1],
+			b: rgb[2]
+		};
+	},
+	HEXToRGBComponent(hex) {
+		hex = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i, (m, r, g, b) => r+r+g+g+b+b));
+		return {
+			r: parseInt(hex[1], 16),
+			g: parseInt(hex[2], 16),
+			b: parseInt(hex[3], 16)
+		};
+	},
+	RGBComponentToRGB(c, weight=1) {
+		return `rgb(${c.r * weight}, ${c.g * weight}, ${c.b * weight})`;
+	},
+	RGBComponentToHEX(c, weight=1) {
+		return `#${this.componentToHEX(c.r * weight)}${this.componentToHEX(c.g * weight)}${this.componentToHEX(c.b * weight)}`;
+	},
+	RGBToHEX(rgb, weight=1) {
+		return this.RGBComponentToHEX(this.RGBToRGBComponent(rgb), weight);
+	},
+	HEXToRGB(hex, weight=1) {
+		return this.RGBComponentToRGB(this.HEXToRGBComponent(hex), weight);
+	},
+	/**
+	 * @param {string} c 'rgb(r, g, b)' and '#rrggbb' or '#rgb'.
+	 */
+	multiply(c, weight=1) {
+		if (c.includes('rgb')) {
+			return this.RGBComponentToRGB(this.RGBToRGBComponent(c), weight);
+		}
+		if (c.includes('#')) {
+			return this.RGBComponentToHEX(this.HEXToRGBComponent(c), weight);
+		}
+		throw new TypeError(`The provided value 'c' must be in CSS rgb([r], [g], [b]) or hex #[r][g][b] format.`);
 	}
 };
 
 NZ.C.list = Object.values(NZ.C);
-NZ.C.list.splice(NZ.C.list.length - 3);
+NZ.C.list.splice(NZ.C.list.length - 12);
 
 NZ.Font = {
 	h1: 48,
@@ -1381,6 +1510,123 @@ class NZGameObject extends NZObject {
 	}
 	postUpdate() {
 		this.alarmUpdate();
+	}
+}
+
+class NZTri {
+	constructor(points, baseColor=C.white) {
+		this.p = points;
+		this.depth = 0;
+		this.baseColor = baseColor;
+		this.lightDotProduct = 0;
+	}
+	clone() {
+		const t = new NZTri([
+			this.p[0].clone(),
+			this.p[1].clone(),
+			this.p[2].clone()
+		]);
+		t.depth = this.depth;
+		t.baseColor = this.baseColor;
+		t.lightDotProduct = this.lightDotProduct;
+		return t;
+	}
+	onAllPoints(fn) {
+		for (let i = 0; i < 3; i++) {
+			fn(this.p[i]);
+		}
+	}
+	calculateDepth() {
+		// z mid method
+		this.depth =  (this.p[0].z + this.p[1].z + this.p[2].z) * Math.ONE_THIRD;
+	}
+}
+
+class NZMesh {
+	constructor(tris=[]) {
+		this.tris = tris;
+	}
+	loadFromOBJText(objText) {
+		this.tris.length = 0;
+		const vertices = [];
+		const words = objText.split(/\s/);
+		const get = () => +words.shift();
+		while (words.length > 0) {
+			switch (words.shift()) {
+				case 'v': vertices.push(new Vec3(get(), get(), get())); break;
+				case 'f': this.tris.push(new NZTri([vertices[get()-1], vertices[get()-1], vertices[get()-1]])); break;
+			}
+		}
+	}
+	static LoadFromOBJText(objText) {
+		const m = new NZMesh();
+		m.loadFromOBJText(objText);
+		return m;
+	}
+	static makeCube() {
+		return NZMesh.LoadFromOBJText('v -1 1 1 v -1 -1 1 v -1 1 -1 v -1 -1 -1 v 1 1 1 v 1 -1 1 v 1 1 -1 v 1 -1 -1 f 5 3 1 f 3 8 4 f 7 6 8 f 2 8 6 f 1 4 2 f 5 2 6 f 5 7 3 f 3 7 8 f 7 5 6 f 2 4 8 f 1 3 4 f 5 1 2');
+	}
+}
+
+class NZTransform {
+	constructor(position=Vec3.zero, rotation=Vec3.zero) {
+		this.position = position;
+		this.rotation = rotation;
+	}
+	clone() {
+		return new NZTransform(this.position.clone(), this.rotation.clone());
+	}
+}
+
+class NZ3DObject extends NZObject {
+	constructor(mesh, position=Vec3.zero, rotation=Vec3.zero) {
+		super();
+		this.mesh = mesh;
+		this.transform = null;
+		if (position instanceof NZTransform) {
+			this.transform = position.clone();
+		}
+		else {
+			this.transform = new NZTransform(position, rotation);
+		}
+	}
+	processTrisToRaster(matProj, trisToRaster) {
+		const matWorld = Mat4.makeWorld(this.transform);
+		for (let i = this.mesh.tris.length - 1; i >= 0; --i) {
+			const tri = this.mesh.tris[i].clone();
+
+			// Transform
+			tri.p[0] = Mat4.multiplyVector(matWorld, tri.p[0]);
+			tri.p[1] = Mat4.multiplyVector(matWorld, tri.p[1]);
+			tri.p[2] = Mat4.multiplyVector(matWorld, tri.p[2]);
+
+			// Normals
+			const line1 = Vec3.sub(tri.p[1], tri.p[0]);
+			const line2 = Vec3.sub(tri.p[2], tri.p[0]);
+			const normal = Vec3.cross(line1, line2);
+			normal.normalize();
+			const cameraRay = Vec3.sub(tri.p[0], Vec3.zero);
+
+			if (Vec3.dot(normal, cameraRay) < 0) {
+				// Illumination
+				const lightDirection = new Vec3(0, 0, -1);
+				lightDirection.normalize();
+				tri.lightDotProduct = Vec3.dot(normal, lightDirection);
+
+				// Project
+				tri.p[0] = Mat4.multiplyVector(matProj, tri.p[0]);
+				tri.p[1] = Mat4.multiplyVector(matProj, tri.p[1]);
+				tri.p[2] = Mat4.multiplyVector(matProj, tri.p[2]);
+				tri.onAllPoints((p) => {
+					p.div(p.w);
+					p.add(1, 1, 0);
+					p.mul(Room.mid.w, -Room.mid.h, 1);
+					p.y += Room.h;
+				});
+
+				trisToRaster.push(tri);
+			}
+		}
 	}
 }
 
