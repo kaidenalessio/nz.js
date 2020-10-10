@@ -33,7 +33,7 @@ Room.current.render = () => {
 	}
 	trisToRaster.sort((a, b) => a.depth < b.depth? 1 : -1);
 	for (const tri of trisToRaster) {
-		Draw.setColor(C.multiply(tri.baseColor, 0.2 + 0.8 * tri.lightDotProduct), C.black);
+		Draw.setColor(tri.bakedColor, C.black);
 		Draw.pointTriangle(tri.p[0], tri.p[1], tri.p[2]);
 		Draw.stroke();
 	}

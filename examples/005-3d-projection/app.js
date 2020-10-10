@@ -19,15 +19,15 @@ Room.current.render = () => {
 
 			// Transform
 			const triTransformed = tri.clone();
-			triTransformed.p[0] = Mat4.multiplyVector(matWorld, triTransformed.p[0]);
-			triTransformed.p[1] = Mat4.multiplyVector(matWorld, triTransformed.p[1]);
-			triTransformed.p[2] = Mat4.multiplyVector(matWorld, triTransformed.p[2]);
+			triTransformed.p[0] = Mat4.mulVec3(matWorld, triTransformed.p[0]);
+			triTransformed.p[1] = Mat4.mulVec3(matWorld, triTransformed.p[1]);
+			triTransformed.p[2] = Mat4.mulVec3(matWorld, triTransformed.p[2]);
 
 			// Project
 			const triProjected = triTransformed.clone();
-			triProjected.p[0] = Mat4.multiplyVector(matProj, triProjected.p[0]);
-			triProjected.p[1] = Mat4.multiplyVector(matProj, triProjected.p[1]);
-			triProjected.p[2] = Mat4.multiplyVector(matProj, triProjected.p[2]);
+			triProjected.p[0] = Mat4.mulVec3(matProj, triProjected.p[0]);
+			triProjected.p[1] = Mat4.mulVec3(matProj, triProjected.p[1]);
+			triProjected.p[2] = Mat4.mulVec3(matProj, triProjected.p[2]);
 			triProjected.onAllPoints((p) => {
 				p.div(p.w);
 				p.add(1, 1, 0);
