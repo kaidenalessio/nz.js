@@ -4,6 +4,9 @@ Math.PI2 = 2 * Math.PI;
 Math.DEG_TO_RAD = Math.PI / 180;
 Math.RAD_TO_DEG = 180 / Math.PI;
 Math.EPSILON = 1e-6;
+Math.ONE_THIRD = 1 / 3;
+Math.ONE_SIXTH = 1 / 6;
+Math.TWO_THIRDS = 2 / 3;
 Math.degtorad = (deg) => deg * Math.DEG_TO_RAD;
 Math.radtodeg = (rad) => rad * Math.RAD_TO_DEG;
 Math.map = (value, min1, max1, min2, max2, boundMin, boundMax) => {
@@ -127,9 +130,9 @@ class Vec2 {
 		return new Vec2(Math.range(this.x, v.x, t), Math.range(this.y, v.y, t));
 	}
 	reset() {
-		this.x = 0; this.y = 0;
+		this.set(0);
 	}
-	copy() {
+	clone() {
 		return new Vec2(this.x, this.y);
 	}
 	static fromObject(i) {
@@ -138,7 +141,7 @@ class Vec2 {
 	static _checkOperArgStatic(i) {
 		let v;
 		if (i instanceof Vec2) {
-			v = i.copy();
+			v = i.clone();
 		}
 		else if (typeof i === 'object') {
 			v = Vec2.fromObject(i);
@@ -171,7 +174,7 @@ class Vec2 {
 	static reset(v) {
 		v.x = 0; v.y = 0;
 	}
-	static copy(v) {
+	static clone(v) {
 		return new Vec2(v.x, v.y);
 	}
 	static distance(v1, v2) {
@@ -223,6 +226,196 @@ class Vec2 {
 	}
 	polar() {
 		return Vec2.polar(this.angle);
+	}
+	toString(fractionDigits=-1) {
+		if (fractionDigits > -1) return `(${this.x.toFixed(fractionDigits)}, ${this.y.toFixed(fractionDigits)})`;
+		return `(${this.x}, ${this.y})`;
+	}
+}
+
+class Vec3 {
+	constructor(x, y, z) {
+		this.x = x;
+		this.y = y;
+		this.z = z;
+		this.w = 1;
+	}
+	_checkOperArgs(x, y, z) {
+		// Check operation arguments
+		if (arguments.length < 1) {
+			throw new Error(`At least 1 argument required, but nothing present.`);
+		}
+		if (x instanceof Vec3 || typeof x === 'object') {
+			z = x.z;
+			y = x.y;
+			x = x.x;
+		}
+		else if (typeof x !== 'number') {
+			throw new TypeError('The provided value cannot be converted to Vec3 or number.');
+		}
+		if (y === undefined) y = x;
+		if (z === undefined) z = x;
+		return { x, y, z };
+	}
+	set(x, y, z) {
+		x = this._checkOperArgs(x, y, z);
+		z = x.z; y = x.y; x = x.x;
+		this.x = x; this.y = y; this.z = z;
+		return this;
+	}
+	add(x, y, z) {
+		x = this._checkOperArgs(x, y, z);
+		z = x.z; y = x.y; x = x.x;
+		this.x += x; this.y += y; this.z += z;
+		return this;
+	}
+	sub(x, y, z) {
+		x = this._checkOperArgs(x, y, z);
+		z = x.z; y = x.y; x = x.x;
+		this.x -= x; this.y -= y; this.z -= z;
+		return this;
+	}
+	mul(x, y, z) {
+		x = this._checkOperArgs(x, y, z);
+		z = x.z; y = x.y; x = x.x;
+		this.x *= x; this.y *= y; this.z *= z;
+		return this;
+	}
+	div(x, y, z) {
+		x = this._checkOperArgs(x, y, z);
+		z = x.z; y = x.y; x = x.x;
+		this.x /= x; this.y /= y; this.z /= z;
+		return this;
+	}
+	reset() {
+		this.set(0);
+	}
+	clone() {
+		return new Vec3(this.x, this.y, this.z);
+	}
+	static get up() {
+		return new Vec3(0, -1, 0);
+	}
+	static get left() {
+		return new Vec3(-1, 0, 0);
+	}
+	static get down() {
+		return new Vec3(0, 1, 0);
+	}
+	static get right() {
+		return new Vec3(1, 0, 0);
+	}
+	static get forward() {
+		return new Vec3(0, 0, 1);
+	}
+	static get backward() {
+		return new Vec3(0, 0, -1);
+	}
+	static get one() {
+		return new Vec3(1, 1, 1);
+	}
+	static get zero() {
+		return new Vec3(0, 0, 0);
+	}
+}
+
+class Mat4 {
+	constructor() {
+		this.m = [
+			[0, 0, 0, 0],
+			[0, 0, 0, 0],
+			[0, 0, 0, 0],
+			[0, 0, 0, 0]
+		];
+	}
+	static multiplyVector(m, i) {
+		let v = Vec3.zero;
+		v.x = i.x * m.m[0][0] + i.y * m.m[1][0] + i.z * m.m[2][0] + i.w * m.m[3][0];
+		v.y = i.x * m.m[0][1] + i.y * m.m[1][1] + i.z * m.m[2][1] + i.w * m.m[3][1];
+		v.z = i.x * m.m[0][2] + i.y * m.m[1][2] + i.z * m.m[2][2] + i.w * m.m[3][2];
+		v.w = i.x * m.m[0][3] + i.y * m.m[1][3] + i.z * m.m[2][3] + i.w * m.m[3][3];
+		return v;
+	}
+	static multiplyMatrix(m1, m2) {
+		const m = new Mat4();
+		for (let i = 0; i < 4; i++) {
+			for (let j = 0; j < 4; j++) {
+				m.m[j][i] = m1.m[j][0] * m2.m[0][i] + m1.m[j][1] * m2.m[1][i] + m1.m[j][2] * m2.m[2][i] + m1.m[j][3] * m2.m[3][i];
+			}
+		}
+		return m;
+	}
+	static makeIdentity() {
+		const m = new Mat4();
+		m.m[0][0] = 1;
+		m.m[1][1] = 1;
+		m.m[2][2] = 1;
+		m.m[3][3] = 1;
+		return m;
+	}
+	static makeProjection(aspectRatio=0.5625, fovDeg=90, near=0.1, far=1000) {
+		const fovRad = 1 / Math.tan(Math.degtorad(fovDeg * 0.5));
+		const m = new Mat4();
+		m.m[0][0] = aspectRatio * fovRad;
+		m.m[1][1] = fovRad;
+		m.m[2][2] = far / (far - near);
+		m.m[3][2] = (-far * near) / (far - near);
+		m.m[2][3] = 1;
+		return m;
+	}
+	static makeRotationX(angleDeg, m=new Mat4()) {
+		angleDeg = Math.degtorad(angleDeg);
+		m.m[0][0] = 1;
+		m.m[1][1] = Math.cos(angleDeg);
+		m.m[1][2] = Math.sin(angleDeg);
+		m.m[2][1] = -Math.sin(angleDeg);
+		m.m[2][2] = Math.cos(angleDeg);
+		m.m[3][3] = 1;
+		return m;
+	}
+	static makeRotationY(angleDeg, m=new Mat4()) {
+		angleDeg = Math.degtorad(angleDeg);
+		m.m[0][0] = Math.cos(angleDeg);
+		m.m[0][2] = -Math.sin(angleDeg);
+		m.m[1][1] = 1;
+		m.m[2][0] = Math.sin(angleDeg);
+		m.m[2][2] = Math.cos(angleDeg);
+		m.m[3][3] = 1;
+		return m;
+	}
+	static makeRotationZ(angleDeg, m=new Mat4()) {
+		angleDeg = Math.degtorad(angleDeg);
+		m.m[0][0] = Math.cos(angleDeg);
+		m.m[0][1] = Math.sin(angleDeg);
+		m.m[1][0] = -Math.sin(angleDeg);
+		m.m[1][1] = Math.cos(angleDeg);
+		m.m[2][2] = 1;
+		m.m[3][3] = 1;
+		return m;
+	}
+	static makeTranslation(x, y, z) {
+		if (x instanceof Vec3 || typeof x === 'object') {
+			z = x.z;
+			y = x.y;
+			x = x.x;
+		}
+		const m = new Mat4();
+		m.m[0][0] = 1;
+		m.m[1][1] = 1;
+		m.m[2][2] = 1;
+		m.m[3][3] = 1;
+		m.m[3][0] = x;
+		m.m[3][1] = y;
+		m.m[3][2] = z;
+		return m;
+	}
+	static makeWorld(transform) {
+		const matRotZ = Mat4.makeRotationZ(transform.rotation.z);
+		const matRotX = Mat4.makeRotationX(transform.rotation.x);
+		const matRotY = Mat4.makeRotationY(transform.rotation.y);
+		const matTrans = Mat4.makeTranslation(transform.position);
+		const matWorld = Mat4.multiplyMatrix(Mat4.multiplyMatrix(Mat4.multiplyMatrix(matRotZ, matRotX), matRotY), matTrans);
+		return matWorld;
 	}
 }
 
@@ -1196,6 +1389,8 @@ NZ.OBJ = {
 	list: [],
 	names: [],
 	linkedClass: {},
+	_updateDisabled: false,
+	_renderDisabled: false,
 	add(name) {
 		this.list.push([]);
 		this.names.push(name);
@@ -1208,6 +1403,7 @@ NZ.OBJ = {
 		this.link(name, cls);
 	},
 	update() {
+		if (this._updateDisabled) return;
 		for (let i = this.list.length - 1; i >= 0; --i) {
 			for (let j = this.list[i].length - 1; j >= 0; --j) {
 				if (this.list[i][j].active) {
@@ -1219,6 +1415,7 @@ NZ.OBJ = {
 		}
 	},
 	render() {
+		if (this._renderDisabled) return;
 		const h = [];
 		for (let i = this.list.length - 1; i >= 0; --i) {
 			for (let j = this.list[i].length - 1; j >= 0; --j) {
@@ -1231,6 +1428,41 @@ NZ.OBJ = {
 		for (let i = h.length - 1; i >= 0; --i) {
 			h[i].render();
 		}
+	},
+	updateFrom(name) {
+		const i = this.getIndex(name);
+		for (let j = this.list[i].length - 1; j >= 0; --j) {
+			if (this.list[i][j].active) {
+				this.list[i][j].preUpdate();
+				if (this.list[i][j]) this.list[i][j].update();
+				if (this.list[i][j]) this.list[i][j].postUpdate();
+			}
+		}
+	},
+	renderFrom(name) {
+		const h = [];
+		const i = this.getIndex(name);
+		for (let j = this.list[i].length - 1; j >= 0; --j) {
+			if (this.list[i][j].visible) {
+				h.push(this.list[i][j]);
+			}
+		}
+		h.sort((a, b) => a.depth < b.depth? -1 : 1);
+		for (let j = h.length - 1; j >= 0; --j) {
+			h[j].render();
+		}
+	},
+	enableUpdate() {
+		this._updateDisabled = false;
+	},
+	disableUpdate() {
+		this._updateDisabled = true;
+	},
+	enableRender() {
+		this._renderDisabled = false;
+	},
+	disableRender() {
+		this._renderDisabled = true;
 	},
 	getIndex(name) {
 		return ((typeof name === 'number')? name : this.names.indexOf(name));
@@ -1356,6 +1588,8 @@ NZ.Room = {
 		return NZ.Room.add(name, new NZRoom());
 	},
 	restart() {
+		NZ.OBJ.enableUpdate();
+		NZ.OBJ.enableRender();
 		NZ.OBJ.clearAll();
 		this.current.start();
 	},
