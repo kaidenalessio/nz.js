@@ -261,17 +261,13 @@ class Vec3 {
 		if (l !== 0) this.div(l);
 	}
 	distance(v) {
-		return Math.hypot(v.x-this.x, v.y-this.y);
-	}
-	direction(v) {
-		const d = 90 - Math.radtodeg(Math.atan2(v.x-this.x, v.y-this.y));
-		return d < 0? d + 360 : d;
+		return Math.sqrt((v.x-this.x)*(v.x-this.x) + (v.y-this.y)*(v.y-this.y) + (v.z-this.z)*(v.z-this.z));
 	}
 	equal(v) {
-		return this.x === v.x && this.y === v.y;
+		return this.x === v.x && this.y === v.y && this.z === v.z;
 	}
 	fuzzyEqual(v, epsilon=Math.EPSILON) {
-		return (Math.abs(this.x-v.x) <= epsilon && Math.abs(this.y-v.y) <= epsilon);
+		return (Math.abs(this.x-v.x) <= epsilon && Math.abs(this.y-v.y) <= epsilon && Math.abs(this.z-v.z) <= epsilon);
 	}
 	_checkOperArgs(x, y, z) {
 		// Check operation arguments
@@ -378,6 +374,10 @@ class Vec3 {
 	static clone(v) {
 		return new Vec3(v.x, v.y, v.z);
 	}
+	static distance(v1, v2) {
+		const v = Vec2._checkOperArgStatic(v1);
+		return v.distance(v2);
+	}
 	static get up() {
 		return new Vec3(0, -1, 0);
 	}
@@ -402,6 +402,10 @@ class Vec3 {
 	static get zero() {
 		return new Vec3(0, 0, 0);
 	}
+	toString(fractionDigits=-1) {
+		if (fractionDigits > -1) return `(${this.x.toFixed(fractionDigits)}, ${this.y.toFixed(fractionDigits)}, ${this.z.toFixed(fractionDigits)})`;
+		return `(${this.x}, ${this.y}, ${this.z})`;
+	}
 }
 
 class Mat4 {
@@ -413,7 +417,7 @@ class Mat4 {
 			[0, 0, 0, 0]
 		];
 	}
-	static multiplyVector(m, i) {
+	static mulVec3(m, i) {
 		let v = Vec3.zero;
 		v.x = i.x * m.m[0][0] + i.y * m.m[1][0] + i.z * m.m[2][0] + i.w * m.m[3][0];
 		v.y = i.x * m.m[0][1] + i.y * m.m[1][1] + i.z * m.m[2][1] + i.w * m.m[3][1];
@@ -421,7 +425,7 @@ class Mat4 {
 		v.w = i.x * m.m[0][3] + i.y * m.m[1][3] + i.z * m.m[2][3] + i.w * m.m[3][3];
 		return v;
 	}
-	static multiplyMatrix(m1, m2) {
+	static mulMat4(m1, m2) {
 		const m = new Mat4();
 		for (let i = 0; i < 4; i++) {
 			for (let j = 0; j < 4; j++) {
@@ -499,7 +503,7 @@ class Mat4 {
 		const matRotX = Mat4.makeRotationX(transform.rotation.x);
 		const matRotY = Mat4.makeRotationY(transform.rotation.y);
 		const matTrans = Mat4.makeTranslation(transform.position);
-		const matWorld = Mat4.multiplyMatrix(Mat4.multiplyMatrix(Mat4.multiplyMatrix(matRotZ, matRotX), matRotY), matTrans);
+		const matWorld = Mat4.mulMat4(Mat4.mulMat4(Mat4.mulMat4(matRotZ, matRotX), matRotY), matTrans);
 		return matWorld;
 	}
 }
@@ -1518,6 +1522,7 @@ class NZTri {
 		this.p = points;
 		this.depth = 0;
 		this.baseColor = baseColor;
+		this.bakedColor = this.baseColor;
 		this.lightDotProduct = 0;
 	}
 	clone() {
@@ -1528,6 +1533,7 @@ class NZTri {
 		]);
 		t.depth = this.depth;
 		t.baseColor = this.baseColor;
+		t.bakedColor = this.bakedColor;
 		t.lightDotProduct = this.lightDotProduct;
 		return t;
 	}
@@ -1538,7 +1544,7 @@ class NZTri {
 	}
 	calculateDepth() {
 		// z mid method
-		this.depth =  (this.p[0].z + this.p[1].z + this.p[2].z) * Math.ONE_THIRD;
+		this.depth = (this.p[0].z + this.p[1].z + this.p[2].z) * Math.ONE_THIRD;
 	}
 }
 
@@ -1596,9 +1602,9 @@ class NZ3DObject extends NZObject {
 			const tri = this.mesh.tris[i].clone();
 
 			// Transform
-			tri.p[0] = Mat4.multiplyVector(matWorld, tri.p[0]);
-			tri.p[1] = Mat4.multiplyVector(matWorld, tri.p[1]);
-			tri.p[2] = Mat4.multiplyVector(matWorld, tri.p[2]);
+			tri.p[0] = Mat4.mulVec3(matWorld, tri.p[0]);
+			tri.p[1] = Mat4.mulVec3(matWorld, tri.p[1]);
+			tri.p[2] = Mat4.mulVec3(matWorld, tri.p[2]);
 
 			// Normals
 			const line1 = Vec3.sub(tri.p[1], tri.p[0]);
@@ -1612,11 +1618,12 @@ class NZ3DObject extends NZObject {
 				const lightDirection = new Vec3(0, 0, -1);
 				lightDirection.normalize();
 				tri.lightDotProduct = Vec3.dot(normal, lightDirection);
+				tri.bakedColor = C.multiply(tri.baseColor, 0.2 + Math.clamp(0.8 * tri.lightDotProduct, 0, 1));
 
 				// Project
-				tri.p[0] = Mat4.multiplyVector(matProj, tri.p[0]);
-				tri.p[1] = Mat4.multiplyVector(matProj, tri.p[1]);
-				tri.p[2] = Mat4.multiplyVector(matProj, tri.p[2]);
+				tri.p[0] = Mat4.mulVec3(matProj, tri.p[0]);
+				tri.p[1] = Mat4.mulVec3(matProj, tri.p[1]);
+				tri.p[2] = Mat4.mulVec3(matProj, tri.p[2]);
 				tri.onAllPoints((p) => {
 					p.div(p.w);
 					p.add(1, 1, 0);
@@ -1624,6 +1631,7 @@ class NZ3DObject extends NZObject {
 					p.y += Room.h;
 				});
 
+				tri.calculateDepth();
 				trisToRaster.push(tri);
 			}
 		}
@@ -1978,6 +1986,7 @@ NZ.Loader = {
 NZ.Debug = {
 	mode: 0,
 	modeAmount: 3,
+	modeKeyCode: NZ.KeyCode.U,
 	modeText() {
 		return `${this.mode}/${this.modeAmount-1}`;
 	}
@@ -1998,7 +2007,7 @@ NZ.Game = {
 	},
 	update(t) {
 		NZ.Time.update(t);
-		if (NZ.Input.keyDown(KeyCode.U)) if (++NZ.Debug.mode >= NZ.Debug.modeAmount) NZ.Debug.mode = 0;
+		if (NZ.Input.keyDown(NZ.Debug.modeKeyCode)) if (++NZ.Debug.mode >= NZ.Debug.modeAmount) NZ.Debug.mode = 0;
 		NZ.Room.update();
 		NZ.OBJ.update();
 		if (NZ.Room.autoClear) NZ.Canvas.ctx.clearRect(0, 0, NZ.Canvas.width, NZ.Canvas.height);
@@ -2029,6 +2038,9 @@ NZ.start = (options={}) => {
 	}
 	if (options.debugModeAmount) {
 		NZ.Debug.modeAmount = options.debugModeAmount;
+	}
+	if (options.debugModeKeyCode) {
+		NZ.Debug.modeKeyCode = options.debugModeKeyCode;
 	}
 	NZ.Room.restart();
 	NZ.Game.start();
