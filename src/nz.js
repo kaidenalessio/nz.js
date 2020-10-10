@@ -19,6 +19,11 @@ Math.irange = (min, max=0) => Math.floor(Math.range(min, max));
 Math.choose = (...args) => args[Math.irange(0, args.length)];
 Math.randneg = (t=0.5) => Math.random() < t? -1 : 1;
 Math.randbool = (t=0.5) => Math.random() < t;
+Math.normalizeAngle = (angleDeg) => {
+	angleDeg = angleDeg % 360;
+	if (angleDeg > 180) angleDeg -= 360;
+	return angleDeg;
+};
 
 NZ.Utils = {
 	pick(arr) {
@@ -66,9 +71,6 @@ class Vec2 {
 	direction(v) {
 		const d = 90 - Math.radtodeg(Math.atan2(v.x-this.x, v.y-this.y));
 		return d < 0? d + 360 : d;
-	}
-	polar() {
-		return new Vec2.direction(Vec2.zero, this);
 	}
 	equal(v) {
 		return this.x === v.x && this.y === v.y;
@@ -120,6 +122,9 @@ class Vec2 {
 		y = x.y; x = x.x;
 		this.x /= x; this.y /= y;
 		return this;
+	}
+	lerp(v, t) {
+		return new Vec2(Math.range(this.x, v.x, t), Math.range(this.y, v.y, t));
 	}
 	reset() {
 		this.x = 0; this.y = 0;
@@ -212,6 +217,12 @@ class Vec2 {
 	static polar(angleDeg, length=1) {
 		angleDeg = Math.degtorad(angleDeg);
 		return new Vec2(Math.cos(angleDeg) * length, Math.sin(angleDeg) * length);
+	}
+	angle() {
+		return Vec2.direction(this, Vec2.zero);
+	}
+	polar() {
+		return Vec2.polar(this.angle);
 	}
 }
 
@@ -676,6 +687,7 @@ NZ.Font = {
 	h4: 16,
 	h5: 14,
 	h6: 10,
+	size: 16,
 	regular: '',
 	bold: 'bold ',
 	italic: 'italic ',
@@ -711,6 +723,13 @@ NZ.LineJoin = {
 	Miter: 'miter',
 	Round: 'round',
 	Bevel: 'bevel'
+};
+
+NZ.LineDash = {
+	solid: [],
+	dot: [3, 10],
+	short: [10, 10],
+	long: [30, 20]
 };
 
 NZ.Primitive = {
@@ -783,7 +802,7 @@ NZ.Draw = {
 	},
 	setFont(font) {
 		this.ctx.font = `${font.style}${font.size}px ${font.family}, serif`;
-		this.textHeight = font.size;
+		this.textHeight = NZ.Font.size = font.size;
 	},
 	resetFont() {
 		this.setFont(NZ.Font.m);
@@ -915,7 +934,18 @@ NZ.Draw = {
 	resetStrokeWeight() {
 		this.resetLineWidth();
 	},
+	setLineDash(segments, offset=0) {
+		this.ctx.setLineDash(segments);
+		this.ctx.lineDashOffset = offset;
+	},
+	resetLineDash() {
+		this.setLineDash(NZ.LineDash.solid);
+	},
 	arc(x, y, r, startAngle, endAngle, isStroke=false) {
+		if (endAngle < 0) {
+			startAngle = endAngle;
+			endAngle = 0;
+		}
 		this.ctx.beginPath();
 		this.ctx.arc(x, y, r, Math.degtorad(startAngle), Math.degtorad(endAngle));
 		this.draw(isStroke);
@@ -1091,6 +1121,7 @@ NZ.Draw = {
 		this.resetLineCap();
 		this.resetLineJoin();
 		this.resetLineWidth();
+		this.resetLineDash();
 	},
 	textBackground(x, y, text, options={}) {
 		options.gap = options.gap || 5;
@@ -1529,6 +1560,7 @@ const C = NZ.C,
 	Align = NZ.Align,
 	LineCap = NZ.LineCap,
 	LineJoin = NZ.LineJoin,
+	LineDash = NZ.LineDash,
 	Primitive = NZ.Primitive,
 	KeyCode = NZ.KeyCode,
 	Loader = NZ.Loader,
