@@ -32,6 +32,42 @@ class Boundary {
 		Draw.setLineWidth(2);
 		Draw.setColor(C.lime, C.magenta);
 		Draw.rect(this.x, this.y, this.w, this.h, isStroke);
+		Draw.resetLineWidth();
+	}
+}
+
+class Message extends NZGameObject {
+	constructor(x, y, text, c=C.white) {
+		super();
+		this.x = x;
+		this.y = y;
+		this.text = text;
+		this.c = c;
+		this.drawY = y;
+		this.scale = 1.2;
+		this.duration = 120;
+		this.alarm[0] = this.duration;
+	}
+	alarm0() {
+		OBJ.remove(this.id);
+	}
+	static Render() {
+		for (const m of OBJ.take('message')) {
+			m.scale = Math.range(m.scale, 1, 0.2)
+			m.drawY = Math.range(m.drawY, m.y, 0.2);
+			Draw.setFont(Font.m);
+			Draw.setAlpha(Math.map(m.alarm[0], 0, m.duration - 100, 0, 1, 0, 1));
+			Draw.onTransform(m.x, m.drawY, m.scale, m.scale, 0, () => {
+				Draw.textBackground(0, 0, m.text, { origin: Vec2.center, textColor: m.c, bgColor: C.makeRGBA(0, 0.5) });
+			});
+			Draw.resetAlpha();
+		}
+	}
+	static Pop(text, c=C.white) {
+		for (const m of OBJ.take('message')) {
+			m.y -= Font.m.size + 10;
+		}
+		const n = OBJ.push('message', new Message(Room.mid.w, 100, text, c));
 	}
 }
 
@@ -44,12 +80,13 @@ class Fruit extends NZObject {
 		this.yVel = 0;
 		this.angle = 0;
 		this.angVel = 0;
-		this.gravity = 0.2;
+		this.gravity = Room.h * 0.0002;
 		this.imageName = imageName;
 		this.imageIndex = 0;
 		this.image = Draw.strips[this.imageName];
 		this.boundary = new Boundary(this.x, this.y, this.image.width / this.image.strip, this.image.height);
 		this.isBomb = false;
+		this.isSplit = false;
 	}
 	setVel(xVel, yVel) {
 		this.xVel = xVel;
@@ -63,7 +100,14 @@ class Fruit extends NZObject {
 		this.angle += this.angVel;
 		this.boundary.x = this.x - this.boundary.w * 0.5;
 		this.boundary.y = this.y - this.boundary.h * 0.5;
-		if (this.y >= Room.h * 2) {
+		if (this.y >= Room.h + this.image.height && this.yVel > 0) {
+			if (!this.isBomb && !this.isSplit) {
+				if (OBJ.count('gamemanager') > 0) {
+					const gm = OBJ.take('gamemanager')[0];
+					Message.Pop('Missed a fruit!');
+					gm.addLives(-1);
+				}
+			}
 			OBJ.remove(this.id);
 		}
 	}
@@ -74,6 +118,7 @@ class Fruit extends NZObject {
 				if (OBJ.count('gamemanager') > 0) {
 					const gm = OBJ.take('gamemanager')[0];
 					if (this.isBomb) {
+						Message.Pop('A bomb explode!');
 						gm.addScore(-10);
 						gm.addLives(-1);
 					}
@@ -95,13 +140,31 @@ class Fruit extends NZObject {
 				Draw.resetAlpha();
 			}
 		});
-		// if (this.boundary.containsPoint(Input.mousePosition)) {
-		// 	this.boundary.show(false);
-		// }
-		// this.boundary.show();
+		if (Debug.mode > 0) {
+			const angleVec = Vec2.polar(this.angle, this.image.height).add(this);
+			const vel = Vec2.create(this.xVel, this.yVel).mul(10);
+			if (this.boundary.containsPoint(Input.mousePosition)) {
+				this.boundary.show(false);
+			}
+			this.boundary.show();
+			Draw.setStroke(C.blue);
+			Draw.line(this.x, this.y, angleVec.x, angleVec.y);
+			Draw.line(this.x, this.y, this.x + vel.x, this.y);
+			Draw.line(this.x, this.y, this.x, this.y + vel.y);
+			if (Debug.mode > 1) {
+				Draw.setFont(Font.m);
+				Draw.textBackground(this.x, this.y - this.image.height * 0.5, `${this.imageName} (${~~this.x}, ${~~this.y})`, { origin: new Vec2(0.5, 1) });
+			}
+			if (Debug.mode > 2) {
+				Draw.setFont(Font.s);
+				Draw.textBackground(angleVec.x, angleVec.y, `image angle: ${~~this.angle}`, { origin: Vec2.center });
+				Draw.textBackground(this.x + vel.x, this.y, `xVel: ${this.xVel.toFixed(2)}`, { origin: Vec2.center });
+				Draw.textBackground(this.x, this.y + vel.y, `yVel: ${this.yVel.toFixed(2)}`, { origin: Vec2.center });
+			}
+		}
 	}
 	static spawn(x, y) {
-		const n = OBJ.create('fruit', Math.choose('bomb', 'bomb', 'apple', 'orange', 'banana'), x, y);
+		const n = OBJ.create('fruit', Math.choose('bomb', 'apple', 'orange', 'banana'), x, y);
 		if (n.imageName === 'bomb') {
 			n.isBomb = true;
 		}
@@ -121,6 +184,7 @@ class FruitSplit extends Fruit {
 		this.angle = angle;
 		this.angVel = angVel;
 		this.imageIndex = imageIndex;
+		this.isSplit = true;
 	}
 	update() {}
 }
@@ -132,6 +196,7 @@ class FruitSpawner extends NZGameObject {
 			min: intervalMin,
 			max: intervalMax
 		};
+		this.lastSpawnName = '';
 		this.alarm0();
 	}
 	alarm0() {
@@ -140,36 +205,56 @@ class FruitSpawner extends NZGameObject {
 		}
 		const n = Fruit.spawn(Room.randomX, Room.h + 100);
 		n.setVel(
-			(Room.mid.w - n.x) / Room.w * Math.range(10, 20),
+			(Room.mid.w - n.x) / Room.w * Math.range(10, 12),
 			-Room.h * 0.01 * Math.range(1.8, 2)
 		);
-		this.alarm[0] = Math.range(this.interval.min, this.interval.max);
+		this.lastSpawnName = n.imageName;
+		this.alarm[0] = Math.irange(this.interval.min, this.interval.max);
 	}
 }
 
 class GameManager extends NZGameObject {
-	constructor(timer=61000, lives=3) {
+	constructor(options={}) {
 		super();
-		this.timer = timer;
+		options.timer = options.timer || 61000;
+		options.lives = options.lives || 3;
+		options.spawnIntervalMin = options.spawnIntervalMin || 60;
+		options.spawnIntervalMax = options.spawnIntervalMax || 120;
+		this.timer = options.timer;
+		this.lives = options.lives;
+		this.spawnIntervalMin = options.spawnIntervalMin;
+		this.spawnIntervalMax = options.spawnIntervalMax;
 		this.score = 0;
-		this.lives = lives;
 		this.isGameOver = false;
+		this.fruitSpawner = OBJ.create('fruitspawner', this.spawnIntervalMin, this.spawnIntervalMax);
 	}
 	addScore(value) {
 		if (!this.isGameOver) {
 			this.score += value;
+			if (value >= 0) {
+				Message.Pop(`Score +${value}`);
+			}
+			else {
+				Message.Pop(`Score ${value}`, C.burlyWood);
+			}
 		}
 	}
 	addLives(value) {
 		if (!this.isGameOver) {
 			this.lives += value;
+			if (value >= 0) {
+				Message.Pop(`Lives +${value}`);
+			}
+			else {
+				Message.Pop(`Lives ${value}`, C.burlyWood);
+			}
 			if (this.lives <= 0) {
 				this.isGameOver = true;
 			}
 		}
 	}
 	start() {
-		OBJ.create('fruitspawner', 60, 120);
+		this.fruitSpawner = OBJ.create('fruitspawner', this.spawnIntervalMin, this.spawnIntervalMax);
 	}
 	update() {
 		if (this.isGameOver) return;
@@ -198,14 +283,21 @@ class GameManager extends NZGameObject {
 				Draw.text(Room.mid.w, Room.mid.h, `Score: ${gm.score}`);
 				return;
 			}
-			Draw.setFont(Font.xl);
+			Draw.setFont(Font.l);
 			Draw.textBackground(0, 0, `Score: ${gm.score}`);
-			Draw.textBackground(0, 46, `Lives: ${gm.lives}`);
+			Draw.textBackground(0, 34, `Lives: ${gm.lives}`);
 			Draw.textBackground(Room.w, 0, `Time\n${Time.toClockWithLeadingZero(gm.timer)}`, { gap: 10, origin: new Vec2(1, 0) });
+			Draw.setFont(Font.m);
+			Draw.textBackground(0, Room.h, `Press u-key to change debug mode: ${Debug.modeText()}`, { origin: new Vec2(0, 1) });
+			Message.Render();
+			if (Debug.mode > 0) {
+				Draw.textBackground(0, Room.mid.h, `FPS: ${Time.FPS}\nRoom size: (${~~Room.w}, ${~~Room.h})\nInstance count: ${OBJ.countAll()}\nSpawn timer: ${gm.fruitSpawner.alarm[0]}\nLast spawn: ${gm.fruitSpawner.lastSpawnName}`, { origin: new Vec2(0, 0.5) });
+			}
 		}
 	}
 }
 
+OBJ.add('message');
 OBJ.addLink('fruit', Fruit);
 OBJ.addLink('fruitsplit', FruitSplit);
 OBJ.addLink('fruitspawner', FruitSpawner);

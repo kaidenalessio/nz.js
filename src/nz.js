@@ -1,20 +1,24 @@
 const NZ = {};
 
 Math.PI2 = 2 * Math.PI;
-Math.TAU = 0.5 * Math.PI;
 Math.DEG_TO_RAD = Math.PI / 180;
 Math.RAD_TO_DEG = 180 / Math.PI;
 Math.EPSILON = 1e-6;
 Math.degtorad = (deg) => deg * Math.DEG_TO_RAD;
 Math.radtodeg = (rad) => rad * Math.RAD_TO_DEG;
-Math.map = (a, b, c, d, e) => d + (a - b) / (c - b) * (e - d);
+Math.map = (value, min1, max1, min2, max2, boundMin, boundMax) => {
+	value = min2 + (value - min1) / (max1 - min1) * (max2 - min2);
+	if (typeof boundMin === 'number') value = Math.max(value, boundMin);
+	if (typeof boundMax === 'number') value = Math.min(value, boundMax);
+	return value;
+};
 Math.hypot = (a, b) => Math.sqrt(a * a + b * b);
 Math.clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 Math.range = (min, max=0, t=Math.random()) => min + t * (max - min);
 Math.irange = (min, max=0) => Math.floor(Math.range(min, max));
 Math.choose = (...args) => args[Math.irange(0, args.length)];
-Math.randneg = (t = 0.5) => Math.random() < t? -1 : 1;
-Math.randbool = (t = 0.5) => Math.random() < t;
+Math.randneg = (t=0.5) => Math.random() < t? -1 : 1;
+Math.randbool = (t=0.5) => Math.random() < t;
 
 NZ.Utils = {
 	pick(arr) {
@@ -50,11 +54,11 @@ class Vec2 {
 	}
 	set length(value) {
 		const l = this.length;
-		if (l !== 0) this.multiply(value / l);
+		if (l !== 0) this.mul(value / l);
 	}
 	normalize() {
 		const l = this.length;
-		if (l !== 0) this.divide(l);
+		if (l !== 0) this.div(l);
 	}
 	distance(v) {
 		return Math.hypot(v.x-this.x, v.y-this.y);
@@ -62,6 +66,9 @@ class Vec2 {
 	direction(v) {
 		const d = 90 - Math.radtodeg(Math.atan2(v.x-this.x, v.y-this.y));
 		return d < 0? d + 360 : d;
+	}
+	polar() {
+		return new Vec2.direction(Vec2.zero, this);
 	}
 	equal(v) {
 		return this.x === v.x && this.y === v.y;
@@ -125,11 +132,11 @@ class Vec2 {
 	}
 	static _checkOperArgStatic(i) {
 		let v;
-		if (v1 instanceof Vec2) {
-			v = v1.copy();
+		if (i instanceof Vec2) {
+			v = i.copy();
 		}
-		else if (typeof v1 === 'object') {
-			v = Vec2.fromObject(v1);
+		else if (typeof i === 'object') {
+			v = Vec2.fromObject(i);
 		}
 		else {
 			throw new TypeError('The provided value cannot be converted to Vec2.');
@@ -162,6 +169,22 @@ class Vec2 {
 	static copy(v) {
 		return new Vec2(v.x, v.y);
 	}
+	static distance(v1, v2) {
+		const v = Vec2._checkOperArgStatic(v1);
+		return v.distance(v2);
+	}
+	static direction(v1, v2) {
+		const v = Vec2._checkOperArgStatic(v1);
+		return v.direction(v2);
+	}
+	static equal(v1, v2) {
+		const v = Vec2._checkOperArgStatic(v1);
+		return v.equal(v2);
+	}
+	static fuzzyEqual(v1, v2, epsilon=Math.EPSILON) {
+		const v = Vec2._checkOperArgStatic(v1);
+		return v.fuzzyEqual(v2);
+	}
 	static get up() {
 		return new Vec2(0, -1);
 	}
@@ -182,6 +205,9 @@ class Vec2 {
 	}
 	static get center() {
 		return new Vec2(0.5, 0.5);
+	}
+	static create(x, y) {
+		return new Vec2(x, y);
 	}
 	static polar(angleDeg, length=1) {
 		angleDeg = Math.degtorad(angleDeg);
@@ -361,6 +387,8 @@ NZ.Input = {
 		for (let i = this.mice.length - 1; i >= 0; --i) {
 			this.mice[i].reset();
 		}
+		this.movementX = this.mouseMovement.x = 0;
+		this.movementY = this.mouseMovement.y = 0;
 		this.mouseMove = false;
 		this.mouseWheelDelta = 0;
 	},
@@ -625,6 +653,16 @@ NZ.C = {
 		if (g === undefined) g = r;
 		if (b === undefined) b = r;
 		return `rgb(${r}, ${g}, ${b})`;
+	},
+	makeRGBA(r, g, b, a) {
+		if (arguments.length === 2) {
+			a = g;
+			g = r;
+		}
+		if (g === undefined) g = r;
+		if (b === undefined) b = r;
+		if (a === undefined) a = 1;
+		return `rgba(${r}, ${g}, ${b}, ${a})`;
 	}
 };
 
@@ -922,6 +960,7 @@ NZ.Draw = {
 	},
 	point(x, y, size=1) {
 		if (x instanceof Vec2 || typeof x === 'object') {
+			if (typeof y === 'number') size = y;
 			y = x.y;
 			x = x.x;
 		}
@@ -946,6 +985,11 @@ NZ.Draw = {
 		this.vertices.length = 0;
 	},
 	vertex(x, y) {
+		if (x instanceof Vec2 || typeof x === 'object') {
+			y = x.y;
+			x = x.x;
+		}
+		if (y === undefined) y = x;
 		this.vertices.push(new Vec2(x, y));
 	},
 	primitiveEnd(primitiveType=NZ.Primitive.Fill) {
@@ -1420,6 +1464,14 @@ NZ.Loader = {
 	}
 };
 
+NZ.Debug = {
+	mode: 0,
+	modeAmount: 3,
+	modeText() {
+		return `${this.mode}/${this.modeAmount-1}`;
+	}
+};
+
 NZ.Game = {
 	init() {
 		window.addEventListener('keyup', NZ.Input.keyUpEvent);
@@ -1435,6 +1487,7 @@ NZ.Game = {
 	},
 	update(t) {
 		NZ.Time.update(t);
+		if (NZ.Input.keyDown(KeyCode.U)) if (++NZ.Debug.mode >= NZ.Debug.modeAmount) NZ.Debug.mode = 0;
 		NZ.Room.update();
 		NZ.OBJ.update();
 		if (NZ.Room.autoClear) NZ.Canvas.ctx.clearRect(0, 0, NZ.Canvas.width, NZ.Canvas.height);
@@ -1456,12 +1509,15 @@ NZ.start = (options={}) => {
 	}
 	else {
 		document.head.appendChild(NZ.Canvas.fullWindowStyle);
-		window.addEventListener('resize', NZ.Room.resizeEvent);
-		NZ.Room.resizeEvent();
 	}
+	window.addEventListener('resize', NZ.Room.resizeEvent);
+	NZ.Room.resizeEvent(); // Includes calculate bounding rect that will be used for mouse input
 	if (options.preventContextMenu) {
 		window.addEventListener('contextmenu', (e) => e.preventDefault());
 		NZ.Canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+	}
+	if (options.debugModeAmount) {
+		NZ.Debug.modeAmount = options.debugModeAmount;
 	}
 	NZ.Room.restart();
 	NZ.Game.start();
@@ -1477,6 +1533,7 @@ const C = NZ.C,
 	KeyCode = NZ.KeyCode,
 	Loader = NZ.Loader,
 	Input = NZ.Input,
+	Debug = NZ.Debug,
 	Utils = NZ.Utils,
 	Draw = NZ.Draw,
 	Time = NZ.Time,

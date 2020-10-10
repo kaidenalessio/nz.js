@@ -9,7 +9,12 @@ Menu.renderUI = () => {
 };
 
 Game.start = () => {
-	myGameManager = OBJ.create('gamemanager');
+	myGameManager = OBJ.create('gamemanager', {
+		timer: 61000, // in milliseconds
+		lives: 3,
+		spawnIntervalMin: 60,
+		spawnIntervalMax: 120
+	});
 };
 
 Game.renderUI = () => {
@@ -23,5 +28,9 @@ Game.renderUI = () => {
 	}
 };
 
-NZ.start();
+NZ.start({
+	w: 960,
+	h: 540,
+	debugModeAmount: 4
+});
 Room.start('menu');
