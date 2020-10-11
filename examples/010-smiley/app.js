@@ -30,11 +30,6 @@ Room.current.start = () => {
 	}
 };
 
-Room.current.render = () => {
-	Draw.setColor(C.blueViolet);
-	Draw.rect(0, 0, Room.w, Room.h);
-};
-
 Room.current.renderUI = () => {
 	const drawText = (x, y, text) => {
 		Draw.setColor(C.black);
@@ -65,5 +60,6 @@ Room.current.renderUI = () => {
 
 NZ.start({
 	w: ROOM_WIDTH,
-	h: ROOM_HEIGHT
+	h: ROOM_HEIGHT,
+	bgColor: [C.darkOrchid, C.darkSlateBlue]
 });
