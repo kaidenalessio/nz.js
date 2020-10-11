@@ -90,17 +90,17 @@ class Vec2 {
 	fuzzyEqual(v, epsilon=Math.EPSILON) {
 		return (Math.abs(this.x-v.x) <= epsilon && Math.abs(this.y-v.y) <= epsilon);
 	}
-	ceil(s) {
+	ceil(s=1) {
 		this.x = Math.ceil(this.x * s) / s;
 		this.y = Math.ceil(this.y * s) / s;
 		return this;
 	}
-	floor(s) {
+	floor(s=1) {
 		this.x = Math.floor(this.x * s) / s;
 		this.y = Math.floor(this.y * s) / s;
 		return this;
 	}
-	round(s) {
+	round(s=1) {
 		this.x = Math.round(this.x * s) / s;
 		this.y = Math.round(this.y * s) / s;
 		return this;
