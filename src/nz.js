@@ -37,6 +37,14 @@ NZ.Utils = {
 	},
 	randpop(i) {
 		return i.splice(Math.irange(i.length), 1)[0];
+	},
+	copyToClipboard(text) {
+		const t = document.createElement('textarea');
+		t.value = text;
+		document.body.appendChild(t);
+		t.select();
+		document.execCommand('copy');
+		document.body.removeChild(t);
 	}
 };
 
@@ -961,6 +969,7 @@ NZ.C = {
 	whiteSmoke: '#f5f5f5',
 	yellow: '#ffff00',
 	yellowGreen: '#9acd32',
+	keys: [],
 	list: [],
 	random() {
 		return this.list[Math.floor(Math.random() * this.list.length)];
@@ -1026,8 +1035,10 @@ NZ.C = {
 	}
 };
 
+NZ.C.keys = Object.keys(NZ.C);
+NZ.C.keys.splice(NZ.C.keys.length - 13);
 NZ.C.list = Object.values(NZ.C);
-NZ.C.list.splice(NZ.C.list.length - 12);
+NZ.C.list.splice(NZ.C.list.length - 13);
 
 NZ.Font = {
 	h1: 48,
