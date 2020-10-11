@@ -27,6 +27,9 @@ Math.normalizeAngle = (angleDeg) => {
 	if (angleDeg > 180) angleDeg -= 360;
 	return angleDeg;
 };
+Math.smoothRotate = (a, b, speed) => {
+	return a + Math.sin(Math.degtorad(b-a)) * speed;
+};
 
 NZ.Utils = {
 	pick(arr) {
@@ -80,7 +83,7 @@ class Vec2 {
 		return Math.hypot(v.x-this.x, v.y-this.y);
 	}
 	direction(v) {
-		const d = 90 - Math.radtodeg(Math.atan2(v.x-this.x, v.y-this.y));
+		let d = 90 - Math.radtodeg(Math.atan2(v.x-this.x, v.y-this.y));
 		return d < 0? d + 360 : d;
 	}
 	equal(v) {
@@ -164,6 +167,12 @@ class Vec2 {
 		return new Vec2(this.x, this.y);
 	}
 	static fromObject(i) {
+		if (i.x === undefined) {
+			throw new TypeError(`The provided object has no 'x' component defined.`);
+		}
+		if (i.y === undefined) {
+			throw new TypeError(`The provided object has no 'y' component defined.`);
+		}
 		return new Vec2(i.x, i.y);
 	}
 	static _checkOperArgStatic(i) {
@@ -242,10 +251,15 @@ class Vec2 {
 	static get center() {
 		return new Vec2(0.5, 0.5);
 	}
-	static random(min=1, max=0) {
-		return new Vec2(Math.range(min, max), Math.range(min, max));
+	static random(xmin, xmax, ymin, ymax) {
+		if (xmin === undefined) xmin = 1;
+		if (xmax === undefined) xmax = 0;
+		if (ymin === undefined) ymin = xmin;
+		if (ymax === undefined) ymax = xmax;
+		return new Vec2(Math.range(xmin, xmax), Math.range(ymin, ymax));
 	}
 	static create(x, y) {
+		if (y === undefined) y = x;
 		return new Vec2(x, y);
 	}
 	static polar(angleDeg, length=1) {
@@ -1132,6 +1146,14 @@ NZ.Draw = {
 		this.onCtx(n.getContext('2d'), drawFn);
 		return n;
 	},
+	copyCanvas(canvas, w, h) {
+		w = w || canvas.width;
+		h = h || canvas.height;
+		const n = this.createCanvasExt(w, h, () => {
+			this.ctx.drawImage(canvas, 0, 0, w, h);
+		});
+		return n;
+	},
 	setAlpha(a) {
 		this.ctx.globalAlpha = a;
 	},
@@ -1302,13 +1324,13 @@ NZ.Draw = {
 	resetLineDash() {
 		this.setLineDash(NZ.LineDash.solid);
 	},
-	arc(x, y, r, startAngle, endAngle, isStroke=false) {
-		if (endAngle < 0) {
-			startAngle = endAngle;
-			endAngle = 0;
+	arc(x, y, r, startAngleDeg, endAngleDeg, isStroke=false) {
+		if (endAngleDeg < 0) {
+			startAngleDeg = endAngleDeg;
+			endAngleDeg = 0;
 		}
 		this.ctx.beginPath();
-		this.ctx.arc(x, y, r, Math.degtorad(startAngle), Math.degtorad(endAngle));
+		this.ctx.arc(x, y, r, Math.degtorad(startAngleDeg), Math.degtorad(endAngleDeg));
 		this.draw(isStroke);
 	},
 	line(x1, y1, x2, y2) {
@@ -1368,6 +1390,9 @@ NZ.Draw = {
 		this.ctx.lineTo(p4.x, p4.y);
 		this.ctx.closePath();
 		this.draw(isStroke);
+	},
+	pointCircle(p, r, isStroke=false) {
+		this.circle(p.x, p.y, r, isStroke);
 	},
 	pointTriangle(p1, p2, p3, isStroke=false) {
 		this.triangle(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y, isStroke);
@@ -1884,6 +1909,24 @@ NZ.OBJ = {
 				return this.list[i].splice(j, 1)[0];
 			}
 		}
+	},
+	nearest(name, position) {
+		// Make sure the instances to check have a member variable of Vec2 called 'position'.
+		let f = Vec2._checkOperArgStatic(position);
+		let g = null;
+		let h = Number.POSITIVE_INFINITY;
+		let i = this.getIndex(name);
+		for (let j = this.list[i].length - 1; j >= 0; --j) {
+			const k = this.list[i][j];
+			if (k.position instanceof Vec2) {
+				const l = k.position.distance(position);
+				if (l <= h) {
+					g = k;
+					h = l;
+				}
+			}
+		}
+		return g;
 	}
 };
 
@@ -1966,16 +2009,12 @@ NZ.Room = {
 		this.current.renderUI();
 	},
 	applyScale() {
-		const tmp = NZ.Draw.createCanvasExt(this.w, this.h, () => {
-			NZ.Draw.onTransform(this.mid.w, this.mid.h, this.scale.x, this.scale.y, 0, () => {
-				NZ.Draw.imageEl(NZ.Canvas, 0, 0);
-			});
-		});
+		const tmp = NZ.Draw.copyCanvas(NZ.Canvas, this.w * this.scale.x, this.h * this.scale.y);
 		NZ.Canvas.width = this.w * this.scale.x;
 		NZ.Canvas.height = this.h * this.scale.y;
 		NZ.Canvas.ctx.resetTransform();
 		NZ.Canvas.ctx.scale(this.scale.x, this.scale.y);
-		NZ.Canvas.ctx.drawImage(tmp, 0, 0);
+		NZ.Canvas.ctx.drawImage(tmp, 0, 0, this.w, this.h);
 	},
 	setScale(scale) {
 		this.scale.set(scale);
@@ -2177,6 +2216,7 @@ NZ.Debug = {
 };
 
 NZ.Game = {
+	active: false,
 	init() {
 		window.addEventListener('keyup', NZ.Input.keyUpEvent);
 		window.addEventListener('keydown', NZ.Input.keyDownEvent);
@@ -2187,9 +2227,15 @@ NZ.Game = {
 		document.body.appendChild(NZ.Canvas);
 	},
 	start() {
+		this.active = true;
 		window.requestAnimationFrame(NZ.Game.update);
 	},
+	stop() {
+		this.active = false;
+		window.cancelAnimationFrame(NZ.Game.update);
+	},
 	update(t) {
+		if (!NZ.Game.active) return;
 		NZ.Time.update(t);
 		if (NZ.Draw.autoReset) NZ.Draw.reset();
 		if (NZ.UI.autoReset) NZ.UI.reset();
