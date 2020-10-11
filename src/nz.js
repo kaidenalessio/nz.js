@@ -27,9 +27,7 @@ Math.normalizeAngle = (angleDeg) => {
 	if (angleDeg > 180) angleDeg -= 360;
 	return angleDeg;
 };
-Math.smoothRotate = (a, b, speed) => {
-	return a + Math.sin(Math.degtorad(b-a)) * speed;
-};
+Math.smoothRotate = (a, b, speed) => a + Math.sin(Math.degtorad(b-a)) * speed;
 
 NZ.Utils = {
 	pick(arr) {
@@ -557,7 +555,6 @@ NZ.Canvas = document.createElement('canvas');
 NZ.Canvas.id = 'NZCanvas';
 NZ.Canvas.ctx = NZ.Canvas.getContext('2d');
 NZ.Canvas.boundingClientRect = NZ.Canvas.getBoundingClientRect();
-NZ.Canvas.style.backgroundImage = 'radial-gradient(blanchedalmond 33%, burlywood)';
 NZ.Canvas.fullWindowStyle = document.createElement('style');
 NZ.Canvas.fullWindowStyle.innerHTML = `
 	* {
@@ -2267,6 +2264,19 @@ NZ.start = (options={}) => {
 		window.addEventListener('contextmenu', (e) => e.preventDefault());
 		NZ.Canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 	}
+	let color1 = NZ.C.blanchedAlmond;
+	let color2 = NZ.C.burlyWood;
+	if (options.bgColor) {
+		if (options.bgColor instanceof Array) {
+			color1 = options.bgColor[0];
+			color2 = options.bgColor[1];
+		}
+		else {
+			color1 = options.bgColor;
+			color2 = options.bgColor;
+		}
+	}
+	NZ.Canvas.style.backgroundImage = `radial-gradient(${color1} 33%, ${color2})`;
 	if (typeof options.uiAutoReset === 'boolean') {
 		NZ.UI.autoReset = options.uiAutoReset;
 	}
