@@ -574,6 +574,19 @@ NZ.Canvas.fullWindowStyle.innerHTML = `
 		height: 100%;
 	}
 `;
+NZ.Canvas.customStyle = document.createElement('style');
+
+NZ.StylePreset = {
+	none: '',
+	noGap: `* { margin: 0; padding: 0; }`,
+	center: `#${NZ.Canvas.id} { position: absolute; left: 50%; transform: translateX(-50%); }`,
+	middle: `#${NZ.Canvas.id} { position: absolute; top: 50%; transform: translateY(-50%); }`,
+	centerMiddle: `#${NZ.Canvas.id} { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }`,
+};
+
+NZ.StylePreset.noGapCenter = NZ.StylePreset.noGap + NZ.StylePreset.center;
+NZ.StylePreset.noGapMiddle = NZ.StylePreset.noGap + NZ.StylePreset.middle;
+NZ.StylePreset.noGapCenterMiddle = NZ.StylePreset.noGap + NZ.StylePreset.centerMiddle;
 
 NZ.KeyCode = {
 	Backspace: 8,
@@ -2264,6 +2277,8 @@ NZ.start = (options={}) => {
 		NZ.Room.resize(options.w, options.h);
 		NZ.Canvas.style.width = `${options.w}px`;
 		NZ.Canvas.style.height = `${options.h}px`;
+		NZ.Canvas.customStyle.innerHTML = options.stylePreset || '';
+		document.head.appendChild(NZ.Canvas.customStyle);
 	}
 	else {
 		document.head.appendChild(NZ.Canvas.fullWindowStyle);
@@ -2312,6 +2327,7 @@ const C = NZ.C,
 	LineJoin = NZ.LineJoin,
 	LineDash = NZ.LineDash,
 	Primitive = NZ.Primitive,
+	StylePreset = NZ.StylePreset,
 	KeyCode = NZ.KeyCode,
 	Loader = NZ.Loader,
 	Cursor = NZ.Cursor,
