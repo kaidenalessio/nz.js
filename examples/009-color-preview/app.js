@@ -1,4 +1,5 @@
 let scrollY = 0;
+let scrollVel = 0;
 let selectAll = false;
 
 const drawGroup = (x, y, w, h, cols, gap, noText=false) => {
@@ -49,8 +50,25 @@ Room.current.renderUI = () => {
 	let h = w * 0.5;
 	let x = w * 0.5;
 
-	scrollY += Input.mouseWheelDelta + (Input.keyRepeat(KeyCode.PageUp) - Input.keyRepeat(KeyCode.PageDown)) * 20;
+	if (Input.keyDown(KeyCode.PageUp)) {
+		if (scrollVel < 0) {
+			scrollVel = 0;
+		}
+	}
+	if (Input.keyDown(KeyCode.PageDown)) {
+		if (scrollVel > 0) {
+			scrollVel = 0;
+		}
+	}
+	scrollVel += (Input.keyRepeat(KeyCode.PageUp) - Input.keyRepeat(KeyCode.PageDown)) * 100;
+	scrollVel = Math.clamp(scrollVel, -400, 400);
+	scrollVel *= 0.8;
+	scrollY += Input.mouseWheelDelta + scrollVel;
+	let unclampedScrollY = scrollY;
 	scrollY = Math.clamp(scrollY, -Math.floor(C.keys.length * 0.2) * h, 0);
+	if (unclampedScrollY !== scrollY) { // if clamped
+		scrollVel = 0;
+	}
 
 	let y = scrollY + h * 0.5;
 
