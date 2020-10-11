@@ -81,6 +81,26 @@ class Vec2 {
 	fuzzyEqual(v, epsilon=Math.EPSILON) {
 		return (Math.abs(this.x-v.x) <= epsilon && Math.abs(this.y-v.y) <= epsilon);
 	}
+	ceil(s) {
+		this.x = Math.ceil(this.x * s) / s;
+		this.y = Math.ceil(this.y * s) / s;
+		return this;
+	}
+	floor(s) {
+		this.x = Math.floor(this.x * s) / s;
+		this.y = Math.floor(this.y * s) / s;
+		return this;
+	}
+	round(s) {
+		this.x = Math.round(this.x * s) / s;
+		this.y = Math.round(this.y * s) / s;
+		return this;
+	}
+	clamp(min, max) {
+		this.x = Math.clamp(this.x, min, max);
+		this.y = Math.clamp(this.y, min, max);
+		return this;
+	}
 	_checkOperArgs(x, y) {
 		// Check operation arguments
 		if (arguments.length < 1) {
@@ -213,6 +233,9 @@ class Vec2 {
 	}
 	static get center() {
 		return new Vec2(0.5, 0.5);
+	}
+	static random(min=1, max=0) {
+		return new Vec2(Math.range(min, max), Math.range(min, max));
 	}
 	static create(x, y) {
 		return new Vec2(x, y);
@@ -1069,6 +1092,7 @@ NZ.Primitive = {
 };
 
 NZ.Draw = {
+	autoReset: true, // Execute NZ.Draw.reset every frame before rendering
 	ctx: NZ.Canvas.ctx,
 	textHeight: 10,
 	images: {},
@@ -1638,6 +1662,58 @@ class NZ3DObject extends NZObject {
 	}
 }
 
+class NZBoundary {
+	constructor(x, y, w, h) {
+		this.x = x;
+		this.y = y;
+		this.w = w;
+		this.h = h;
+	}
+	get left() {
+		return this.x;
+	}
+	get right() {
+		return this.x + this.w;
+	}
+	get top() {
+		return this.y;
+	}
+	get bottom() {
+		return this.y + this.h;
+	}
+	get center() {
+		return new Vec2(this.x + this.w * 0.5, this.y + this.h * 0.5);
+	}
+	containsPoint(x, y) {
+		if (x instanceof Vec2 || typeof x === 'object') {
+			y = x.y;
+			x = x.x;
+		}
+		if (y === undefined) y = x;
+		return (x >= this.left && x <= this.right && y >= this.top && y <= this.bottom);
+	}
+	get hovered() {
+		return this.containsPoint(NZ.Input.mousePosition);
+	}
+	updatePosition(x, y) {
+		this.x = x;
+		this.y = y;
+	}
+	show(options={}) {
+		options.fill = options.fill || NZ.C.white;
+		options.stroke = options.stroke || NZ.C.black;
+		options.isStroke = options.isStroke || true;
+		NZ.Draw.setColor(options.fill, options.stroke);
+		NZ.Draw.rect(this.x, this.y, this.w, this.h, options.isStroke);
+	}
+	debug(fill, stroke) {
+		this.show({ fill, stroke });
+		if (this.hovered) {
+			NZ.Draw.fill();
+		}
+	}
+}
+
 NZ.OBJ = {
 	ID: 0,
 	list: [],
@@ -1809,9 +1885,12 @@ class NZRoom {
 }
 
 NZ.Room = {
+	RES_LOW: 0.5,
+	RES_HIGH: 2,
+	RES_ULTRA: 4,
+	RES_NORMAL: 1,
 	autoClear: true,
-	autoReset: true, // Execute NZ.Draw.reset every frame before rendering
-	scale: 1,
+	scale: Vec2.one, // Resolution scale (0.5=Low, 1=Normal, 2=High, 4=Ultra)
 	w: 300,
 	h: 150,
 	mid: {
@@ -1827,6 +1906,14 @@ NZ.Room = {
 	},
 	get randomY() {
 		return Math.random() * this.size.y;
+	},
+	get resolutionText() {
+		const s = this.scale.xy * 0.5;
+		let txt = 'Ultra';
+		if (s < 4) txt = 'High';
+		if (s < 2) txt = 'Normal';
+		if (s < 1) txt = 'Low';
+		return txt;
 	},
 	add(name, room) {
 		if (typeof name === 'number') {
@@ -1867,22 +1954,105 @@ NZ.Room = {
 	renderUI() {
 		this.current.renderUI();
 	},
-	resize(w, h, scale=0) {
-		if (scale > 0) NZ.Room.scale = scale;
-		scale = NZ.Room.scale;
-		NZ.Canvas.width = w * scale;
-		NZ.Canvas.height = h * scale;
+	applyScale() {
+		const tmp = NZ.Draw.createCanvasExt(this.w, this.h, () => {
+			NZ.Draw.onTransform(this.mid.w, this.mid.h, this.scale.x, this.scale.y, 0, () => {
+				NZ.Draw.imageEl(NZ.Canvas, 0, 0);
+			});
+		});
+		NZ.Canvas.width = this.w * this.scale.x;
+		NZ.Canvas.height = this.h * this.scale.y;
 		NZ.Canvas.ctx.resetTransform();
-		NZ.Canvas.ctx.scale(scale, scale);
-		NZ.Room.w = w;
-		NZ.Room.h = h;
-		NZ.Room.mid.w = NZ.Room.w * 0.5;
-		NZ.Room.mid.h = NZ.Room.h * 0.5;
-		NZ.Room.size.set(w, h);
+		NZ.Canvas.ctx.scale(this.scale.x, this.scale.y);
+		NZ.Canvas.ctx.drawImage(tmp, 0, 0);
+	},
+	setScale(scale) {
+		this.scale.set(scale);
+		this.applyScale();
+	},
+	resetScale() {
+		this.setScale(1);
+	},
+	resize(w, h) {
+		this.w = w;
+		this.h = h;
+		this.mid.w = this.w * 0.5;
+		this.mid.h = this.h * 0.5;
+		this.size.set(w, h);
+		this.applyScale();
 	},
 	resizeEvent() {
 		NZ.Canvas.boundingClientRect = NZ.Canvas.getBoundingClientRect();
 		NZ.Room.resize(NZ.Canvas.boundingClientRect.width, NZ.Canvas.boundingClientRect.height);
+	}
+};
+
+NZ.Cursor = {
+	alias: 'alias',
+	all: 'all',
+	allScroll: 'all-scroll',
+	auto: 'auto',
+	cell: 'cell',
+	colResize: 'col-resize',
+	contextMenu: 'context-menu',
+	copy: 'copy',
+	crosshair: 'crosshair',
+	default: 'default',
+	eResize: 'e-resize',
+	ewResize: 'ew-resize',
+	help: 'help',
+	inherit: 'inherit',
+	initial: 'initial',
+	move: 'move',
+	nResize: 'n-resize',
+	neResize: 'ne-resize',
+	neswResize: 'nesw-resize',
+	noDrop: 'no-drop',
+	none: 'none',
+	none: 'none',
+	notAllowed: 'not-allowed',
+	nsResize: 'ns-resize',
+	nwResize: 'nw-resize',
+	nwseResize: 'nwse-resize',
+	pointer: 'pointer',
+	progress: 'progress',
+	rowResize: 'row-resize',
+	sResize: 's-resize',
+	seResize: 'se-resize',
+	swResize: 'sw-resize',
+	text: 'text',
+	unset: 'unset',
+	verticalText: 'vertical-text',
+	wResize: 'w-resize',
+	wait: 'wait',
+	zoomIn: 'zoom-in',
+	zoomOut: 'zoom-out',
+	list: [],
+	image(src, x=0, y=0) {
+		if (src instanceof Image) {
+			src = src.src;
+		}
+		return `url(${src}) ${x} ${y}, auto`;
+	},
+	random() {
+		return this.list[Math.floor(Math.random() * this.list.length)];
+	}
+};
+
+NZ.Cursor.list = Object.values(NZ.Cursor);
+NZ.Cursor.list.splice(NZ.Cursor.list.length - 3);
+
+NZ.UI = {
+	autoReset: true,
+	cursor: NZ.Cursor.default,
+	setCursor(cr) {
+		NZ.Canvas.style.cursor = this.cursor = cr;
+	},
+	resetCursor() {
+		this.setCursor(NZ.Cursor.default);
+	},
+	reset() {
+		this.resetCursor();
 	}
 };
 
@@ -1989,6 +2159,9 @@ NZ.Debug = {
 	modeKeyCode: NZ.KeyCode.U,
 	modeText() {
 		return `${this.mode}/${this.modeAmount-1}`;
+	},
+	update() {
+		if (NZ.Input.keyDown(this.modeKeyCode)) if (++this.mode >= this.modeAmount) this.mode = 0;
 	}
 };
 
@@ -2007,11 +2180,12 @@ NZ.Game = {
 	},
 	update(t) {
 		NZ.Time.update(t);
-		if (NZ.Input.keyDown(NZ.Debug.modeKeyCode)) if (++NZ.Debug.mode >= NZ.Debug.modeAmount) NZ.Debug.mode = 0;
+		if (NZ.Draw.autoReset) NZ.Draw.reset();
+		if (NZ.UI.autoReset) NZ.UI.reset();
+		NZ.Debug.update();
 		NZ.Room.update();
 		NZ.OBJ.update();
-		if (NZ.Room.autoClear) NZ.Canvas.ctx.clearRect(0, 0, NZ.Canvas.width, NZ.Canvas.height);
-		if (NZ.Room.autoReset) NZ.Draw.reset();
+		if (NZ.Room.autoClear) NZ.Canvas.ctx.clearRect(0, 0, NZ.Room.w, NZ.Room.h);
 		NZ.Room.render();
 		NZ.OBJ.render();
 		NZ.Room.renderUI();
@@ -2036,6 +2210,12 @@ NZ.start = (options={}) => {
 		window.addEventListener('contextmenu', (e) => e.preventDefault());
 		NZ.Canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 	}
+	if (typeof options.uiAutoReset === 'boolean') {
+		NZ.UI.autoReset = options.uiAutoReset;
+	}
+	if (typeof options.drawAutoReset === 'boolean') {
+		NZ.Draw.autoReset = options.drawAutoReset;
+	}
 	if (options.debugModeAmount) {
 		NZ.Debug.modeAmount = options.debugModeAmount;
 	}
@@ -2047,6 +2227,7 @@ NZ.start = (options={}) => {
 };
 
 const C = NZ.C,
+	UI = NZ.UI,
 	OBJ = NZ.OBJ,
 	Font = NZ.Font,
 	Align = NZ.Align,
@@ -2056,6 +2237,7 @@ const C = NZ.C,
 	Primitive = NZ.Primitive,
 	KeyCode = NZ.KeyCode,
 	Loader = NZ.Loader,
+	Cursor = NZ.Cursor,
 	Input = NZ.Input,
 	Debug = NZ.Debug,
 	Utils = NZ.Utils,
