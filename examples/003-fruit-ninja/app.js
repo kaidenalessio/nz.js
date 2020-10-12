@@ -31,6 +31,7 @@ Game.renderUI = () => {
 NZ.start({
 	w: 960,
 	h: 540,
-	debugModeAmount: 4
+	debugModeAmount: 4,
+	stylePreset: StylePreset.noGapCenter
 });
 Room.start('menu');
