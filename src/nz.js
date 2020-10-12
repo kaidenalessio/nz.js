@@ -105,10 +105,15 @@ class Vec2 {
 		this.y = Math.round(this.y * s) / s;
 		return this;
 	}
-	clamp(min, max) {
-		this.x = Math.clamp(this.x, min, max);
-		this.y = Math.clamp(this.y, min, max);
+	clamp(xmin, xmax, ymin, ymax) {
+		if (ymin === undefined) ymin = xmin;
+		if (ymax === undefined) ymax = xmax;
+		this.x = Math.clamp(this.x, xmin, xmax);
+		this.y = Math.clamp(this.y, ymin, ymax);
 		return this;
+	}
+	manhattanDistance(v) {
+		return Math.abs(v.x - this.x) + Math.abs(v.y - this.y);
 	}
 	_checkOperArgs(x, y) {
 		// Check operation arguments
@@ -227,6 +232,10 @@ class Vec2 {
 	static fuzzyEqual(v1, v2, epsilon=Math.EPSILON) {
 		const v = Vec2._checkOperArgStatic(v1);
 		return v.fuzzyEqual(v2);
+	}
+	static manhattanDistance(v1, v2) {
+		const v = Vec2._checkOperArgStatic(v1);
+		return v.manhattanDistance(v2);
 	}
 	static get up() {
 		return new Vec2(0, -1);
