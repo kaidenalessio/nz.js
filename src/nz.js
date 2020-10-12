@@ -81,7 +81,7 @@ class Vec2 {
 		return Math.hypot(v.x-this.x, v.y-this.y);
 	}
 	direction(v) {
-		let d = 90 - Math.radtodeg(Math.atan2(v.x-this.x, v.y-this.y));
+		let d = Math.radtodeg(Math.atan2(v.y-this.y, v.x-this.x));
 		return d < 0? d + 360 : d;
 	}
 	equal(v) {
