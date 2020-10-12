@@ -1417,6 +1417,9 @@ NZ.Draw = {
 			isStroke
 		);
 	},
+	gridRect(column, row, gridWidth, gridHeight, isStroke=false) {
+		this.rect(column * gridWidth, row * gridHeight, gridWidth, gridHeight, isStroke);
+	},
 	primitiveBegin() {
 		this.vertices.length = 0;
 	},
@@ -1718,6 +1721,45 @@ class NZ3DObject extends NZObject {
 	}
 }
 
+class NZShape {
+	constructor(x, y) {
+		this.x = x;
+		this.y = y;
+	}
+	calculateArea() {}
+	calculatePerimeter() {}
+}
+
+class NZRect extends NZShape {
+	constructor(x, y, w, h) {
+		super(x, y);
+		this.w = w;
+		this.h = h;
+	}
+	calculateArea() {
+		return this.w * this.h;
+	}
+	calculatePerimeter() {
+		return this.w * 2 + this.h * 2;
+	}
+	static fromGrid(column, row, gridWidth, gridHeight) {
+		return new NZRect(column * gridWidth, row * gridHeight, gridWidth, gridHeight);
+	}
+}
+
+class NZCircle extends NZShape {
+	constructor(x, y, r) {
+		super(x, y);
+		this.r = r;
+	}
+	calculateArea() {
+		return Math.PI * r * r;
+	}
+	calculatePerimeter() {
+		return Math.PI * r * 2;
+	}
+}
+
 class NZBoundary {
 	constructor(x, y, w, h) {
 		this.x = x;
@@ -1767,6 +1809,22 @@ class NZBoundary {
 		if (this.hovered) {
 			NZ.Draw.fill();
 		}
+	}
+	static rectContainsPoint(rect, x, y) {
+		if (x instanceof Vec2 || typeof x === 'object') {
+			y = x.y;
+			x = x.x;
+		}
+		if (y === undefined) y = x;
+		return (x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h);
+	}
+	static circleContainsPoint(circle, x, y) {
+		if (x instanceof Vec2 || typeof x === 'object') {
+			y = x.y;
+			x = x.x;
+		}
+		if (y === undefined) y = x;
+		return Vec2.fromObject(circle).distance(new Vec2(x, y)) <= circle.r;
 	}
 }
 
