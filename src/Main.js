@@ -7,6 +7,7 @@ var NZ = NZ || {};
  * - NZ.Canvas (if no canvas provided)
  * - NZ.StylePreset (if no style preset provided)
  * - NZ.UI
+ * - NZ.OBJ
  * - NZ.Draw
  * - NZ.Debug
  *	options = {
@@ -22,6 +23,7 @@ var NZ = NZ || {};
  *		debugModeKeyCode: sets the debug mode key code (see NZ.Runner.run for implementation)
  *		preventContextMenu: prevent right-click to show context menu
  *		defaultFont: set default font used to draw text (default = Maven Pro 16) (See NZ.Font for more info)
+ *		enablePersistent: enable instance to not get removed on NZ.OBJ.onSceneRestart() if it has property `persistent` set to true
  *	};
  */
 NZ.start = (options={}) => {
@@ -111,6 +113,13 @@ NZ.start = (options={}) => {
 	NZ.Stage.resizeEvent();
 	// Handle window.onresize to resize stage appropriately
 	NZ.Stage.setupEvent();
+
+	// Clear all object except persistent
+	NZ.Scene.on('restart', NZ.OBJ.onSceneRestart);
+
+	if (options.enablePersistent === true) {
+		NZ.OBJ.enablePersistent();
+	}
 
 	NZ.Scene.restart();
 	NZ.Runner.start();

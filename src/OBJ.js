@@ -11,6 +11,7 @@ class NZObject {
 		this.depth = 0;
 		this.active = true;
 		this.visible = true;
+		this.persistent = false;
 	}
 	start() {}
 	preUpdate() {}
@@ -26,6 +27,7 @@ NZ.OBJ = {
 	linkedClass: {},
 	_updateDisabled: false,
 	_renderDisabled: false,
+	_persistentDisabled: true,
 	add(name) {
 		this.list.push([]);
 		this.names.push(name);
@@ -100,6 +102,12 @@ NZ.OBJ = {
 	disableRender() {
 		this._renderDisabled = true;
 	},
+	enablePersistent() {
+		this._persistentDisabled = false;
+	},
+	disablePersistent() {
+		this._persistentDisabled = true;
+	},
 	getIndex(name) {
 		return ((typeof name === 'number')? name : this.names.indexOf(name));
 	},
@@ -124,6 +132,23 @@ NZ.OBJ = {
 			this.list[i].length = 0;
 		}
 		this.ID = 0;
+	},
+	clearAllExcept(filter) {
+		for (let i = this.list.length - 1; i >= 0; --i) {
+			for (let j = this.list[i].length - 1; j >= 0; --j) {
+				if (!filter(this.list[i][j])) {
+					this.list[i].splice(j, 1);
+				}
+			}
+		}
+	},
+	onSceneRestart() {
+		if (NZ.OBJ._persistentDisabled) {
+			NZ.OBJ.clearAll();
+		}
+		else {
+			NZ.OBJ.clearAllExcept((i) => i.persistent);
+		}
 	},
 	push(name, instance) {
 		const i = this.getIndex(name);

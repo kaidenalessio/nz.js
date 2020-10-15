@@ -11,6 +11,7 @@ class NZScene {
 
 NZ.Scene = {
 	list: {},
+	listener: {},
 	current: new NZScene(),
 	previous: new NZScene(),
 	add(name, scene) {
@@ -26,7 +27,17 @@ NZ.Scene = {
 	create(name) {
 		return this.add(name, new NZScene());
 	},
+	on(type, listener) {
+		if (!this.listener[type]) this.listener[type] = [];
+		this.listener[type].push(listener);
+	},
+	onRestart() {
+		for (let i = this.listener['restart'].length - 1; i >= 0; --i) {
+			this.listener['restart'][i]();
+		}
+	},
 	restart() {
+		this.onRestart();
 		if (this.current.start) this.current.start();
 	},
 	start(name) {
