@@ -115,7 +115,7 @@ class Vec2 {
 	manhattanDistance(v) {
 		return Math.abs(v.x - this.x) + Math.abs(v.y - this.y);
 	}
-	_checkOperArgs(x, y) {
+	static _checkArgs(x, y, returnArray=false) {
 		// Check operation arguments
 		if (arguments.length < 1) {
 			throw new Error(`At least 1 argument required, but nothing present.`);
@@ -128,34 +128,34 @@ class Vec2 {
 			throw new TypeError('The provided value cannot be converted to Vec2 or number.');
 		}
 		if (y === undefined) y = x;
-		return { x, y };
+		return returnArray? [x, y] : { x, y };
 	}
 	set(x, y) {
-		x = this._checkOperArgs(x, y);
+		x = Vec2._checkArgs(x, y);
 		y = x.y; x = x.x;
 		this.x = x; this.y = y;
 		return this;
 	}
 	add(x, y) {
-		x = this._checkOperArgs(x, y);
+		x = Vec2._checkArgs(x, y);
 		y = x.y; x = x.x;
 		this.x += x; this.y += y;
 		return this;
 	}
 	sub(x, y) {
-		x = this._checkOperArgs(x, y);
+		x = Vec2._checkArgs(x, y);
 		y = x.y; x = x.x;
 		this.x -= x; this.y -= y;
 		return this;
 	}
 	mul(x, y) {
-		x = this._checkOperArgs(x, y);
+		x = Vec2._checkArgs(x, y);
 		y = x.y; x = x.x;
 		this.x *= x; this.y *= y;
 		return this;
 	}
 	div(x, y) {
-		x = this._checkOperArgs(x, y);
+		x = Vec2._checkArgs(x, y);
 		y = x.y; x = x.x;
 		this.x /= x; this.y /= y;
 		return this;
@@ -178,7 +178,7 @@ class Vec2 {
 		}
 		return new Vec2(i.x, i.y);
 	}
-	static _checkOperArgStatic(i) {
+	static _checkArg(i) {
 		let v;
 		if (i instanceof Vec2) {
 			v = i.clone();
@@ -192,22 +192,22 @@ class Vec2 {
 		return v;
 	}
 	static add(v1, v2) {
-		const v = Vec2._checkOperArgStatic(v1);
+		const v = Vec2._checkArg(v1);
 		v.add(v2);
 		return v;
 	}
 	static sub(v1, v2) {
-		const v = Vec2._checkOperArgStatic(v1);
+		const v = Vec2._checkArg(v1);
 		v.sub(v2);
 		return v;
 	}
 	static mul(v1, v2) {
-		const v = Vec2._checkOperArgStatic(v1);
+		const v = Vec2._checkArg(v1);
 		v.mul(v2);
 		return v;
 	}
 	static div(v1, v2) {
-		const v = Vec2._checkOperArgStatic(v1);
+		const v = Vec2._checkArg(v1);
 		v.div(v2);
 		return v;
 	}
@@ -218,23 +218,23 @@ class Vec2 {
 		return new Vec2(v.x, v.y);
 	}
 	static distance(v1, v2) {
-		const v = Vec2._checkOperArgStatic(v1);
+		const v = Vec2._checkArg(v1);
 		return v.distance(v2);
 	}
 	static direction(v1, v2) {
-		const v = Vec2._checkOperArgStatic(v1);
+		const v = Vec2._checkArg(v1);
 		return v.direction(v2);
 	}
 	static equal(v1, v2) {
-		const v = Vec2._checkOperArgStatic(v1);
+		const v = Vec2._checkArg(v1);
 		return v.equal(v2);
 	}
 	static fuzzyEqual(v1, v2, epsilon=Math.EPSILON) {
-		const v = Vec2._checkOperArgStatic(v1);
+		const v = Vec2._checkArg(v1);
 		return v.fuzzyEqual(v2);
 	}
 	static manhattanDistance(v1, v2) {
-		const v = Vec2._checkOperArgStatic(v1);
+		const v = Vec2._checkArg(v1);
 		return v.manhattanDistance(v2);
 	}
 	static get up() {
@@ -321,7 +321,7 @@ class Vec3 {
 	fuzzyEqual(v, epsilon=Math.EPSILON) {
 		return (Math.abs(this.x-v.x) <= epsilon && Math.abs(this.y-v.y) <= epsilon && Math.abs(this.z-v.z) <= epsilon);
 	}
-	_checkOperArgs(x, y, z) {
+	static _checkArgs(x, y, z) {
 		// Check operation arguments
 		if (arguments.length < 1) {
 			throw new Error(`At least 1 argument required, but nothing present.`);
@@ -339,31 +339,31 @@ class Vec3 {
 		return { x, y, z };
 	}
 	set(x, y, z) {
-		x = this._checkOperArgs(x, y, z);
+		x = Vec3._checkArgs(x, y, z);
 		z = x.z; y = x.y; x = x.x;
 		this.x = x; this.y = y; this.z = z;
 		return this;
 	}
 	add(x, y, z) {
-		x = this._checkOperArgs(x, y, z);
+		x = Vec3._checkArgs(x, y, z);
 		z = x.z; y = x.y; x = x.x;
 		this.x += x; this.y += y; this.z += z;
 		return this;
 	}
 	sub(x, y, z) {
-		x = this._checkOperArgs(x, y, z);
+		x = Vec3._checkArgs(x, y, z);
 		z = x.z; y = x.y; x = x.x;
 		this.x -= x; this.y -= y; this.z -= z;
 		return this;
 	}
 	mul(x, y, z) {
-		x = this._checkOperArgs(x, y, z);
+		x = Vec3._checkArgs(x, y, z);
 		z = x.z; y = x.y; x = x.x;
 		this.x *= x; this.y *= y; this.z *= z;
 		return this;
 	}
 	div(x, y, z) {
-		x = this._checkOperArgs(x, y, z);
+		x = Vec3._checkArgs(x, y, z);
 		z = x.z; y = x.y; x = x.x;
 		this.x /= x; this.y /= y; this.z /= z;
 		return this;
@@ -377,7 +377,7 @@ class Vec3 {
 	static fromObject(i) {
 		return new Vec3(i.x, i.y, i.z);
 	}
-	static _checkOperArgStatic(i) {
+	static _checkArg(i) {
 		let v;
 		if (i instanceof Vec3) {
 			v = i.clone();
@@ -391,22 +391,22 @@ class Vec3 {
 		return v;
 	}
 	static add(v1, v2) {
-		const v = Vec3._checkOperArgStatic(v1);
+		const v = Vec3._checkArg(v1);
 		v.add(v2);
 		return v;
 	}
 	static sub(v1, v2) {
-		const v = Vec3._checkOperArgStatic(v1);
+		const v = Vec3._checkArg(v1);
 		v.sub(v2);
 		return v;
 	}
 	static mul(v1, v2) {
-		const v = Vec3._checkOperArgStatic(v1);
+		const v = Vec3._checkArg(v1);
 		v.mul(v2);
 		return v;
 	}
 	static div(v1, v2) {
-		const v = Vec3._checkOperArgStatic(v1);
+		const v = Vec3._checkArg(v1);
 		v.div(v2);
 		return v;
 	}
@@ -427,7 +427,7 @@ class Vec3 {
 		return new Vec3(v.x, v.y, v.z);
 	}
 	static distance(v1, v2) {
-		const v = Vec2._checkOperArgStatic(v1);
+		const v = Vec3._checkArg(v1);
 		return v.distance(v2);
 	}
 	static get up() {
@@ -1737,6 +1737,7 @@ class NZShape {
 	}
 	calculateArea() {}
 	calculatePerimeter() {}
+	containsPoint() {}
 }
 
 class NZRect extends NZShape {
@@ -1750,6 +1751,9 @@ class NZRect extends NZShape {
 	}
 	calculatePerimeter() {
 		return this.w * 2 + this.h * 2;
+	}
+	containsPoint(x, y) {
+		return (x >= this.left && x <= this.right && y >= this.top && y <= this.bottom);
 	}
 	static fromGrid(column, row, gridWidth, gridHeight) {
 		return new NZRect(column * gridWidth, row * gridHeight, gridWidth, gridHeight);
@@ -1767,6 +1771,15 @@ class NZCircle extends NZShape {
 	calculatePerimeter() {
 		return Math.PI * r * 2;
 	}
+	containsPoint(x, y) {
+		return Vec2.distance(new Vec2(this.x, this.y), new Vec2(x, y)) <= this.r;
+	}
+}
+
+class NZTriangle extends NZShape {
+	constructor() {
+		
+	}
 }
 
 class NZBoundary {
@@ -1775,6 +1788,7 @@ class NZBoundary {
 		this.y = y;
 		this.w = w;
 		this.h = h;
+		this.shapes = [];
 	}
 	get left() {
 		return this.x;
@@ -1798,6 +1812,12 @@ class NZBoundary {
 		}
 		if (y === undefined) y = x;
 		return (x >= this.left && x <= this.right && y >= this.top && y <= this.bottom);
+	}
+	shapesContainsPoint(x, y) {
+		[x, y] = Vec2._checkArgs(x, y, true);
+		for (let i = this.shapes.length - 1; i >= 0; --i) {
+			this.shapes[i].containsPoint(x, y);
+		}
 	}
 	get hovered() {
 		return this.containsPoint(NZ.Input.mousePosition);
@@ -1999,7 +2019,7 @@ NZ.OBJ = {
 	},
 	nearest(name, position) {
 		// Make sure the instances to check have a member variable of Vec2 called 'position'.
-		let f = Vec2._checkOperArgStatic(position);
+		let f = Vec2._checkArg(position);
 		let g = null;
 		let h = Number.POSITIVE_INFINITY;
 		let i = this.getIndex(name);

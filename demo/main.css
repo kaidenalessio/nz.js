@@ -1,0 +1,33 @@
+* {
+	font-family: 'Maven Pro', sans-serif;
+}
+
+body {
+	margin: 0;
+	padding: 0 200px;
+	height: 100vh;
+}
+
+.container {
+	padding: 3rem;
+	background: blanchedalmond;
+	height: 100%;
+}
+
+ul {
+	padding: 0;
+	list-style: none;
+}
+
+li {
+	margin: 1rem 0;
+	font-size: 1.5rem;
+}
+
+li a {
+	color: black;
+}
+
+li a:hover {
+	color: burlywood;
+}
