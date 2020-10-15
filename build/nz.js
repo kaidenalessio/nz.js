@@ -702,9 +702,7 @@ NZ.KeyCode = {
 NZ.Input = {
 	preventedKeys: [
 		NZ.KeyCode.Up,
-		NZ.KeyCode.Left,
 		NZ.KeyCode.Down,
-		NZ.KeyCode.Right,
 		NZ.KeyCode.Space
 	],
 	keys: [],
