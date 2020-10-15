@@ -1,0 +1,197 @@
+var NZ = NZ || {};
+
+// Built-in object class and manager
+// Any custom class must inherit NZObject class
+// to be able to get managed by OBJ the object manager
+class NZObject {
+	constructor() {
+		this.x = 0;
+		this.y = 0;
+		this.id = 0;
+		this.depth = 0;
+		this.active = true;
+		this.visible = true;
+	}
+	start() {}
+	preUpdate() {}
+	update() {}
+	postUpdate() {}
+	render() {}
+}
+
+NZ.OBJ = {
+	ID: 0,
+	list: [],
+	names: [],
+	linkedClass: {},
+	_updateDisabled: false,
+	_renderDisabled: false,
+	add(name) {
+		this.list.push([]);
+		this.names.push(name);
+	},
+	link(name, cls) {
+		this.linkedClass[name] = cls;
+	},
+	addLink(name, cls) {
+		this.add(name);
+		this.link(name, cls);
+	},
+	update() {
+		if (this._updateDisabled) return;
+		for (let i = this.list.length - 1; i >= 0; --i) {
+			for (let j = this.list[i].length - 1; j >= 0; --j) {
+				if (this.list[i][j].active) {
+					this.list[i][j].preUpdate();
+					// Check if instance is not removed
+					if (this.list[i][j]) this.list[i][j].update();
+					if (this.list[i][j]) this.list[i][j].postUpdate();
+				}
+			}
+		}
+	},
+	render() {
+		if (this._renderDisabled) return;
+		const h = [];
+		for (let i = this.list.length - 1; i >= 0; --i) {
+			for (let j = this.list[i].length - 1; j >= 0; --j) {
+				if (this.list[i][j].visible) {
+					h.push(this.list[i][j]);
+				}
+			}
+		}
+		h.sort((a, b) => a.depth < b.depth? -1 : 1);
+		for (let i = h.length - 1; i >= 0; --i) {
+			h[i].render();
+		}
+	},
+	updateFrom(name) {
+		const i = this.getIndex(name);
+		for (let j = this.list[i].length - 1; j >= 0; --j) {
+			if (this.list[i][j].active) {
+				this.list[i][j].preUpdate();
+				if (this.list[i][j]) this.list[i][j].update();
+				if (this.list[i][j]) this.list[i][j].postUpdate();
+			}
+		}
+	},
+	renderFrom(name) {
+		const h = [];
+		const i = this.getIndex(name);
+		for (let j = this.list[i].length - 1; j >= 0; --j) {
+			if (this.list[i][j].visible) {
+				h.push(this.list[i][j]);
+			}
+		}
+		h.sort((a, b) => a.depth < b.depth? -1 : 1);
+		for (let j = h.length - 1; j >= 0; --j) {
+			h[j].render();
+		}
+	},
+	enableUpdate() {
+		this._updateDisabled = false;
+	},
+	disableUpdate() {
+		this._updateDisabled = true;
+	},
+	enableRender() {
+		this._renderDisabled = false;
+	},
+	disableRender() {
+		this._renderDisabled = true;
+	},
+	getIndex(name) {
+		return ((typeof name === 'number')? name : this.names.indexOf(name));
+	},
+	take(name) {
+		return this.list[this.getIndex(name)];
+	},
+	count(name) {
+		return this.take(name).length;
+	},
+	countAll() {
+		let h = 0;
+		for (let i = this.list.length - 1; i >= 0; --i) {
+			h += this.list[i].length;
+		}
+		return h;
+	},
+	clear(name) {
+		this.list[this.getIndex(name)].length = 0;
+	},
+	clearAll() {
+		for (let i = this.list.length - 1; i >= 0; --i) {
+			this.list[i].length = 0;
+		}
+		this.ID = 0;
+	},
+	push(name, instance) {
+		const i = this.getIndex(name);
+		if (i < 0) {
+			throw new Error(`Name not exists: '${name}'. Try insert "OBJ.add('${name}');" to your code.`);
+		}
+		instance.id = this.ID++;
+		this.list[i].push(instance);
+		instance.start();
+		return instance;
+	},
+	create(name, ...payload) {
+		if (this.getIndex(name) < 0) {
+			throw new Error(`Name not exists: '${name}'. Try insert "OBJ.add('${name}');" to your code.`);
+		}
+		const cls = this.linkedClass[name];
+		if (typeof cls !== 'function') {
+			throw new Error(`Class not found: '${name}'. Try insert "OBJ.link('${name}', [the name of the class]);" to your code.`);
+		}
+		const instance = new cls(...payload);
+		return this.push(name, instance);
+	},
+	get(id) {
+		for (let i = this.list.length - 1; i >= 0; --i) {
+			for (let j = this.list[i].length - 1; j >= 0; --j) {
+				if (this.list[i][j].id === id) {
+					return this.list[i][j];
+				}
+			}
+		}
+	},
+	remove(id) {
+		for (let i = this.list.length - 1; i >= 0; --i) {
+			for (let j = this.list[i].length - 1; j >= 0; --j) {
+				if (this.list[i][j].id === id) {
+					return this.list[i].splice(j, 1)[0];
+				}
+			}
+		}
+	},
+	getFrom(name, id) {
+		let i = this.getIndex(name);
+		for (let j = this.list[i].length - 1; j >= 0; --j) {
+			if (this.list[i][j].id === id) {
+				return this.list[i][j];
+			}
+		}
+	},
+	removeFrom(name, id) {
+		let i = this.getIndex(name);
+		for (let j = this.list[i].length - 1; j >= 0; --j) {
+			if (this.list[i][j].id === id) {
+				return this.list[i].splice(j, 1)[0];
+			}
+		}
+	},
+	nearest(name, x, y) {
+		let g = null;
+		let h = Number.POSITIVE_INFINITY;
+		let i = this.getIndex(name);
+		for (let j = this.list[i].length - 1; j >= 0; --j) {
+			const k = this.list[i][j];
+			const l = (x-k.x)*(x-k.x) + (y-k.y)*(y-k.y); // squared distance to save sqrt
+			if (l <= h) {
+				g = k;
+				h = l;
+			}
+		}
+		return g;
+	}
+};
