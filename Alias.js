@@ -11,6 +11,7 @@ const {
 	Align,
 	Debug,
 	Input,
+	Mathz,
 	Utils,
 	Cursor,
 	Loader,
