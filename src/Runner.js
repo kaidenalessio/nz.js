@@ -18,12 +18,12 @@ window.cancelAnimationFrame = window.cancelAnimationFrame
 	|| window.webkitCancelAnimationFrame;
 
 NZ.Runner.start = () => {
-	this.active = true;
+	NZ.Runner.active = true;
 	window.requestAnimationFrame(NZ.Runner.run);
 };
 
 NZ.Runner.stop = () => {
-	this.active = false;
+	NZ.Runner.active = false;
 	window.cancelAnimationFrame(NZ.Runner.run);
 };
 
