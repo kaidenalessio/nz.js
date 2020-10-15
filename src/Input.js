@@ -18,9 +18,10 @@ NZ.Input = {
 	movementY: 0,
 	mouseMove: false,
 	mouseWheelDelta: 0,
-	init(targetElement) {
+	setTargetElement(targetElement) {
 		this.targetElement = targetElement; // element that has `getBoundingClientRect()` to offset mouse position to
-
+	},
+	init() {
 		// Reset array
 		this.keys.length = 0;
 		this.mice.length = 0;
@@ -147,7 +148,7 @@ NZ.Input = {
 	mouseWheelEvent(e) {
 		NZ.Input.mouseWheelDelta = e.wheelDelta;
 	},
-	setupEventListenerAt(element) {
+	setupEventAt(element) {
 		element = element || window;
 		element.addEventListener('keyup', this.keyUpEvent);
 		element.addEventListener('keydown', this.keyDownEvent);
@@ -161,3 +162,5 @@ NZ.Input = {
 		position.y += (this.keyHold(40) - this.keyHold(38)) * speed;
 	}
 };
+
+NZ.Input.init();

@@ -7,6 +7,8 @@ NZ.Stage = {
 	ULTRA: 4,
 	NORMAL: 1,
 	pixelRatio: 1, // (0.5=Low, 1=Normal, 2=High, 4=Ultra)
+	canvas: null,
+	autoClear: true,
 	w: 300,
 	h: 150,
 	mid: {
@@ -34,18 +36,25 @@ NZ.Stage = {
 		if (s < 1) txt = 'Low';
 		return txt;
 	},
+	setupCanvas(canvas) {
+		this.canvas = canvas;
+		this.canvas.ctx = this.canvas.getContext('2d');
+		return canvas;
+	},
 	setPixelRatio(scale) {
 		this.pixelRatio = scale;
 	},
 	resetPixelRatio() {
 		this.pixelRatio = 1;
 	},
-	applyPixelRatio(canvas) {
-		const ctx = canvas.getContext('2d');
-		canvas.width = this.w * this.pixelRatio;
-		canvas.height = this.h * this.pixelRatio;
-		ctx.resetTransform();
-		ctx.scale(this.pixelRatio, this.pixelRatio);
+	applyPixelRatio() {
+		this.canvas.width = this.w * this.pixelRatio;
+		this.canvas.height = this.h * this.pixelRatio;
+		this.canvas.ctx.resetTransform();
+		this.canvas.ctx.scale(this.pixelRatio, this.pixelRatio);
+	},
+	clear() {
+		this.canvas.ctx.clearRect(0, 0, this.w, this.h);
 	},
 	resize(w, h) {
 		this.w = w;
@@ -55,15 +64,12 @@ NZ.Stage = {
 		this.size.x = w;
 		this.size.y = h;
 	},
-	resizeEvent(w, h, canvas) {
-		NZ.Stage.resize(w, h);
-		NZ.Stage.applyPixelRatio(canvas);
+	resizeEvent() {
+		const b = NZ.Stage.canvas.getBoundingClientRect();
+		NZ.Stage.resize(b.width, b.height);
+		NZ.Stage.applyPixelRatio();
 	},
-	setupEvent(element, canvas) {
-		element = element || window;
-		element.addEventListener('resize', () => {
-			const b = canvas.getBoundingClientRect();
-			NZ.Stage.resizeEvent(b.width, b.height, canvas);
-		});
+	setupEvent() {
+		window.addEventListener('resize', this.resizeEvent);
 	}
 };

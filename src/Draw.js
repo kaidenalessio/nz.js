@@ -9,16 +9,20 @@ NZ.Draw = {
 		style: '',
 		family: 'Maven Pro, sans-serif'
 	},
+	autoReset: true, // use in NZ.Runner.run
 	ctx: null,
 	textHeight: 10,
 	images: {},
 	sprites: {},
 	strips: {},
 	vertices: [],
+	degtorad(deg) {
+		return deg * 0.017453292519943295;
+	},
 	init(options={}) {
-		if (options._defaultCtx) this._defaultCtx = options._defaultCtx;
-		if (options._defaultFont) this._defaultFont = options._defaultFont;
-		this.resetCtx();
+		if (options.ctx) this._defaultCtx = options.ctx;
+		if (options.font) this._defaultFont = options.font;
+		this.reset();
 		return this;
 	},
 	setCtx(ctx) {
@@ -262,7 +266,7 @@ NZ.Draw = {
 			endAngleDeg = 0;
 		}
 		this.ctx.beginPath();
-		this.ctx.arc(x, y, r, Math.degtorad(startAngleDeg), Math.degtorad(endAngleDeg));
+		this.ctx.arc(x, y, r, this.degtorad(startAngleDeg), this.degtorad(endAngleDeg));
 		this.draw(isStroke);
 	},
 	line(x1, y1, x2, y2) {
@@ -394,7 +398,7 @@ NZ.Draw = {
 		this.ctx.beginPath();
 		for (let i = 0; i <= 2 * pts; i++) {
 			const r = (i % 2 === 0)? inner : outer;
-			const a = Math.PI * i / pts - Math.degtorad(angle);
+			const a = Math.PI * i / pts - this.degtorad(angle);
 			const p = {
 				x: x + r * Math.sin(a),
 				y: y + r * Math.cos(a)
@@ -417,7 +421,7 @@ NZ.Draw = {
 	onTransform(x, y, xscale, yscale, angle, drawFn) {
 		this.ctx.save();
 		this.ctx.translate(x, y);
-		this.ctx.rotate(Math.degtorad(angle));
+		this.ctx.rotate(this.degtorad(angle));
 		this.ctx.scale(xscale, yscale);
 		drawFn();
 		this.ctx.restore();

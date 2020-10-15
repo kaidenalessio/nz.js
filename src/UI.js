@@ -1,7 +1,7 @@
 var NZ = NZ || {};
 
 NZ.UI = {
-	autoReset: true, // use in NZ.Game.update
+	autoReset: true, // use in NZ.Runner.run
 	cursor: 'default',
 	setCursor(cursor) {
 		this.cursor = cursor;

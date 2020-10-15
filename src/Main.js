@@ -1,25 +1,81 @@
 var NZ = NZ || {};
 
+// Quick start
+/* Modules required:
+ * - NZ.Input
+ * - NZ.Stage
+ * - NZ.Canvas (if no canvas provided)
+ * - NZ.StylePreset (if no style preset provided)
+ * - NZ.UI
+ * - NZ.Draw
+ * - NZ.Debug
+ *	options = {
+ *		w: stage width
+ *		h: stage height
+ *		canvas: stage canvas
+ *		bgColor: color or [color1, color2]. Example: red or [white, gray]. Default [blanchedalmond, burlywood]
+ *		stylePreset: choose one from NZ.StylePreset (Will only be applied if `w` and `h` defined, otherwise it will be stylized full viewport)
+ *		uiAutoReset: execute NZ.UI.reset() every run (see NZ.Runner.run)
+ *		drawAutoReset: execute NZ.Draw.reset() every run (see NZ.Runner.run)
+ *		stageAutoClear: execute NZ.Stage.clear() every run (see NZ.Runner.run)
+ *		debugModeAmount: sets the amount of debug mode
+ *		debugModeKeyCode: sets the debug mode key code (see NZ.Runner.run for implementation)
+ *		preventContextMenu: prevent right-click to show context menu
+ *		defaultFont: set default font used to draw text (default = Maven Pro 16) (See NZ.Font for more info)
+ *	};
+ */
 NZ.start = (options={}) => {
-	NZ.Game.init();
+
+	options.inputParent = options.inputParent || window;
+	options.parent = options.parent || document.body;
+	options.canvas = options.canvas || NZ.Canvas;
+	options.canvas.id = 'NZCanvas';
+
+	NZ.Input.setupEventAt(options.inputParent);
+	NZ.Input.setTargetElement(options.canvas);
+
+	NZ.Draw.init({
+		ctx: options.canvas.getContext('2d'),
+		font: options.defaultFont
+	});
+
+	NZ.Stage.setupCanvas(options.canvas);
+
+	// If `options.w` and `options.h` defined,
 	if (typeof options.w === 'number' && typeof options.h === 'number') {
-		NZ.Room.resize(options.w, options.h);
-		NZ.Canvas.style.width = `${options.w}px`;
-		NZ.Canvas.style.height = `${options.h}px`;
-		NZ.Canvas.customStyle.innerHTML = options.stylePreset || '';
-		document.head.appendChild(NZ.Canvas.customStyle);
+		// set canvas width and height
+		options.canvas.style.width = `${options.w}px`;
+		options.canvas.style.height = `${options.h}px`;
+
+		// Copy values to NZ.Stage
+		NZ.Stage.resize(options.w, options.h);
+
+		// Apply style preset if exists
+		if (options.stylePreset) {
+			const style = document.createElement('style');
+			let stylePreset = options.stylePreset;
+			if (typeof stylePreset === 'function') {
+				stylePreset = stylePreset(options.canvas.id);
+			}
+			style.innerHTML = stylePreset;
+			document.head.appendChild(style);
+		}
 	}
 	else {
-		document.head.appendChild(NZ.Canvas.fullWindowStyle);
+		// Otherwise make it full viewport
+		const style = document.createElement('style');
+		const parentSelector = options.parent.id? `#${options.parent.id}` : options.parent.localName;
+		style.innerHTML = NZ.StylePreset.fullViewport(options.canvas.id, parentSelector);
+		document.head.appendChild(style);
 	}
-	window.addEventListener('resize', NZ.Room.resizeEvent);
-	NZ.Room.resizeEvent(); // Includes calculate bounding rect that will be used for mouse input
+
 	if (options.preventContextMenu) {
-		window.addEventListener('contextmenu', (e) => e.preventDefault());
-		NZ.Canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+		options.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 	}
-	let color1 = NZ.C.blanchedAlmond;
-	let color2 = NZ.C.burlyWood;
+
+	// Style canvas background color
+	let color1 = 'blanchedalmond';
+	let color2 = 'burlywood';
 	if (options.bgColor) {
 		if (options.bgColor instanceof Array) {
 			color1 = options.bgColor[0];
@@ -30,12 +86,16 @@ NZ.start = (options={}) => {
 			color2 = options.bgColor;
 		}
 	}
-	NZ.Canvas.style.backgroundImage = `radial-gradient(${color1} 33%, ${color2})`;
+	options.canvas.style.backgroundImage = `radial-gradient(${color1} 33%, ${color2})`;
+
 	if (typeof options.uiAutoReset === 'boolean') {
 		NZ.UI.autoReset = options.uiAutoReset;
 	}
 	if (typeof options.drawAutoReset === 'boolean') {
 		NZ.Draw.autoReset = options.drawAutoReset;
+	}
+	if (typeof options.stageAutoClear === 'boolean') {
+		NZ.Stage.autoClear = options.stageAutoClear;
 	}
 	if (options.debugModeAmount) {
 		NZ.Debug.modeAmount = options.debugModeAmount;
@@ -43,6 +103,15 @@ NZ.start = (options={}) => {
 	if (options.debugModeKeyCode) {
 		NZ.Debug.modeKeyCode = options.debugModeKeyCode;
 	}
-	NZ.Room.restart();
-	NZ.Game.start();
+
+	// Append canvas
+	options.parent.appendChild(options.canvas);
+
+	// Resize stage appropriately
+	NZ.Stage.resizeEvent();
+	// Handle window.onresize to resize stage appropriately
+	NZ.Stage.setupEvent();
+
+	NZ.Scene.restart();
+	NZ.Runner.start();
 };
