@@ -32,7 +32,7 @@ NZ.Vec2._checkArg = function(i) {
 		v = NZ.Vec2.fromObject(i);
 	}
 	else {
-		throw new TypeError('The provided value cannot be converted to Vec2.');
+		throw new TypeError('The provided value cannot be converted to NZ.Vec2.');
 	}
 	return v;
 };
@@ -47,7 +47,7 @@ NZ.Vec2._checkArgs = function(x, y, returnArray=false) {
 		x = x.x;
 	}
 	else if (typeof x !== 'number') {
-		throw new TypeError('The provided value cannot be converted to Vec2 or number.');
+		throw new TypeError('The provided value cannot be converted to NZ.Vec2 or number.');
 	}
 	if (y === undefined) y = x;
 	return returnArray? [x, y] : { x, y };
@@ -58,60 +58,64 @@ NZ.Vec2.prototype.set = function(x, y) {
 	y = x.y; x = x.x;
 	this.x = x; this.y = y;
 	return this;
-}
+};
 
 NZ.Vec2.prototype.add = function(x, y) {
 	x = NZ.Vec2._checkArgs(x, y);
 	y = x.y; x = x.x;
 	this.x += x; this.y += y;
 	return this;
-}
+};
 
 NZ.Vec2.prototype.sub = function(x, y) {
 	x = NZ.Vec2._checkArgs(x, y);
 	y = x.y; x = x.x;
 	this.x -= x; this.y -= y;
 	return this;
-}
+};
 
 NZ.Vec2.prototype.mul = function(x, y) {
 	x = NZ.Vec2._checkArgs(x, y);
 	y = x.y; x = x.x;
 	this.x *= x; this.y *= y;
 	return this;
-}
+};
+
+NZ.Vec2.prototype.mult = function(x, y) {
+	return this.mul(x, y);
+};
 
 NZ.Vec2.prototype.div = function(x, y) {
 	x = NZ.Vec2._checkArgs(x, y);
 	y = x.y; x = x.x;
 	this.x /= x; this.y /= y;
 	return this;
-}
+};
 
 NZ.Vec2.prototype.lerp = function(v, t) {
 	return new NZ.Vec2(NZ.Vec2.range(this.x, v.x, t), NZ.Vec2.range(this.y, v.y, t));
-}
+};
 
 NZ.Vec2.prototype.reset = function() {
 	this.set(0);
-}
+};
 
 NZ.Vec2.prototype.clone = function() {
 	return new NZ.Vec2(this.x, this.y);
-}
+};
 
 NZ.Vec2.prototype.angle = function() {
 	return NZ.Vec2.direction(this, NZ.Vec2.zero);
-}
+};
 
 NZ.Vec2.prototype.polar = function() {
 	return NZ.Vec2.polar(this.angle);
-}
+};
 
 NZ.Vec2.prototype.toString = function(fractionDigits=-1) {
 	if (fractionDigits > -1) return `(${this.x.toFixed(fractionDigits)}, ${this.y.toFixed(fractionDigits)})`;
 	return `(${this.x}, ${this.y})`;
-}
+};
 
 NZ.Vec2.prototype.normalise = function() {
 	const l = this.length;
@@ -191,6 +195,10 @@ NZ.Vec2.mul = function(v1, v2) {
 	const v = NZ.Vec2._checkArg(v1);
 	v.mul(v2);
 	return v;
+};
+
+NZ.Vec2.mult = function(v1, v2) {
+	return NZ.Vec2.mul(v1, v2);
 };
 
 NZ.Vec2.div = function(v1, v2) {

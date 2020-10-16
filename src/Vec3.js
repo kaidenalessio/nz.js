@@ -69,6 +69,10 @@ NZ.Vec3.prototype.mul = function(x, y, z) {
 	return this;
 };
 
+NZ.Vec3.prototype.mult = function(x, y, z) {
+	return this.mul(x, y, z);
+};
+
 NZ.Vec3.prototype.div = function(x, y, z) {
 	x = NZ.Vec3._checkArgs(x, y, z);
 	z = x.z; y = x.y; x = x.x;
@@ -126,6 +130,10 @@ NZ.Vec3.mul = function(v1, v2) {
 	const v = NZ.Vec3._checkArg(v1);
 	v.mul(v2);
 	return v;
+};
+
+NZ.Vec3.mult = function(v1, v2) {
+	return NZ.Vec3.mul(v1, v2);
 };
 
 NZ.Vec3.div = function(v1, v2) {
@@ -189,7 +197,7 @@ Object.defineProperty(NZ.Vec3.prototype, 'length', {
 
 Object.defineProperty(NZ.Vec3, 'up', {
 	get: function() {
-		return new NZ.Vec3(0, -1, 0);
+		return new NZ.Vec3(0, 1, 0);
 	}
 });
 
@@ -201,7 +209,7 @@ Object.defineProperty(NZ.Vec3, 'left', {
 
 Object.defineProperty(NZ.Vec3, 'down', {
 	get: function() {
-		return new NZ.Vec3(0, 1, 0);
+		return new NZ.Vec3(0, -1, 0);
 	}
 });
 
