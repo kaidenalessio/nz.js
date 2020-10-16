@@ -205,6 +205,11 @@ NZ.OBJ = {
 			}
 		}
 	},
+	onAll(name, callbackFn) {
+		for (const i of this.take(name)) {
+			callbackFn(i);
+		}
+	},
 	nearest(name, x, y) {
 		let g = null;
 		let h = Number.POSITIVE_INFINITY;
