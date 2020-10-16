@@ -20,7 +20,7 @@ class Triangle {
 		}
 	}
 	calculateDepth() {
-		this.depth =  (this.p[0].z + this.p[1].z + this.p[2].z) * Math.ONE_THIRD;
+		this.depth =  (this.p[0].z + this.p[1].z + this.p[2].z) * Mathz.ONE_THIRD;
 	}
 }
 

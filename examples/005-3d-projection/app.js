@@ -1,4 +1,4 @@
-Room.current.start = () => {
+Scene.current.start = () => {
 	OBJ.disableRender();
 	OBJ.create('3dobject', Mesh.makeCube(), new Vec3(0, 0, 3));
 	OBJ.create('3dobject', Mesh.makeCube(), new Vec3(3, 0, 5));
@@ -7,8 +7,8 @@ Room.current.start = () => {
 	OBJ.create('3dobject', Mesh.makeCube(), new Vec3(-3, 4, 10));
 };
 
-Room.current.render = () => {
-	const matProj = Mat4.makeProjection(Room.h / Room.w);
+Scene.current.render = () => {
+	const matProj = Mat4.makeProjection(Stage.h / Stage.w);
 	const trisToRaster = [];
 
 	for (const o of OBJ.take('3dobject')) {
@@ -31,8 +31,8 @@ Room.current.render = () => {
 			triProjected.onAllPoints((p) => {
 				p.div(p.w);
 				p.add(1, 1, 0);
-				p.mul(Room.mid.w, -Room.mid.h, 1);
-				p.y += Room.h;
+				p.mul(Stage.mid.w, -Stage.mid.h, 1);
+				p.y += Stage.h;
 			});
 
 			trisToRaster.push(triProjected);
