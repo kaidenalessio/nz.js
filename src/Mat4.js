@@ -7,6 +7,10 @@ NZ.Mat4 = function() {
 		[0, 0, 0, 0],
 		[0, 0, 0, 0]
 	];
+}
+
+NZ.Mat4.degtorad = function(deg) {
+	return deg * 0.017453292519943295;
 };
 
 NZ.Mat4.mulVec3 = function(m, i) {
@@ -38,7 +42,7 @@ NZ.Mat4.makeIdentity = function() {
 };
 
 NZ.Mat4.makeProjection = function(aspectRatio=0.5625, fovDeg=90, near=0.1, far=1000) {
-	const fovRad = 1 / Math.tan(Math.degtorad(fovDeg * 0.5));
+	const fovRad = 1 / Math.tan(NZ.Mat4.degtorad(fovDeg * 0.5));
 	const m = new Mat4();
 	m.m[0][0] = aspectRatio * fovRad;
 	m.m[1][1] = fovRad;
@@ -49,7 +53,7 @@ NZ.Mat4.makeProjection = function(aspectRatio=0.5625, fovDeg=90, near=0.1, far=1
 };
 
 NZ.Mat4.makeRotationX = function(angleDeg, m=new Mat4()) {
-	angleDeg = Math.degtorad(angleDeg);
+	angleDeg = NZ.Mat4.degtorad(angleDeg);
 	m.m[0][0] = 1;
 	m.m[1][1] = Math.cos(angleDeg);
 	m.m[1][2] = Math.sin(angleDeg);
@@ -60,7 +64,7 @@ NZ.Mat4.makeRotationX = function(angleDeg, m=new Mat4()) {
 };
 
 NZ.Mat4.makeRotationY = function(angleDeg, m=new Mat4()) {
-	angleDeg = Math.degtorad(angleDeg);
+	angleDeg = NZ.Mat4.degtorad(angleDeg);
 	m.m[0][0] = Math.cos(angleDeg);
 	m.m[0][2] = -Math.sin(angleDeg);
 	m.m[1][1] = 1;
@@ -71,7 +75,7 @@ NZ.Mat4.makeRotationY = function(angleDeg, m=new Mat4()) {
 };
 
 NZ.Mat4.makeRotationZ = function(angleDeg, m=new Mat4()) {
-	angleDeg = Math.degtorad(angleDeg);
+	angleDeg = NZ.Mat4.degtorad(angleDeg);
 	m.m[0][0] = Math.cos(angleDeg);
 	m.m[0][1] = Math.sin(angleDeg);
 	m.m[1][0] = -Math.sin(angleDeg);
