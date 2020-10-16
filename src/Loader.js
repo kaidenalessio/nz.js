@@ -1,5 +1,7 @@
 var NZ = NZ || {};
 
+// Make it easier to load and add images to NZ.Draw (soon: load sound)
+// MODULES REQUIRED: NZ.Draw (soon: NZ.Sound)
 NZ.Loader = {
 	loaded: false,
 	loadAmount: 0,
