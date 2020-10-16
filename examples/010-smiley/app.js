@@ -1,6 +1,7 @@
-Room.current.start = () => {
-	Room.setScale(2);
-	const smiley = OBJ.create('smiley', Room.size.mid, PLAYER_SPEED, PLAYER_MAX_VELOCITY, PLAYER_RADIUS);
+Scene.current.start = () => {
+	Stage.setPixelRatio(2);
+	Stage.applyPixelRatio();
+	const smiley = OBJ.create('smiley', Stage.size.mid, PLAYER_SPEED, PLAYER_MAX_VELOCITY, PLAYER_RADIUS);
 	for (let i = 0; i < FOOD_AMOUNT; i++) {
 		const n = OBJ.create('food', FOOD_SPEED, FOOD_RADIUS);
 		n.onIntersectsSmiley = () => {
@@ -30,7 +31,7 @@ Room.current.start = () => {
 	}
 };
 
-Room.current.renderUI = () => {
+Scene.current.renderUI = () => {
 	const drawText = (x, y, text) => {
 		Draw.setColor(C.black);
 		Draw.text(x, y+1, text);
@@ -50,11 +51,11 @@ Room.current.renderUI = () => {
 		if (SCORE >= TARGET_SCORE) {
 			gameOverText = GAME_OVER_WON_TEXT;
 		}
-		drawText(Room.mid.w, Room.mid.h, gameOverText);
+		drawText(Stage.mid.w, Stage.mid.h, gameOverText);
 		Draw.setFont(Font.m);
 		Draw.setHVAlign(Align.c, Align.b);
-		drawText(Room.mid.w, Room.h - 16, 'Reload the page to restart.');
-		NZ.Game.stop();
+		drawText(Stage.mid.w, Stage.h - 16, 'Reload the page to restart.');
+		NZ.Runner.stop();
 	}
 };
 

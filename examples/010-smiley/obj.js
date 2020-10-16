@@ -1,33 +1,33 @@
 class Dot extends NZObject {
 	constructor(position=Vec2.zero, velocity=Vec2.zero, r=16) {
 		super();
-		this.position = position;
+		this.position = new Vec2(position.x, position.y);
 		this.velocity = velocity;
 		this.r = r;
 	}
 	wrap() {
 		if (this.position.x < -this.r) {
-			this.position.x = Room.w + this.r;
+			this.position.x = Stage.w + this.r;
 		}
-		if (this.position.x > Room.w + this.r) {
+		if (this.position.x > Stage.w + this.r) {
 			this.position.x = -this.r;
 		}
 		if (this.position.y < -this.r) {
-			this.position.y = Room.h + this.r;
+			this.position.y = Stage.h + this.r;
 		}
-		if (this.position.y > Room.h + this.r) {
+		if (this.position.y > Stage.h + this.r) {
 			this.position.y = -this.r;
 		}
 	}
 	respawn() {
-		this.position.set(Vec2.random(0, Room.w, 0, Room.h));
+		this.position.set(Vec2.random(0, Stage.w, 0, Stage.h));
 	}
 	respawnOutside() {
 		const xmin = -this.r;
-		const xmax = Room.w + this.r;
+		const xmax = Stage.w + this.r;
 		const ymin = -this.r;
-		const ymax = Room.h + this.r;
-		switch (Math.irange(4)) {
+		const ymax = Stage.h + this.r;
+		switch (Mathz.irange(4)) {
 			case 0: this.position.set(Vec2.random(xmin, xmax, ymin, ymin)); break;
 			case 1: this.position.set(Vec2.random(xmin, xmax, ymax, ymax)); break;
 			case 2: this.position.set(Vec2.random(xmin, xmin, ymin, ymax)); break;
@@ -54,7 +54,7 @@ class Food extends Dot {
 		this.randomizeVelocity();
 	}
 	randomizeVelocity() {
-		this.velocity.set(Vec2.create(this.speed).mul(Math.randneg(), Math.randneg()));
+		this.velocity.set(Vec2.create(this.speed).mul(Mathz.randneg(), Mathz.randneg()));
 	}
 	onIntersectsSmiley() {}
 	update() {
@@ -80,11 +80,16 @@ class Smiley extends Dot {
 		this.desiredLookAngle = 0;
 	}
 	update() {
-		const nearestFood = OBJ.nearest('food', this.position);
+		// Update x and y to get evaluated by OBJ.nearest appropriately
+		OBJ.onAll('food', (i) => {
+			i.x = i.position.x;
+			i.y = i.position.y;
+		});
+		const nearestFood = OBJ.nearest('food', this.position.x, this.position.y);
 		if (nearestFood) {
 			this.desiredLookAngle = this.position.direction(nearestFood.position);
 		}
-		this.lookAngle = Math.smoothRotate(this.lookAngle, this.desiredLookAngle, 5);
+		this.lookAngle = Mathz.smoothRotate(this.lookAngle, this.desiredLookAngle, 5);
 		Input.testMoving4Dir(this.velocity, this.speed);
 		this.velocity.clamp(-this.maxVel, this.maxVel);
 	}
