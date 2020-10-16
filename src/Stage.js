@@ -15,7 +15,7 @@ NZ.Stage = {
 		w: 150,
 		h: 75
 	},
-	size: { x: 300, y: 150 },
+	size: { x: 300, y: 150, mid: { x: 150, y: 75 } },
 	get randomX() {
 		return Math.random() * this.size.x;
 	},
@@ -63,6 +63,8 @@ NZ.Stage = {
 		this.mid.h = this.h * 0.5;
 		this.size.x = w;
 		this.size.y = h;
+		this.size.mid.x = this.size.x * 0.5;
+		this.size.mid.y = this.size.y * 0.5;
 	},
 	resizeEvent() {
 		const b = NZ.Stage.canvas.getBoundingClientRect();
