@@ -1,3 +1,48 @@
+class Boundary {
+	constructor(x, y, w, h) {
+		this.x = x;
+		this.y = y;
+		this.w = w;
+		this.h = h;
+	}
+	get left() {
+		return this.x;
+	}
+	get right() {
+		return this.x + this.w;
+	}
+	get top() {
+		return this.y;
+	}
+	get bottom() {
+		return this.y + this.h;
+	}
+	containsPoint(x, y) {
+		[x, y] = Vec2._checkArgs(x, y, true);
+		return (x >= this.left && x <= this.right && y >= this.top && y <= this.bottom);
+	}
+	get hovered() {
+		return this.containsPoint(Input.mousePosition);
+	}
+	updatePosition(x, y) {
+		this.x = x;
+		this.y = y;
+	}
+	show(options={}) {
+		options.fill = options.fill || C.white;
+		options.stroke = options.stroke || C.black;
+		options.isStroke = options.isStroke || true;
+		Draw.setColor(options.fill, options.stroke);
+		Draw.rect(this.x, this.y, this.w, this.h, options.isStroke);
+	}
+	debug(fill, stroke) {
+		this.show({ fill, stroke });
+		if (this.hovered) {
+			Draw.fill();
+		}
+	}
+}
+
 class Button extends NZObject {
 	constructor(x, y, w, h, text, cursor, onClickCallback) {
 		super();
@@ -8,7 +53,7 @@ class Button extends NZObject {
 		this.text = text;
 		this.cursor = cursor;
 		this.onClickCallback = onClickCallback;
-		this.boundary = new NZBoundary(this.x, this.y, this.w, this.h);
+		this.boundary = new Boundary(this.x, this.y, this.w, this.h);
 		this.scale = 1;
 		this.desiredScale = this.scale;
 		this.clicked = false;
@@ -31,6 +76,7 @@ class Button extends NZObject {
 		const hovered = this.boundary.hovered;
 		if (hovered) {
 			UI.setCursor(this.cursor);
+			UI.applyCursor(Stage.canvas);
 			if (Input.mouseHold(0)) {
 				if (this.clicked) this.desiredScale = 0.9;
 				else this.desiredScale = 1.2;
@@ -40,7 +86,7 @@ class Button extends NZObject {
 		else {
 			this.desiredScale = 1;
 		}
-		this.scale = Math.range(this.scale, this.desiredScale, 0.2);
+		this.scale = Mathz.range(this.scale, this.desiredScale, 0.2);
 		this.boundary.debug();
 		if (hovered) {
 			Draw.fill();
@@ -60,6 +106,8 @@ class myCanvasShaker extends NZGameObject {
 	}
 	alarm0() {
 		OBJ.remove(this.id);
+		Stage.resetPixelRatio();
+		Stage.applyPixelRatio();
 	}
 }
 

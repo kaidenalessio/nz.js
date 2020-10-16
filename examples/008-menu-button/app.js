@@ -1,7 +1,7 @@
-Room.current.start = () => {
-	let y = Room.mid.h - 216;
+Scene.current.start = () => {
+	let y = Stage.mid.h - 216;
 	const addButton = (text, cursor, callback) => {
-		OBJ.create('button', Room.mid.w, y, 120, 60, text, cursor, callback);
+		OBJ.create('button', Stage.mid.w, y, 120, 60, text, cursor, callback);
 		y += 72;
 	};
 	addButton('New game', Cursor.pointer, () => {
@@ -18,26 +18,30 @@ Room.current.start = () => {
 		OBJ.create('canvasshaker');
 	});
 	addButton('Higher res', Cursor.zoomIn, () => {
-		Room.scale.mul(11/10).ceil(100).clamp(0.5, 4);
-		Room.applyScale();
+		Stage.setPixelRatio(Mathz.clamp(Stage.pixelRatio * (11/10), 0.5, 4));
+		Stage.applyPixelRatio();
 	});
 	addButton('Lower res', Cursor.zoomOut, () => {
-		Room.scale.mul(10/11).ceil(100).clamp(0.5, 4);
-		Room.applyScale();
+		Stage.setPixelRatio(Mathz.clamp(Stage.pixelRatio * (10/11), 0.5, 4));
+		Stage.applyPixelRatio();
 	});
 	addButton('Reset res', Cursor.crosshair, () => {
-		Room.resetScale();
+		Stage.resetPixelRatio();
+		Stage.applyPixelRatio();
 	});
 	addButton('Close tab', Cursor.image('cr.png'), () => {
 		window.close();
 	});
 };
 
-Room.current.renderUI = () => {
-	Draw.textBackground(0, 0, `Room scale: ${Room.scale.toString(1)}`);
-	Draw.textBackground(0, 26, `Room resolution: ${Room.resolutionText}`);
+Scene.current.renderUI = () => {
+	Draw.textBackground(0, 0, `Stage pixel ratio: ${Stage.pixelRatio}`);
+	Draw.textBackground(0, 26, `Stage resolution: ${Stage.pixelRatioText}`);
 	if (OBJ.count('canvasshaker') > 0) {
-		Room.setScale(Vec2.random(0.98, 1));
+		Stage.setPixelRatio(Mathz.range(0.98, 1.02));
+		const tmp = Draw.copyCanvas(Stage.canvas);
+		Stage.applyPixelRatio();
+		Draw.imageEl(tmp, Stage.mid.w, Stage.mid.h);
 	}
 };
 
