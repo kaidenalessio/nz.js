@@ -7,7 +7,6 @@ NZ.Font = {
 	h4: 16,
 	h5: 14,
 	h6: 10,
-	size: 16,
 	regular: '', // no space/nothing
 	bold: 'bold ', // with one space at the end if style exists to match NZ.Draw.setFont formatting:
 	/* htmlcontext.font = `${font.style}${font.size}px ${font.family}, serif`;
