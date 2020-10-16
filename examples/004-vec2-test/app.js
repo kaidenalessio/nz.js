@@ -17,12 +17,12 @@ const getNearestV = (pos) => {
 	return n;
 };
 
-Room.current.start = () => {
-	v1 = Room.size.mid;
-	v2 = Room.size.mid.sub(0, Room.h * 0.25);
+Scene.current.start = () => {
+	v1 = Vec2.clone(Stage.size.mid);
+	v2 = Vec2.clone(Stage.size.mid).sub(0, Stage.h * 0.25);
 };
 
-Room.current.update = () => {
+Scene.current.update = () => {
 	if (Input.mouseUp(0)) {
 		vDrag = null;
 	}
@@ -36,9 +36,9 @@ Room.current.update = () => {
 	}
 };
 
-Room.current.render = () => {
+Scene.current.render = () => {
 	const angle = Vec2.sub(v1, v2).angle();
-	const normalizedAngle = Math.normalizeAngle(angle);
+	const normalizedAngle = Mathz.normalizeAngle(angle);
 	const distance = v1.distance(v2);
 	const polar0 = Vec2.polar(0, distance).add(v1); // .add to offset it
 	const polar1 = Vec2.polar(angle * 0.5, distance).add(v1);
@@ -98,9 +98,9 @@ Room.current.render = () => {
 	drawText(`distance: ${distance}`, C.sienna);
 	drawText(`angle: ${angle}`, C.royalBlue);
 	drawText(`normalized angle: ${normalizedAngle}`, C.gold);
-	drawText(`sin(angle): ${Math.sin(Math.degtorad(angle))}`);
-	drawText(`cos(angle): ${Math.cos(Math.degtorad(angle))}`);
-	drawText(`tan(angle): ${Math.tan(Math.degtorad(angle))}`);
+	drawText(`sin(angle): ${Math.sin(Mathz.degtorad(angle))}`);
+	drawText(`cos(angle): ${Math.cos(Mathz.degtorad(angle))}`);
+	drawText(`tan(angle): ${Math.tan(Mathz.degtorad(angle))}`);
 	drawText('Click near the red or green point to drag it around.');
 	drawText(`FPS: ${Time.FPS}`);
 };
