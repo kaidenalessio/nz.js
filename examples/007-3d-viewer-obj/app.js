@@ -1,5 +1,5 @@
 let trisCount, trisToRasterCount;
-const myModel = new NZ3DObject(NZMesh.makeCube(), Vec3.forward.mul(8));
+const myModel = new NZObject3D(Mesh.makeCube(), Vec3.forward.mul(8));
 
 const setMyModelColor = (c=C.random()) => {
 	for (const tri of myModel.mesh.tris) {
@@ -24,13 +24,13 @@ const setMyModelColor = (c=C.random()) => {
 	document.body.appendChild(input);
 }());
 
-Room.current.start = () => {
+Scene.current.start = () => {
 	trisCount = 0;
 	trisToRasterCount = 0;
 	setMyModelColor();
 };
 
-Room.current.render = () => {
+Scene.current.render = () => {
 	if (Input.keyDown(Debug.modeKeyCode)) {
 		if (Debug.mode % 2 === 0) {
 			setMyModelColor();
@@ -39,7 +39,7 @@ Room.current.render = () => {
 			setMyModelColor(C.white);
 		}
 	}
-	const matProj = Mat4.makeProjection(Room.h / Room.w);
+	const matProj = Mat4.makeProjection(Stage.h / Stage.w);
 	const trisToRaster = [];
 	const m = new Vec2(myModel.transform.position.x, -myModel.transform.position.z);
 	Input.testMoving4Dir(m, 0.1);
@@ -56,12 +56,12 @@ Room.current.render = () => {
 	trisToRasterCount = trisToRaster.length;
 };
 
-Room.current.renderUI = () => {
+Scene.current.renderUI = () => {
 	let y = 50;
 	Draw.setFont(Font.m);
 	const drawText = (text, c=C.black, x=0, dontInc=false) => {
 		Draw.textBackground(x, y, text, { bgColor: c });
-		if (!dontInc) y += Font.size + 10;
+		if (!dontInc) y += Draw.textHeight + 10;
 	};
 	drawText(`FPS: ${Time.FPS}`);
 	drawText(`Tris: ${trisCount}`);

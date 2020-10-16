@@ -1,4 +1,4 @@
-class My3DObject extends NZ3DObject {
+class My3DObject extends NZObject3D {
 	constructor(mesh, position=Vec3.zero, rotation=Vec3.zero) {
 		super(mesh, position, rotation);
 	}
@@ -16,19 +16,20 @@ class My3DObject extends NZ3DObject {
 
 OBJ.addLink('3dobject', My3DObject);
 
-Room.current.start = () => {
+Scene.current.start = () => {
 	OBJ.disableRender();
-	OBJ.create('3dobject', NZMesh.makeCube(), new Vec3(0, 0, 3));
-	OBJ.create('3dobject', NZMesh.makeCube(), new Vec3(3, 0, 5));
-	OBJ.create('3dobject', NZMesh.makeCube(), new Vec3(-3, 0, 5));
-	OBJ.create('3dobject', NZMesh.makeCube(), new Vec3(3, 4, 10));
-	OBJ.create('3dobject', NZMesh.makeCube(), new Vec3(-3, 4, 10));
+	OBJ.create('3dobject', Mesh.makeCube(), new Vec3(0, 0, 3));
+	OBJ.create('3dobject', Mesh.makeCube(), new Vec3(3, 0, 5));
+	OBJ.create('3dobject', Mesh.makeCube(), new Vec3(-3, 0, 5));
+	OBJ.create('3dobject', Mesh.makeCube(), new Vec3(3, 4, 10));
+	OBJ.create('3dobject', Mesh.makeCube(), new Vec3(-3, 4, 10));
 };
 
-Room.current.render = () => {
-	const matProj = Mat4.makeProjection(Room.h / Room.w);
+Scene.current.render = () => {
+	const matProj = Mat4.makeProjection(Stage.h / Stage.w);
 	const trisToRaster = [];
 	for (const o of OBJ.take('3dobject')) {
+		// Transforms, Normals, Illuminates, Projects, Calculates depth for sorting (todo: clipping)
 		o.processTrisToRaster(matProj, trisToRaster);
 	}
 	trisToRaster.sort((a, b) => a.depth < b.depth? 1 : -1);
