@@ -30,7 +30,10 @@ NZ.Runner.stop = () => {
 NZ.Runner.run = (t) => {
 	if (!NZ.Runner.active) return;
 	if (NZ.Draw.autoReset) NZ.Draw.reset();
-	if (NZ.UI.autoReset) NZ.UI.reset();
+	if (NZ.UI.autoReset) {
+		NZ.UI.reset();
+		NZ.UI.applyCursor(NZ.Stage.canvas);
+	}
 	NZ.Time.update(t);
 	if (NZ.Input.keyDown(NZ.Debug.modeKeyCode)) if (++NZ.Debug.mode >= NZ.Debug.modeAmount) NZ.Debug.mode = 0;
 	NZ.Scene.update();
