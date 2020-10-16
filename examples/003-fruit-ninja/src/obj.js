@@ -53,10 +53,10 @@ class Message extends NZGameObject {
 	}
 	static Render() {
 		for (const m of OBJ.take('message')) {
-			m.scale = Math.range(m.scale, 1, 0.2)
-			m.drawY = Math.range(m.drawY, m.y, 0.2);
+			m.scale = Mathz.range(m.scale, 1, 0.2)
+			m.drawY = Mathz.range(m.drawY, m.y, 0.2);
 			Draw.setFont(Font.m);
-			Draw.setAlpha(Math.map(m.alarm[0], 0, m.duration - 100, 0, 1, 0, 1));
+			Draw.setAlpha(Mathz.map(m.alarm[0], 0, m.duration - 100, 0, 1, 0, 1));
 			Draw.onTransform(m.x, m.drawY, m.scale, m.scale, 0, () => {
 				Draw.textBackground(0, 0, m.text, { origin: Vec2.center, textColor: m.c, bgColor: C.makeRGBA(0, 0.5) });
 			});
@@ -67,7 +67,7 @@ class Message extends NZGameObject {
 		for (const m of OBJ.take('message')) {
 			m.y -= Font.m.size + 10;
 		}
-		const n = OBJ.push('message', new Message(Room.mid.w, 100, text, c));
+		const n = OBJ.push('message', new Message(Stage.mid.w, 100, text, c));
 	}
 }
 
@@ -80,7 +80,7 @@ class Fruit extends NZObject {
 		this.yVel = 0;
 		this.angle = 0;
 		this.angVel = 0;
-		this.gravity = Room.h * 0.0002;
+		this.gravity = Stage.h * 0.0002;
 		this.imageName = imageName;
 		this.imageIndex = 0;
 		this.image = Draw.strips[this.imageName];
@@ -100,7 +100,7 @@ class Fruit extends NZObject {
 		this.angle += this.angVel;
 		this.boundary.x = this.x - this.boundary.w * 0.5;
 		this.boundary.y = this.y - this.boundary.h * 0.5;
-		if (this.y >= Room.h + this.image.height && this.yVel > 0) {
+		if (this.y >= Stage.h + this.image.height && this.yVel > 0) {
 			if (!this.isBomb && !this.isSplit) {
 				if (OBJ.count('gamemanager') > 0) {
 					const gm = OBJ.take('gamemanager')[0];
@@ -164,7 +164,7 @@ class Fruit extends NZObject {
 		}
 	}
 	static spawn(x, y) {
-		const n = OBJ.create('fruit', Math.choose('bomb', 'apple', 'orange', 'banana'), x, y);
+		const n = OBJ.create('fruit', Mathz.choose('bomb', 'apple', 'orange', 'banana'), x, y);
 		if (n.imageName === 'bomb') {
 			n.isBomb = true;
 		}
@@ -203,13 +203,13 @@ class FruitSpawner extends NZGameObject {
 		if (OBJ.count('gamemanager') > 0) {
 			if (OBJ.take('gamemanager')[0].isGameOver) return;
 		}
-		const n = Fruit.spawn(Room.randomX, Room.h + 100);
+		const n = Fruit.spawn(Stage.randomX, Stage.h + 100);
 		n.setVel(
-			(Room.mid.w - n.x) / Room.w * Math.range(10, 12),
-			-Room.h * 0.01 * Math.range(1.8, 2)
+			(Stage.mid.w - n.x) / Stage.w * Mathz.range(10, 12),
+			-Stage.h * 0.01 * Mathz.range(1.8, 2)
 		);
 		this.lastSpawnName = n.imageName;
-		this.alarm[0] = Math.irange(this.interval.min, this.interval.max);
+		this.alarm[0] = Mathz.irange(this.interval.min, this.interval.max);
 	}
 }
 
@@ -273,25 +273,25 @@ class GameManager extends NZGameObject {
 				}
 				Draw.setAlpha(0.5);
 				Draw.setFill(C.black);
-				Draw.rect(0, 0, Room.w, Room.h);
+				Draw.rect(0, 0, Stage.w, Stage.h);
 				Draw.resetAlpha();
 				Draw.setFont(Font.xxl);
 				Draw.setFill(C.white);
 				Draw.setHVAlign(Align.c, Align.m);
-				Draw.text(Room.mid.w, Room.mid.h * 0.5, gameOverText);
+				Draw.text(Stage.mid.w, Stage.mid.h * 0.5, gameOverText);
 				Draw.setFont(Font.xl);
-				Draw.text(Room.mid.w, Room.mid.h, `Score: ${gm.score}`);
+				Draw.text(Stage.mid.w, Stage.mid.h, `Score: ${gm.score}`);
 				return;
 			}
 			Draw.setFont(Font.l);
 			Draw.textBackground(0, 0, `Score: ${gm.score}`);
 			Draw.textBackground(0, 34, `Lives: ${gm.lives}`);
-			Draw.textBackground(Room.w, 0, `Time\n${Time.toClockWithLeadingZero(gm.timer)}`, { gap: 10, origin: new Vec2(1, 0) });
+			Draw.textBackground(Stage.w, 0, `Time\n${Time.toClockWithLeadingZero(gm.timer)}`, { gap: 10, origin: new Vec2(1, 0) });
 			Draw.setFont(Font.m);
-			Draw.textBackground(0, Room.h, `Press u-key to change debug mode: ${Debug.modeText()}`, { origin: new Vec2(0, 1) });
+			Draw.textBackground(0, Stage.h, `Press u-key to change debug mode: ${Debug.modeText()}`, { origin: new Vec2(0, 1) });
 			Message.Render();
 			if (Debug.mode > 0) {
-				Draw.textBackground(0, Room.mid.h, `FPS: ${Time.FPS}\nRoom size: (${~~Room.w}, ${~~Room.h})\nInstance count: ${OBJ.countAll()}\nSpawn timer: ${gm.fruitSpawner.alarm[0]}\nLast spawn: ${gm.fruitSpawner.lastSpawnName}`, { origin: new Vec2(0, 0.5) });
+				Draw.textBackground(0, Stage.mid.h, `FPS: ${Time.FPS}\nStage size: (${~~Stage.w}, ${~~Stage.h})\nInstance count: ${OBJ.countAll()}\nSpawn timer: ${gm.fruitSpawner.alarm[0]}\nLast spawn: ${gm.fruitSpawner.lastSpawnName}`, { origin: new Vec2(0, 0.5) });
 			}
 		}
 	}
