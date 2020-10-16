@@ -294,7 +294,7 @@ NZ.Draw = {
 	roundRect(x, y, w, h, r=10, isStroke=false) {
 		if (w < 0) { x += w; w = -w; }
 		if (h < 0) { y += h; h = -h; }
-		r = Math.clamp(r, 0, Math.min(w * 0.5, h * 0.5)) || 0;
+		r = Math.min(Math.min(w * 0.5, h * 0.5), Math.max(0, r)) || 0;
 		this.ctx.beginPath();
 		this.ctx.moveTo(x, y + r);
 		this.ctx.quadraticCurveTo(x, y, x + r, y);
