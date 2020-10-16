@@ -117,7 +117,7 @@ NZ.Vec2.prototype.toString = function(fractionDigits=-1) {
 	return `(${this.x}, ${this.y})`;
 };
 
-NZ.Vec2.prototype.normalise = function() {
+NZ.Vec2.prototype.normalize = function() {
 	const l = this.length;
 	if (l !== 0) this.div(l);
 };

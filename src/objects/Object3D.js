@@ -27,13 +27,13 @@ class NZObject3D extends NZObject {
 			const line1 = NZ.Vec3.sub(tri.p[1], tri.p[0]);
 			const line2 = NZ.Vec3.sub(tri.p[2], tri.p[0]);
 			const normal = NZ.Vec3.cross(line1, line2);
-			normal.normalise();
+			normal.normalize();
 			const cameraRay = NZ.Vec3.sub(tri.p[0], NZ.Vec3.zero);
 
 			if (NZ.Vec3.dot(normal, cameraRay) < 0) {
 				// Illumination
 				const lightDirection = new NZ.Vec3(0, 0, -1);
-				lightDirection.normalise();
+				lightDirection.normalize();
 				tri.lightDotProduct = NZ.Vec3.dot(normal, lightDirection);
 				tri.bakedColor = NZ.C.multiply(tri.baseColor, 0.2 + Mathz.clamp(0.8 * tri.lightDotProduct, 0, 1));
 
