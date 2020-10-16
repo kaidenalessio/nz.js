@@ -4,9 +4,11 @@ const {
 	C,
 	UI,
 	OBJ,
+	Tri,
 	Draw,
 	Font,
 	Mat4,
+	Mesh,
 	Time,
 	Vec2,
 	Vec3,
@@ -24,5 +26,6 @@ const {
 	LineDash,
 	LineJoin,
 	Primitive,
+	Transform,
 	StylePreset,
 } = NZ;

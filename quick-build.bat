@@ -1,1 +1,1 @@
-copy /b src\*.js+Alias.js nz-quick-build.js
+copy /b src\*.js+src\objects\*.js+Alias.js nz-quick-build.js
