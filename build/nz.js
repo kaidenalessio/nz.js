@@ -541,7 +541,7 @@ NZ.Draw = {
 	roundRect(x, y, w, h, r=10, isStroke=false) {
 		if (w < 0) { x += w; w = -w; }
 		if (h < 0) { y += h; h = -h; }
-		r = Math.clamp(r, 0, Math.min(w * 0.5, h * 0.5)) || 0;
+		r = Math.min(Math.min(w * 0.5, h * 0.5), Math.max(0, r)) || 0;
 		this.ctx.beginPath();
 		this.ctx.moveTo(x, y + r);
 		this.ctx.quadraticCurveTo(x, y, x + r, y);
@@ -771,7 +771,6 @@ NZ.Font = {
 	h4: 16,
 	h5: 14,
 	h6: 10,
-	size: 16,
 	regular: '',
 	bold: 'bold ',
 	italic: 'italic ',
@@ -1164,8 +1163,125 @@ NZ.start = (options={}) => {
 	NZ.Stage.resizeEvent();
 	NZ.Stage.setupEvent();
 
+	NZ.Scene.on('restart', NZ.OBJ.onSceneRestart);
+
+	if (options.enablePersistent === true) {
+		NZ.OBJ.enablePersistent();
+	}
+
 	NZ.Scene.restart();
 	NZ.Runner.start();
+};
+
+NZ.Mat4 = function() {
+	this.m = [
+		[0, 0, 0, 0],
+		[0, 0, 0, 0],
+		[0, 0, 0, 0],
+		[0, 0, 0, 0]
+	];
+}
+
+NZ.Mat4.degtorad = function(deg) {
+	return deg * 0.017453292519943295;
+};
+
+NZ.Mat4.mulVec3 = function(m, i) {
+	let v = Vec3.zero;
+	v.x = i.x * m.m[0][0] + i.y * m.m[1][0] + i.z * m.m[2][0] + i.w * m.m[3][0];
+	v.y = i.x * m.m[0][1] + i.y * m.m[1][1] + i.z * m.m[2][1] + i.w * m.m[3][1];
+	v.z = i.x * m.m[0][2] + i.y * m.m[1][2] + i.z * m.m[2][2] + i.w * m.m[3][2];
+	v.w = i.x * m.m[0][3] + i.y * m.m[1][3] + i.z * m.m[2][3] + i.w * m.m[3][3];
+	return v;
+};
+
+NZ.Mat4.mulMat4 = function(m1, m2) {
+	const m = new Mat4();
+	for (let i = 0; i < 4; i++) {
+		for (let j = 0; j < 4; j++) {
+			m.m[j][i] = m1.m[j][0] * m2.m[0][i] + m1.m[j][1] * m2.m[1][i] + m1.m[j][2] * m2.m[2][i] + m1.m[j][3] * m2.m[3][i];
+		}
+	}
+	return m;
+};
+
+NZ.Mat4.makeIdentity = function() {
+	const m = new Mat4();
+	m.m[0][0] = 1;
+	m.m[1][1] = 1;
+	m.m[2][2] = 1;
+	m.m[3][3] = 1;
+	return m;
+};
+
+NZ.Mat4.makeProjection = function(aspectRatio=0.5625, fovDeg=90, near=0.1, far=1000) {
+	const fovRad = 1 / Math.tan(NZ.Mat4.degtorad(fovDeg * 0.5));
+	const m = new Mat4();
+	m.m[0][0] = aspectRatio * fovRad;
+	m.m[1][1] = fovRad;
+	m.m[2][2] = far / (far - near);
+	m.m[3][2] = (-far * near) / (far - near);
+	m.m[2][3] = 1;
+	return m;
+};
+
+NZ.Mat4.makeRotationX = function(angleDeg, m=new Mat4()) {
+	angleDeg = NZ.Mat4.degtorad(angleDeg);
+	m.m[0][0] = 1;
+	m.m[1][1] = Math.cos(angleDeg);
+	m.m[1][2] = Math.sin(angleDeg);
+	m.m[2][1] = -Math.sin(angleDeg);
+	m.m[2][2] = Math.cos(angleDeg);
+	m.m[3][3] = 1;
+	return m;
+};
+
+NZ.Mat4.makeRotationY = function(angleDeg, m=new Mat4()) {
+	angleDeg = NZ.Mat4.degtorad(angleDeg);
+	m.m[0][0] = Math.cos(angleDeg);
+	m.m[0][2] = -Math.sin(angleDeg);
+	m.m[1][1] = 1;
+	m.m[2][0] = Math.sin(angleDeg);
+	m.m[2][2] = Math.cos(angleDeg);
+	m.m[3][3] = 1;
+	return m;
+};
+
+NZ.Mat4.makeRotationZ = function(angleDeg, m=new Mat4()) {
+	angleDeg = NZ.Mat4.degtorad(angleDeg);
+	m.m[0][0] = Math.cos(angleDeg);
+	m.m[0][1] = Math.sin(angleDeg);
+	m.m[1][0] = -Math.sin(angleDeg);
+	m.m[1][1] = Math.cos(angleDeg);
+	m.m[2][2] = 1;
+	m.m[3][3] = 1;
+	return m;
+};
+
+NZ.Mat4.makeTranslation = function(x, y, z) {
+	if (x instanceof Vec3 || typeof x === 'object') {
+		z = x.z;
+		y = x.y;
+		x = x.x;
+	}
+	const m = new Mat4();
+	m.m[0][0] = 1;
+	m.m[1][1] = 1;
+	m.m[2][2] = 1;
+	m.m[3][3] = 1;
+	m.m[3][0] = x;
+	m.m[3][1] = y;
+	m.m[3][2] = z;
+	return m;
+};
+
+NZ.Mat4.makeWorld = function(transform) {
+	const matRotZ = Mat4.makeRotationZ(transform.rotation.z);
+	const matRotX = Mat4.makeRotationX(transform.rotation.x);
+	const matRotY = Mat4.makeRotationY(transform.rotation.y);
+	const matTrans = Mat4.makeTranslation(transform.position);
+	const matWorld = Mat4.mulMat4(Mat4.mulMat4(Mat4.mulMat4(matRotZ, matRotX), matRotY), matTrans);
+	return matWorld;
 };
 
 NZ.Mathz = {};
@@ -1218,6 +1334,33 @@ NZ.Mathz.normalizeAngle = (angleDeg) => {
 
 NZ.Mathz.smoothRotate = (angleDegA, angleDegB, speed=5) => angleDegA + Math.sin(NZ.Mathz.degtorad(angleDegB - angleDegA)) * speed;
 
+NZ.Mesh = function(tris=[]) {
+	this.tris = tris;
+}
+
+NZ.Mesh.prototype.loadFromOBJText = function(objText) {
+	this.tris.length = 0;
+	const vertices = [];
+	const words = objText.split(/\s/);
+	const get = () => +words.shift();
+	while (words.length > 0) {
+		switch (words.shift()) {
+			case 'v': vertices.push(new NZ.Vec3(get(), get(), get())); break;
+			case 'f': this.tris.push(new NZ.Tri([vertices[get()-1], vertices[get()-1], vertices[get()-1]])); break;
+		}
+	}
+};
+
+NZ.Mesh.LoadFromOBJText = function(objText) {
+	const m = new NZ.Mesh();
+	m.loadFromOBJText(objText);
+	return m;
+};
+
+NZ.Mesh.makeCube = function() {
+	return NZ.Mesh.LoadFromOBJText(`v -1 1 1 v -1 -1 1 v -1 1 -1 v -1 -1 -1 v 1 1 1 v 1 -1 1 v 1 1 -1 v 1 -1 -1 f 5 3 1 f 3 8 4 f 7 6 8 f 2 8 6 f 1 4 2 f 5 2 6 f 5 7 3 f 3 7 8 f 7 5 6 f 2 4 8 f 1 3 4 f 5 1 2`);
+};
+
 class NZObject {
 	constructor() {
 		this.x = 0;
@@ -1226,6 +1369,7 @@ class NZObject {
 		this.depth = 0;
 		this.active = true;
 		this.visible = true;
+		this.persistent = false;
 	}
 	start() {}
 	preUpdate() {}
@@ -1241,6 +1385,7 @@ NZ.OBJ = {
 	linkedClass: {},
 	_updateDisabled: false,
 	_renderDisabled: false,
+	_persistentDisabled: true,
 	add(name) {
 		this.list.push([]);
 		this.names.push(name);
@@ -1314,6 +1459,12 @@ NZ.OBJ = {
 	disableRender() {
 		this._renderDisabled = true;
 	},
+	enablePersistent() {
+		this._persistentDisabled = false;
+	},
+	disablePersistent() {
+		this._persistentDisabled = true;
+	},
 	getIndex(name) {
 		return ((typeof name === 'number')? name : this.names.indexOf(name));
 	},
@@ -1338,6 +1489,23 @@ NZ.OBJ = {
 			this.list[i].length = 0;
 		}
 		this.ID = 0;
+	},
+	clearAllExcept(filter) {
+		for (let i = this.list.length - 1; i >= 0; --i) {
+			for (let j = this.list[i].length - 1; j >= 0; --j) {
+				if (!filter(this.list[i][j])) {
+					this.list[i].splice(j, 1);
+				}
+			}
+		}
+	},
+	onSceneRestart() {
+		if (NZ.OBJ._persistentDisabled) {
+			NZ.OBJ.clearAll();
+		}
+		else {
+			NZ.OBJ.clearAllExcept((i) => i.persistent);
+		}
 	},
 	push(name, instance) {
 		const i = this.getIndex(name);
@@ -1394,6 +1562,11 @@ NZ.OBJ = {
 			}
 		}
 	},
+	onAll(name, callbackFn) {
+		for (const i of this.take(name)) {
+			callbackFn(i);
+		}
+	},
 	nearest(name, x, y) {
 		let g = null;
 		let h = Number.POSITIVE_INFINITY;
@@ -1426,19 +1599,22 @@ window.cancelAnimationFrame = window.cancelAnimationFrame
 	|| window.webkitCancelAnimationFrame;
 
 NZ.Runner.start = () => {
-	this.active = true;
+	NZ.Runner.active = true;
 	window.requestAnimationFrame(NZ.Runner.run);
 };
 
 NZ.Runner.stop = () => {
-	this.active = false;
+	NZ.Runner.active = false;
 	window.cancelAnimationFrame(NZ.Runner.run);
 };
 
 NZ.Runner.run = (t) => {
 	if (!NZ.Runner.active) return;
 	if (NZ.Draw.autoReset) NZ.Draw.reset();
-	if (NZ.UI.autoReset) NZ.UI.reset();
+	if (NZ.UI.autoReset) {
+		NZ.UI.reset();
+		NZ.UI.applyCursor(NZ.Stage.canvas);
+	}
 	NZ.Time.update(t);
 	if (NZ.Input.keyDown(NZ.Debug.modeKeyCode)) if (++NZ.Debug.mode >= NZ.Debug.modeAmount) NZ.Debug.mode = 0;
 	NZ.Scene.update();
@@ -1461,6 +1637,7 @@ class NZScene {
 
 NZ.Scene = {
 	list: {},
+	listener: {},
 	current: new NZScene(),
 	previous: new NZScene(),
 	add(name, scene) {
@@ -1476,7 +1653,17 @@ NZ.Scene = {
 	create(name) {
 		return this.add(name, new NZScene());
 	},
+	on(type, listener) {
+		if (!this.listener[type]) this.listener[type] = [];
+		this.listener[type].push(listener);
+	},
+	onRestart() {
+		for (let i = this.listener['restart'].length - 1; i >= 0; --i) {
+			this.listener['restart'][i]();
+		}
+	},
 	restart() {
+		this.onRestart();
 		if (this.current.start) this.current.start();
 	},
 	start(name) {
@@ -1515,7 +1702,7 @@ NZ.Stage = {
 		w: 150,
 		h: 75
 	},
-	size: { x: 300, y: 150 },
+	size: { x: 300, y: 150, mid: { x: 150, y: 75 } },
 	get randomX() {
 		return Math.random() * this.size.x;
 	},
@@ -1563,6 +1750,8 @@ NZ.Stage = {
 		this.mid.h = this.h * 0.5;
 		this.size.x = w;
 		this.size.y = h;
+		this.size.mid.x = this.size.x * 0.5;
+		this.size.mid.y = this.size.y * 0.5;
 	},
 	resizeEvent() {
 		const b = NZ.Stage.canvas.getBoundingClientRect();
@@ -1670,6 +1859,46 @@ NZ.Time = {
 	}
 };
 
+NZ.Transform = function(position=Vec3.zero, rotation=Vec3.zero) {
+	this.position = position;
+	this.rotation = rotation;
+}
+
+NZ.Transform.prototype.clone = function() {
+	return new NZ.Transform(this.position.clone(), this.rotation.clone());
+};
+
+NZ.Tri = function(points, baseColor=C.white) {
+	this.p = points;
+	this.depth = 0;
+	this.baseColor = baseColor;
+	this.bakedColor = this.baseColor;
+	this.lightDotProduct = 0;
+}
+
+NZ.Tri.prototype.clone = function() {
+	const t = new NZ.Tri([
+		this.p[0].clone(),
+		this.p[1].clone(),
+		this.p[2].clone()
+	]);
+	t.depth = this.depth;
+	t.baseColor = this.baseColor;
+	t.bakedColor = this.bakedColor;
+	t.lightDotProduct = this.lightDotProduct;
+	return t;
+};
+
+NZ.Tri.prototype.onAllPoints = function(fn) {
+	for (let i = 0; i < 3; i++) {
+		fn(this.p[i]);
+	}
+};
+
+NZ.Tri.prototype.calculateDepth = function() {
+	this.depth = (this.p[0].z + this.p[1].z + this.p[2].z) / 3;
+};
+
 NZ.UI = {
 	autoReset: true,
 	cursor: 'default',
@@ -1708,13 +1937,679 @@ NZ.Utils = {
 	}
 };
 
+NZ.Vec2 = function(x, y) {
+	this.x = x;
+	this.y = y;
+}
+
+NZ.Vec2.EPSILON = 1e-6;
+
+NZ.Vec2.degtorad = function(deg) {
+	return deg * 0.017453292519943295;
+};
+
+NZ.Vec2.radtodeg = function(rad) {
+	return rad * 57.29577951308232;
+};
+
+NZ.Vec2.range = function(from, to, weight=Math.random()) {
+	return from + weight * (to - from);
+};
+
+NZ.Vec2.clamp = function(value, min, max) {
+	return Math.min(max, Math.max(min, value));
+};
+
+NZ.Vec2._checkArg = function(i) {
+	let v;
+	if (i instanceof NZ.Vec2) {
+		v = i.clone();
+	}
+	else if (typeof i === 'object') {
+		v = NZ.Vec2.fromObject(i);
+	}
+	else {
+		throw new TypeError('The provided value cannot be converted to NZ.Vec2.');
+	}
+	return v;
+};
+
+NZ.Vec2._checkArgs = function(x, y, returnArray=false) {
+	if (arguments.length < 1) {
+		throw new Error(`At least 1 argument required, but nothing present.`);
+	}
+	if (x instanceof NZ.Vec2 || typeof x === 'object') {
+		y = x.y;
+		x = x.x;
+	}
+	else if (typeof x !== 'number') {
+		throw new TypeError('The provided value cannot be converted to NZ.Vec2 or number.');
+	}
+	if (y === undefined) y = x;
+	return returnArray? [x, y] : { x, y };
+};
+
+NZ.Vec2.prototype.set = function(x, y) {
+	x = NZ.Vec2._checkArgs(x, y);
+	y = x.y; x = x.x;
+	this.x = x; this.y = y;
+	return this;
+};
+
+NZ.Vec2.prototype.add = function(x, y) {
+	x = NZ.Vec2._checkArgs(x, y);
+	y = x.y; x = x.x;
+	this.x += x; this.y += y;
+	return this;
+};
+
+NZ.Vec2.prototype.sub = function(x, y) {
+	x = NZ.Vec2._checkArgs(x, y);
+	y = x.y; x = x.x;
+	this.x -= x; this.y -= y;
+	return this;
+};
+
+NZ.Vec2.prototype.mul = function(x, y) {
+	x = NZ.Vec2._checkArgs(x, y);
+	y = x.y; x = x.x;
+	this.x *= x; this.y *= y;
+	return this;
+};
+
+NZ.Vec2.prototype.mult = function(x, y) {
+	return this.mul(x, y);
+};
+
+NZ.Vec2.prototype.div = function(x, y) {
+	x = NZ.Vec2._checkArgs(x, y);
+	y = x.y; x = x.x;
+	this.x /= x; this.y /= y;
+	return this;
+};
+
+NZ.Vec2.prototype.lerp = function(v, t) {
+	return new NZ.Vec2(NZ.Vec2.range(this.x, v.x, t), NZ.Vec2.range(this.y, v.y, t));
+};
+
+NZ.Vec2.prototype.reset = function() {
+	this.set(0);
+};
+
+NZ.Vec2.prototype.clone = function() {
+	return new NZ.Vec2(this.x, this.y);
+};
+
+NZ.Vec2.prototype.angle = function() {
+	return NZ.Vec2.direction(this, NZ.Vec2.zero);
+};
+
+NZ.Vec2.prototype.polar = function() {
+	return NZ.Vec2.polar(this.angle);
+};
+
+NZ.Vec2.prototype.toString = function(fractionDigits=-1) {
+	if (fractionDigits > -1) return `(${this.x.toFixed(fractionDigits)}, ${this.y.toFixed(fractionDigits)})`;
+	return `(${this.x}, ${this.y})`;
+};
+
+NZ.Vec2.prototype.normalise = function() {
+	const l = this.length;
+	if (l !== 0) this.div(l);
+};
+
+NZ.Vec2.prototype.distance = function(v) {
+		return Math.hypot(v.x-this.x, v.y-this.y);
+};
+
+NZ.Vec2.prototype.direction = function(v) {
+		let d = NZ.Vec2.radtodeg(Math.atan2(v.y-this.y, v.x-this.x));
+		return d < 0? d + 360 : d;
+};
+
+NZ.Vec2.prototype.equal = function(v) {
+		return this.x === v.x && this.y === v.y;
+};
+
+NZ.Vec2.prototype.fuzzyEqual = function(v, epsilon=NZ.Vec2.EPSILON) {
+		return (Math.abs(this.x-v.x) <= epsilon && Math.abs(this.y-v.y) <= epsilon);
+};
+
+NZ.Vec2.prototype.ceil = function(s=1) {
+		this.x = Math.ceil(this.x * s) / s;
+		this.y = Math.ceil(this.y * s) / s;
+		return this;
+};
+
+NZ.Vec2.prototype.floor = function(s=1) {
+		this.x = Math.floor(this.x * s) / s;
+		this.y = Math.floor(this.y * s) / s;
+		return this;
+};
+
+NZ.Vec2.prototype.round = function(s=1) {
+		this.x = Math.round(this.x * s) / s;
+		this.y = Math.round(this.y * s) / s;
+		return this;
+};
+
+NZ.Vec2.prototype.clamp = function(xmin, xmax, ymin, ymax) {
+		if (ymin === undefined) ymin = xmin;
+		if (ymax === undefined) ymax = xmax;
+		this.x = NZ.Vec2.clamp(this.x, xmin, xmax);
+		this.y = NZ.Vec2.clamp(this.y, ymin, ymax);
+		return this;
+};
+
+NZ.Vec2.prototype.manhattanDistance = function(v) {
+		return Math.abs(v.x - this.x) + Math.abs(v.y - this.y);
+};
+
+NZ.Vec2.fromObject = function(i) {
+	if (i.x === undefined) {
+		throw new TypeError(`The provided object has no 'x' component defined.`);
+	}
+	if (i.y === undefined) {
+		throw new TypeError(`The provided object has no 'y' component defined.`);
+	}
+	return new NZ.Vec2(i.x, i.y);
+};
+
+NZ.Vec2.add = function(v1, v2) {
+	const v = NZ.Vec2._checkArg(v1);
+	v.add(v2);
+	return v;
+};
+
+NZ.Vec2.sub = function(v1, v2) {
+	const v = NZ.Vec2._checkArg(v1);
+	v.sub(v2);
+	return v;
+};
+
+NZ.Vec2.mul = function(v1, v2) {
+	const v = NZ.Vec2._checkArg(v1);
+	v.mul(v2);
+	return v;
+};
+
+NZ.Vec2.mult = function(v1, v2) {
+	return NZ.Vec2.mul(v1, v2);
+};
+
+NZ.Vec2.div = function(v1, v2) {
+	const v = NZ.Vec2._checkArg(v1);
+	v.div(v2);
+	return v;
+};
+
+NZ.Vec2.reset = function(v) {
+	v.x = 0; v.y = 0;
+};
+
+NZ.Vec2.clone = function(v) {
+	return new NZ.Vec2(v.x, v.y);
+};
+
+NZ.Vec2.distance = function(v1, v2) {
+	const v = NZ.Vec2._checkArg(v1);
+	return v.distance(v2);
+};
+
+NZ.Vec2.direction = function(v1, v2) {
+	const v = NZ.Vec2._checkArg(v1);
+	return v.direction(v2);
+};
+
+NZ.Vec2.equal = function(v1, v2) {
+	const v = NZ.Vec2._checkArg(v1);
+	return v.equal(v2);
+};
+
+NZ.Vec2.fuzzyEqual = function(v1, v2, epsilon=NZ.Vec2.EPSILON) {
+	const v = NZ.Vec2._checkArg(v1);
+	return v.fuzzyEqual(v2);
+};
+
+NZ.Vec2.manhattanDistance = function(v1, v2) {
+	const v = NZ.Vec2._checkArg(v1);
+	return v.manhattanDistance(v2);
+};
+
+NZ.Vec2.random = function(xmin, xmax, ymin, ymax) {
+	if (xmin === undefined) xmin = 1;
+	if (xmax === undefined) xmax = 0;
+	if (ymin === undefined) ymin = xmin;
+	if (ymax === undefined) ymax = xmax;
+	return new NZ.Vec2(NZ.Vec2.range(xmin, xmax), NZ.Vec2.range(ymin, ymax));
+};
+
+NZ.Vec2.create = function(x, y) {
+	if (y === undefined) y = x;
+	return new NZ.Vec2(x, y);
+};
+
+NZ.Vec2.polar = function(angleDeg, length=1) {
+	angleDeg = NZ.Vec2.degtorad(angleDeg);
+	return new NZ.Vec2(Math.cos(angleDeg) * length, Math.sin(angleDeg) * length);
+};
+
+Object.defineProperty(NZ.Vec2.prototype, 'xy', {
+	get: function() {
+		return this.x + this.y;
+	}
+});
+
+Object.defineProperty(NZ.Vec2.prototype, 'abs', {
+	get: function() {
+		return new NZ.Vec2(Math.abs(this.x), Math.abs(this.y));
+	}
+});
+
+Object.defineProperty(NZ.Vec2.prototype, 'mid', {
+	get: function() {
+		return new NZ.Vec2(this.x * 0.5, this.y * 0.5);
+	}
+});
+
+Object.defineProperty(NZ.Vec2.prototype, 'sign', {
+	get: function() {
+		return new NZ.Vec2(Math.sign(this.x), Math.sign(this.y));
+	}
+});
+
+Object.defineProperty(NZ.Vec2.prototype, 'length', {
+	get: function() {
+		return Math.sqrt(this.x*this.x + this.y*this.y);
+	},
+	set: function(value) {
+		const l = this.length;
+		if (l !== 0) this.mul(value / l);
+	}
+});
+
+Object.defineProperty(NZ.Vec2, 'up', {
+	get: function() {
+		return new NZ.Vec2(0, -1);
+	}
+});
+
+Object.defineProperty(NZ.Vec2, 'left', {
+	get: function() {
+		return new NZ.Vec2(-1, 0);
+	}
+});
+
+Object.defineProperty(NZ.Vec2, 'down', {
+	get: function() {
+		return new NZ.Vec2(0, 1);
+	}
+});
+
+Object.defineProperty(NZ.Vec2, 'right', {
+	get: function() {
+		return new NZ.Vec2(1, 0);
+	}
+});
+
+Object.defineProperty(NZ.Vec2, 'one', {
+	get: function() {
+		return new NZ.Vec2(1, 1);
+	}
+});
+
+Object.defineProperty(NZ.Vec2, 'zero', {
+	get: function() {
+		return new NZ.Vec2(0, 0);
+	}
+});
+
+Object.defineProperty(NZ.Vec2, 'center', {
+	get: function() {
+		return new NZ.Vec2(0.5, 0.5);
+	}
+});
+
+NZ.Vec3 = function(x, y, z) {
+	this.x = x;
+	this.y = y;
+	this.z = z;
+	this.w = 1;
+}
+
+NZ.Vec3.EPSILON = 1e-6;
+
+NZ.Vec3._checkArg = function(i) {
+	let v;
+	if (i instanceof NZ.Vec3) {
+		v = i.clone();
+	}
+	else if (typeof i === 'object') {
+		v = NZ.Vec3.fromObject(i);
+	}
+	else {
+		throw new TypeError('The provided value cannot be converted to NZ.Vec3.');
+	}
+	return v;
+};
+
+NZ.Vec3._checkArgs = function(x, y, z) {
+	if (arguments.length < 1) {
+		throw new Error(`At least 1 argument required, but nothing present.`);
+	}
+	if (x instanceof NZ.Vec3 || typeof x === 'object') {
+		z = x.z;
+		y = x.y;
+		x = x.x;
+	}
+	else if (typeof x !== 'number') {
+		throw new TypeError('The provided value cannot be converted to NZ.Vec3 or number.');
+	}
+	if (y === undefined) y = x;
+	if (z === undefined) z = x;
+	return { x, y, z };
+};
+
+NZ.Vec3.prototype.set = function(x, y, z) {
+	x = NZ.Vec3._checkArgs(x, y, z);
+	z = x.z; y = x.y; x = x.x;
+	this.x = x; this.y = y; this.z = z;
+	return this;
+};
+
+NZ.Vec3.prototype.add = function(x, y, z) {
+	x = NZ.Vec3._checkArgs(x, y, z);
+	z = x.z; y = x.y; x = x.x;
+	this.x += x; this.y += y; this.z += z;
+	return this;
+};
+
+NZ.Vec3.prototype.sub = function(x, y, z) {
+	x = NZ.Vec3._checkArgs(x, y, z);
+	z = x.z; y = x.y; x = x.x;
+	this.x -= x; this.y -= y; this.z -= z;
+	return this;
+};
+
+NZ.Vec3.prototype.mul = function(x, y, z) {
+	x = NZ.Vec3._checkArgs(x, y, z);
+	z = x.z; y = x.y; x = x.x;
+	this.x *= x; this.y *= y; this.z *= z;
+	return this;
+};
+
+NZ.Vec3.prototype.mult = function(x, y, z) {
+	return this.mul(x, y, z);
+};
+
+NZ.Vec3.prototype.div = function(x, y, z) {
+	x = NZ.Vec3._checkArgs(x, y, z);
+	z = x.z; y = x.y; x = x.x;
+	this.x /= x; this.y /= y; this.z /= z;
+	return this;
+};
+
+NZ.Vec3.prototype.reset = function() {
+	this.set(0);
+};
+
+NZ.Vec3.prototype.clone = function() {
+	return new NZ.Vec3(this.x, this.y, this.z);
+};
+
+NZ.Vec3.prototype.toString = function(fractionDigits=-1) {
+	if (fractionDigits > -1) return `(${this.x.toFixed(fractionDigits)}, ${this.y.toFixed(fractionDigits)}, ${this.z.toFixed(fractionDigits)})`;
+	return `(${this.x}, ${this.y}, ${this.z})`;
+};
+
+NZ.Vec3.prototype.normalise = function() {
+	const l = this.length;
+	if (l !== 0) this.div(l);
+};
+
+NZ.Vec3.prototype.distance = function(v) {
+	return Math.sqrt((v.x-this.x)*(v.x-this.x) + (v.y-this.y)*(v.y-this.y) + (v.z-this.z)*(v.z-this.z));
+};
+
+NZ.Vec3.prototype.equal = function(v) {
+	return this.x === v.x && this.y === v.y && this.z === v.z;
+};
+
+NZ.Vec3.prototype.fuzzyEqual = function(v, epsilon=NZ.Vec3.EPSILON) {
+	return (Math.abs(this.x-v.x) <= epsilon && Math.abs(this.y-v.y) <= epsilon && Math.abs(this.z-v.z) <= epsilon);
+};
+
+NZ.Vec3.fromObject = function(i) {
+	return new NZ.Vec3(i.x, i.y, i.z);
+};
+
+NZ.Vec3.add = function(v1, v2) {
+	const v = NZ.Vec3._checkArg(v1);
+	v.add(v2);
+	return v;
+};
+
+NZ.Vec3.sub = function(v1, v2) {
+	const v = NZ.Vec3._checkArg(v1);
+	v.sub(v2);
+	return v;
+};
+
+NZ.Vec3.mul = function(v1, v2) {
+	const v = NZ.Vec3._checkArg(v1);
+	v.mul(v2);
+	return v;
+};
+
+NZ.Vec3.mult = function(v1, v2) {
+	return NZ.Vec3.mul(v1, v2);
+};
+
+NZ.Vec3.div = function(v1, v2) {
+	const v = NZ.Vec3._checkArg(v1);
+	v.div(v2);
+	return v;
+};
+
+NZ.Vec3.dot = function(v1, v2) {
+	return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
+};
+
+NZ.Vec3.cross = function(v1, v2) {
+	return new NZ.Vec3(
+		v1.y * v2.z - v1.z * v2.y,
+		v1.z * v2.x - v1.x * v2.z,
+		v1.x * v2.y - v1.y * v2.x
+	);
+};
+
+NZ.Vec3.reset = function(v) {
+	v.x = 0; v.y = 0; v.z = 0;
+};
+
+NZ.Vec3.clone = function(v) {
+	return new NZ.Vec3(v.x, v.y, v.z);
+};
+
+NZ.Vec3.distance = function(v1, v2) {
+	const v = NZ.Vec3._checkArg(v1);
+	return v.distance(v2);
+};
+
+Object.defineProperty(NZ.Vec3.prototype, 'abs', {
+	get: function() {
+		return new NZ.Vec3(Math.abs(this.x), Math.abs(this.y), Math.abs(this.z));
+	}
+});
+
+Object.defineProperty(NZ.Vec3.prototype, 'mid', {
+	get: function() {
+		return new NZ.Vec3(this.x * 0.5, this.y * 0.5, this.z * 0.5);
+	}
+});
+
+Object.defineProperty(NZ.Vec3.prototype, 'sign', {
+	get: function() {
+		return new NZ.Vec3(Math.sign(this.x), Math.sign(this.y), Math.sign(this.z));
+	}
+});
+
+Object.defineProperty(NZ.Vec3.prototype, 'length', {
+	get: function() {
+		return Math.sqrt(this.x*this.x + this.y*this.y + this.z*this.z);
+	},
+	set: function(value) {
+		const l = this.length;
+		if (l !== 0) this.mul(value / l);
+	}
+});
+
+Object.defineProperty(NZ.Vec3, 'up', {
+	get: function() {
+		return new NZ.Vec3(0, 1, 0);
+	}
+});
+
+Object.defineProperty(NZ.Vec3, 'left', {
+	get: function() {
+		return new NZ.Vec3(-1, 0, 0);
+	}
+});
+
+Object.defineProperty(NZ.Vec3, 'down', {
+	get: function() {
+		return new NZ.Vec3(0, -1, 0);
+	}
+});
+
+Object.defineProperty(NZ.Vec3, 'right', {
+	get: function() {
+		return new NZ.Vec3(1, 0, 0);
+	}
+});
+
+Object.defineProperty(NZ.Vec3, 'forward', {
+	get: function() {
+		return new NZ.Vec3(0, 0, 1);
+	}
+});
+
+Object.defineProperty(NZ.Vec3, 'backward', {
+	get: function() {
+		return new NZ.Vec3(0, 0, -1);
+	}
+});
+
+Object.defineProperty(NZ.Vec3, 'one', {
+	get: function() {
+		return new NZ.Vec3(1, 1, 1);
+	}
+});
+
+Object.defineProperty(NZ.Vec3, 'zero', {
+	get: function() {
+		return new NZ.Vec3(0, 0, 0);
+	}
+});
+
+class NZGameObject extends NZObject {
+	constructor() {
+		super();
+		this.alarm = [-1, -1, -1, -1, -1, -1];
+	}
+	alarm0() {}
+	alarm1() {}
+	alarm2() {}
+	alarm3() {}
+	alarm4() {}
+	alarm5() {}
+	alarmUpdate() {
+		for (let i = this.alarm.length - 1; i >= 0; --i) {
+			if (this.alarm[i] !== -1) {
+				this.alarm[i] -= 1;
+				if (this.alarm[i] < 0) {
+					switch (i) {
+						case 0: this.alarm0(); break;
+						case 1: this.alarm1(); break;
+						case 2: this.alarm2(); break;
+						case 3: this.alarm3(); break;
+						case 4: this.alarm4(); break;
+						case 5: this.alarm5(); break;
+					}
+					if (this.alarm[i] < 0) {
+						this.alarm[i] = -1;
+					}
+				}
+			}
+		}
+	}
+	postUpdate() {
+		this.alarmUpdate();
+	}
+}
+
+class NZObject3D extends NZObject {
+	constructor(mesh, position=NZ.Vec3.zero, rotation=NZ.Vec3.zero) {
+		super();
+		this.mesh = mesh;
+		this.transform = null;
+		if (position instanceof NZ.Transform) {
+			this.transform = position.clone();
+		}
+		else {
+			this.transform = new NZ.Transform(position, rotation);
+		}
+	}
+	processTrisToRaster(matProj, trisToRaster) {
+		const matWorld = NZ.Mat4.makeWorld(this.transform);
+		for (let i = this.mesh.tris.length - 1; i >= 0; --i) {
+			const tri = this.mesh.tris[i].clone();
+
+			tri.p[0] = NZ.Mat4.mulVec3(matWorld, tri.p[0]);
+			tri.p[1] = NZ.Mat4.mulVec3(matWorld, tri.p[1]);
+			tri.p[2] = NZ.Mat4.mulVec3(matWorld, tri.p[2]);
+
+			const line1 = NZ.Vec3.sub(tri.p[1], tri.p[0]);
+			const line2 = NZ.Vec3.sub(tri.p[2], tri.p[0]);
+			const normal = NZ.Vec3.cross(line1, line2);
+			normal.normalise();
+			const cameraRay = NZ.Vec3.sub(tri.p[0], NZ.Vec3.zero);
+
+			if (NZ.Vec3.dot(normal, cameraRay) < 0) {
+				const lightDirection = new NZ.Vec3(0, 0, -1);
+				lightDirection.normalise();
+				tri.lightDotProduct = NZ.Vec3.dot(normal, lightDirection);
+				tri.bakedColor = NZ.C.multiply(tri.baseColor, 0.2 + Mathz.clamp(0.8 * tri.lightDotProduct, 0, 1));
+
+				tri.p[0] = NZ.Mat4.mulVec3(matProj, tri.p[0]);
+				tri.p[1] = NZ.Mat4.mulVec3(matProj, tri.p[1]);
+				tri.p[2] = NZ.Mat4.mulVec3(matProj, tri.p[2]);
+				tri.onAllPoints((p) => {
+					p.div(p.w);
+					p.add(1, 1, 0);
+					p.mul(Stage.mid.w, -Stage.mid.h, 1);
+					p.y += Stage.h;
+				});
+
+				tri.calculateDepth();
+				trisToRaster.push(tri);
+			}
+		}
+	}
+}
+
 const {
 	C,
 	UI,
 	OBJ,
+	Tri,
 	Draw,
 	Font,
+	Mat4,
+	Mesh,
 	Time,
+	Vec2,
+	Vec3,
 	Align,
 	Debug,
 	Input,
@@ -1729,5 +2624,6 @@ const {
 	LineDash,
 	LineJoin,
 	Primitive,
+	Transform,
 	StylePreset,
 } = NZ;
