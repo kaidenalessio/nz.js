@@ -15,7 +15,7 @@ class MyRoundRect extends NZGameObject {
 		OBJ.remove(this.id);
 	}
 	render() {
-		Draw.setAlpha(Math.clamp((this.alarm[0] + 30) / 60, 0, 1));
+		Draw.setAlpha(Mathz.clamp((this.alarm[0] + 30) / 60, 0, 1));
 		Draw.setColor(this.c);
 		Draw.setLineWidth(2);
 		Draw.roundRectRotated(this.x, this.y, 32, 32, 5, this.angle, true);

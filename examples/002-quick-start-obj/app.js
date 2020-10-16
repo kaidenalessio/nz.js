@@ -1,11 +1,11 @@
 let myCursor;
 
-Room.current.start = () => {
+Scene.current.start = () => {
 	myCursor = new MyCursor();
 	OBJ.push('cursor', myCursor);
 };
 
-Room.current.renderUI = () => {
+Scene.current.renderUI = () => {
 	Draw.setColor(C.white);
 	Draw.roundRect(-10, -10, 280, 225);
 	Draw.textBackground(0, 10, `FPS: ${Time.FPS}`);
