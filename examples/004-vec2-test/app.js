@@ -91,7 +91,7 @@ Scene.current.render = () => {
 	Draw.setFont(Font.m);
 	const drawText = (text, c=C.black) => {
 		Draw.textBackground(0, y, text, { bgColor: c });
-		y += Font.size + 10;
+		y += Font.m.size + 10;
 	};
 	drawText(`vector 1: (${v1.x}, ${v1.y})`, C.red);
 	drawText(`vector 2: (${v2.x}, ${v2.y})`, C.green);
