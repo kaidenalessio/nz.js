@@ -73,5 +73,23 @@ NZ.Stage = {
 	},
 	setupEvent() {
 		window.addEventListener('resize', this.resizeEvent);
+	},
+	// @param {color} bgColor single color or [color1, color2]
+	setBGColor(bgColor) {
+		let color = ['blanchedalmond', 'burlywood']; // default color
+		if (bgColor) {
+			if (bgColor instanceof Array) {
+				color[0] = bgColor[0];
+				color[1] = bgColor[1];
+			}
+			else {
+				color[0] = bgColor;
+				color[1] = bgColor;
+			}
+		}
+		this.canvas.style.backgroundImage = `radial-gradient(${color[0]} 33%, ${color[1]})`;
+	},
+	resetBGColor() {
+		this.setBGColor();
 	}
 };

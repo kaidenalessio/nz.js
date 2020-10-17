@@ -76,19 +76,7 @@ NZ.start = (options={}) => {
 	}
 
 	// Style canvas background color
-	let color1 = 'blanchedalmond';
-	let color2 = 'burlywood';
-	if (options.bgColor) {
-		if (options.bgColor instanceof Array) {
-			color1 = options.bgColor[0];
-			color2 = options.bgColor[1];
-		}
-		else {
-			color1 = options.bgColor;
-			color2 = options.bgColor;
-		}
-	}
-	options.canvas.style.backgroundImage = `radial-gradient(${color1} 33%, ${color2})`;
+	NZ.Stage.setBGColor(options.bgColor);
 
 	if (typeof options.uiAutoReset === 'boolean') {
 		NZ.UI.autoReset = options.uiAutoReset;

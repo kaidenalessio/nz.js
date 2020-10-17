@@ -21,11 +21,12 @@ const {
 	Utils,
 	Cursor,
 	Loader,
+	BGColor,
 	KeyCode,
 	LineCap,
 	LineDash,
 	LineJoin,
 	Primitive,
 	Transform,
-	StylePreset,
+	StylePreset
 } = NZ;
