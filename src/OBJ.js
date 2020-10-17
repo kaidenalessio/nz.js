@@ -206,6 +206,11 @@ NZ.OBJ = {
 			}
 		}
 	},
+	// Removes the first instance from the list of `name`
+	pop(name) {
+		let i = this.getIndex(name);
+		return this.list[i].shift();
+	},
 	onAll(name, callbackFn) {
 		for (const i of this.take(name)) {
 			callbackFn(i);
