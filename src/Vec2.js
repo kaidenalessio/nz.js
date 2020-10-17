@@ -109,7 +109,7 @@ NZ.Vec2.prototype.angle = function() {
 };
 
 NZ.Vec2.prototype.polar = function() {
-	return NZ.Vec2.polar(this.angle);
+	return NZ.Vec2.polar(this.angle());
 };
 
 NZ.Vec2.prototype.toString = function(fractionDigits=-1) {
@@ -117,56 +117,72 @@ NZ.Vec2.prototype.toString = function(fractionDigits=-1) {
 	return `(${this.x}, ${this.y})`;
 };
 
+NZ.Vec2.prototype.setMag = function(value) {
+	this.length = value;
+	return this;
+};
+
+NZ.Vec2.prototype.getMag = function() {
+	return this.length;
+};
+
 NZ.Vec2.prototype.normalize = function() {
 	const l = this.length;
 	if (l !== 0) this.div(l);
+	return this;
 };
 
 NZ.Vec2.prototype.distance = function(v) {
-		return Math.hypot(v.x-this.x, v.y-this.y);
+	return Math.hypot(v.x-this.x, v.y-this.y);
 };
 
 NZ.Vec2.prototype.direction = function(v) {
-		let d = NZ.Vec2.radtodeg(Math.atan2(v.y-this.y, v.x-this.x));
-		return d < 0? d + 360 : d;
+	let d = NZ.Vec2.radtodeg(Math.atan2(v.y-this.y, v.x-this.x));
+	return d < 0? d + 360 : d;
 };
 
 NZ.Vec2.prototype.equal = function(v) {
-		return this.x === v.x && this.y === v.y;
+	return this.x === v.x && this.y === v.y;
 };
 
 NZ.Vec2.prototype.fuzzyEqual = function(v, epsilon=NZ.Vec2.EPSILON) {
-		return (Math.abs(this.x-v.x) <= epsilon && Math.abs(this.y-v.y) <= epsilon);
+	return (Math.abs(this.x-v.x) <= epsilon && Math.abs(this.y-v.y) <= epsilon);
 };
 
 NZ.Vec2.prototype.ceil = function(s=1) {
-		this.x = Math.ceil(this.x * s) / s;
-		this.y = Math.ceil(this.y * s) / s;
-		return this;
+	this.x = Math.ceil(this.x * s) / s;
+	this.y = Math.ceil(this.y * s) / s;
+	return this;
 };
 
 NZ.Vec2.prototype.floor = function(s=1) {
-		this.x = Math.floor(this.x * s) / s;
-		this.y = Math.floor(this.y * s) / s;
-		return this;
+	this.x = Math.floor(this.x * s) / s;
+	this.y = Math.floor(this.y * s) / s;
+	return this;
 };
 
 NZ.Vec2.prototype.round = function(s=1) {
-		this.x = Math.round(this.x * s) / s;
-		this.y = Math.round(this.y * s) / s;
-		return this;
+	this.x = Math.round(this.x * s) / s;
+	this.y = Math.round(this.y * s) / s;
+	return this;
+};
+
+NZ.Vec2.prototype.limit = function(x) {
+	const l = this.length;
+	if (l > x) this.length = x;
+	return this;
 };
 
 NZ.Vec2.prototype.clamp = function(xmin, xmax, ymin, ymax) {
-		if (ymin === undefined) ymin = xmin;
-		if (ymax === undefined) ymax = xmax;
-		this.x = NZ.Vec2.clamp(this.x, xmin, xmax);
-		this.y = NZ.Vec2.clamp(this.y, ymin, ymax);
-		return this;
+	if (ymin === undefined) ymin = xmin;
+	if (ymax === undefined) ymax = xmax;
+	this.x = NZ.Vec2.clamp(this.x, xmin, xmax);
+	this.y = NZ.Vec2.clamp(this.y, ymin, ymax);
+	return this;
 };
 
 NZ.Vec2.prototype.manhattanDistance = function(v) {
-		return Math.abs(v.x - this.x) + Math.abs(v.y - this.y);
+	return Math.abs(v.x - this.x) + Math.abs(v.y - this.y);
 };
 
 NZ.Vec2.fromObject = function(i) {
