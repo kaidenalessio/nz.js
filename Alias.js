@@ -3,6 +3,7 @@ var NZ = NZ || {};
 const {
 	C,
 	UI,
+	Net,
 	OBJ,
 	Tri,
 	Draw,
