@@ -54,4 +54,6 @@ Scene.current.render = () => {
 	}
 };
 
-NZ.start();
+NZ.start({
+	bgColor: BGColor.dark
+});

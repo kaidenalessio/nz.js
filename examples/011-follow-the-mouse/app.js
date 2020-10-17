@@ -35,6 +35,6 @@ Scene.current.renderUI = () => {
 
 NZ.start({
 	debugModeAmount: 6,
-	bgColor: BGColor.list[0],
+	bgColor: BGColor.cream,
 	preventContextMenu: true
 });

@@ -45,4 +45,6 @@ Scene.current.renderUI = () => {
 	}
 };
 
-NZ.start();
+NZ.start({
+	bgColor: BGColor.almond
+});

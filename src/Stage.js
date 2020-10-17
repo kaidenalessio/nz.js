@@ -76,7 +76,7 @@ NZ.Stage = {
 	},
 	// @param {color} bgColor single color or [color1, color2]
 	setBGColor(bgColor) {
-		let color = ['blanchedalmond', 'burlywood']; // default color
+		let color = ['white', 'mintcream']; // default color
 		if (bgColor) {
 			if (bgColor instanceof Array) {
 				color[0] = bgColor[0];

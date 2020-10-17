@@ -105,4 +105,6 @@ Scene.current.render = () => {
 	drawText(`FPS: ${Time.FPS}`);
 };
 
-NZ.start();
+NZ.start({
+	bgColor: BGColor.almond
+});

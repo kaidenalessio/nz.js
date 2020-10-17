@@ -62,6 +62,6 @@ Scene.current.renderUI = () => {
 NZ.start({
 	w: ROOM_WIDTH,
 	h: ROOM_HEIGHT,
-	bgColor: [C.darkOrchid, C.darkSlateBlue],
+	bgColor: BGColor.darkOrchid,
 	stylePreset: StylePreset.noGapCenter
 });
