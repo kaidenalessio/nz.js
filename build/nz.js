@@ -1,5 +1,28 @@
 const NZ = {};
 
+NZ.BGColor = {
+	cream: ['white', 'mintcream'],
+	almond: ['cornsilk', 'blanchedalmond'],
+	lemon: ['lemonchiffon', 'khaki'],
+	spring: ['mediumspringgreen', 'springgreen'],
+	sky: ['powderblue', 'skyblue'],
+	salmon: ['lightsalmon', 'orangered'],
+	goldy: ['yellow', 'gold'],
+	grass: ['mediumseagreen', 'seagreen'],
+	sea: ['deepskyblue', 'cornflowerblue'],
+	orchid: ['orchid', 'mediumorchid'],
+	darkOrchid: ['darkorchid', 'darkslateblue'],
+	dark: ['#1a1a1a', 'black'],
+	keys: [],
+	list: []
+};
+
+NZ.BGColor.keys = Object.keys(NZ.BGColor);
+NZ.BGColor.keys.splice(NZ.BGColor.keys.length - 2);
+NZ.BGColor.list = Object.values(NZ.BGColor);
+NZ.BGColor.list.splice(NZ.BGColor.list.length - 2);
+
+// Collection of color variables and functions to make or convert color in CSS color style
 NZ.C = {
 	aliceBlue: '#f0f8ff',
 	antiqueWhite: '#faebd7',
@@ -182,6 +205,7 @@ NZ.C = {
 		};
 	},
 	HEXToRGBComponent(hex) {
+		// https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
 		hex = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i, (m, r, g, b) => r+r+g+g+b+b));
 		return {
 			r: parseInt(hex[1], 16),
@@ -201,6 +225,9 @@ NZ.C = {
 	HEXToRGB(hex, weight=1) {
 		return this.RGBComponentToRGB(this.HEXToRGBComponent(hex), weight);
 	},
+	/**
+	 * @param {string} c 'rgb(r, g, b)' and '#rrggbb' or '#rgb'.
+	 */
 	multiply(c, weight=1) {
 		if (c.includes('rgb')) {
 			return this.RGBComponentToRGB(this.RGBToRGBComponent(c), weight);
@@ -279,12 +306,14 @@ NZ.Cursor.list.splice(NZ.Cursor.list.length - 3);
 NZ.Debug = {
 	mode: 0,
 	modeAmount: 3,
-	modeKeyCode: 85,
+	modeKeyCode: 85, // U-key
 	modeText() {
 		return `${this.mode}/${this.modeAmount-1}`;
 	}
 };
 
+// Collection of drawing functions and have image storage
+// Only supports canvas rendering at the moment no webgl
 NZ.Draw = {
 	_defaultCtx: null,
 	_defaultFont: {
@@ -292,7 +321,7 @@ NZ.Draw = {
 		style: '',
 		family: 'Maven Pro, sans-serif'
 	},
-	autoReset: true,
+	autoReset: true, // use in NZ.Runner.run
 	ctx: null,
 	textHeight: 10,
 	images: {},
@@ -331,6 +360,13 @@ NZ.Draw = {
 		this.onCtx(n.ctx, drawFn);
 		return n;
 	},
+	/**
+	 * Captures `canvas` and draw it on a new canvas. Options to customize the new canvas width and height.
+	 * @param {HTMLCanvasElement} canvas The source canvas to copy.
+	 * @param {number} [w] Custom width of the new canvas. Default is the same as `canvas` width.
+	 * @param {number} [h] Custom height of the new canvas. Default is the same as `canvas` height.
+	 * @returns {HTMLCanvasElement} A new canvas element with `canvas` drawing on it.
+	 */
 	copyCanvas(canvas, w, h) {
 		w = w || canvas.width;
 		h = h || canvas.height;
@@ -368,6 +404,14 @@ NZ.Draw = {
 	resetShadow() {
 		this.setShadow(0, 0);
 	},
+	/**
+	 * Sets the font that will be use when drawing text. Use `NZ.Draw.resetFont()` to set the default font (Maven Pro 16).
+	 *
+	 * This `font` can be generated using `NZ.Font.generate(size, style, family)`.
+	 *
+	 * More information about how to format each element see: `NZ.Font`.
+	 * @param {NZ.Font} font
+	 */
 	setFont(font) {
 		this.ctx.font = `${font.style}${font.size}px ${font.family}, serif`;
 		this.textHeight = font.size;
@@ -375,12 +419,31 @@ NZ.Draw = {
 	resetFont() {
 		this.setFont(this._defaultFont);
 	},
+	/**
+	 * Sets the horizontal alignment used when drawing text. Choose one of the following constants as values:
+	 * ```
+	 * NZ.Align.l or 'left'
+	 * NZ.Align.c or 'center'
+	 * NZ.Align.r or 'right'
+	 * ```
+	 */
 	setHAlign(align) {
 		this.ctx.textAlign = align;
 	},
+	/**
+	 * Sets the vertical alignment used when drawing text. Choose one of the following constants as values:
+	 * ```
+	 * NZ.Align.t or 'top'
+	 * NZ.Align.m or 'middle'
+	 * NZ.Align.b or 'bottom'
+	 * ```
+	 */
 	setVAlign(align) {
 		this.ctx.textBaseline = align;
 	},
+	/**
+	 * Sets horizontal and vertical alignment.
+	 */
 	setHVAlign(halign, valign) {
 		this.ctx.textAlign = halign;
 		this.ctx.textBaseline = valign;
@@ -434,11 +497,13 @@ NZ.Draw = {
 		this.strips[name] = img;
 		return this.strips[name];
 	},
+	// Draw image element
 	imageEl(img, x, y, origin={ x: 0.5, y: 0.5 }) {
 		x -= img.width * origin.x;
 		y -= img.height * origin.y;
 		this.ctx.drawImage(img, x, y);
 	},
+	// Draw image from the storage
 	image(name, x, y) {
 		const img = this.images[name];
 		this.imageEl(img, x, y, img.origin);
@@ -727,6 +792,7 @@ NZ.Draw = {
 	}
 };
 
+// List of constants to use in NZ.Draw
 NZ.Align = {
 	l: 'left',
 	r: 'right',
@@ -771,17 +837,24 @@ NZ.Font = {
 	h4: 16,
 	h5: 14,
 	h6: 10,
-	regular: '',
-	bold: 'bold ',
-	italic: 'italic ',
-	boldItalic: 'bold italic ',
+	regular: '', // no space/nothing
+	bold: 'bold ', // with one space at the end if style exists to match NZ.Draw.setFont formatting:
+	/* htmlcontext.font = `${font.style}${font.size}px ${font.family}, serif`;
+	 * if no style/regular:
+	 * htmlcontext.font = `10px Arial, serif`;
+	 * with style:
+	 * htmlcontext.font = `bold 10px Arial, serif`;
+	 * notice there is space between 'bold' and '10px'
+	 */
+	italic: 'italic ', // with one space at the end
+	boldItalic: 'bold italic ', // with one space at the end
 	familyDefault: 'Maven Pro, sans-serif',
 	generate(size, style='', family=NZ.Font.familyDefault) {
 		return { size, style, family };
 	}
 };
 
-NZ.Font.xxl = NZ.Font.generate(NZ.Font.h1);
+NZ.Font.xxl = NZ.Font.generate(NZ.Font.h1); // { size: 48, style: '', family: 'Maven Pro, sans-serif' }
 NZ.Font.xl 	= NZ.Font.generate(NZ.Font.h2);
 NZ.Font.l 	= NZ.Font.generate(NZ.Font.h3);
 NZ.Font.m 	= NZ.Font.generate(NZ.Font.h4);
@@ -791,9 +864,9 @@ NZ.Font.s 	= NZ.Font.generate(NZ.Font.h6);
 NZ.Input = {
 	targetElement: null,
 	preventedKeys: [
-		38,
-		40,
-		32
+		38, // up
+		40, // down
+		32 // space
 	],
 	keys: [],
 	mice: [],
@@ -807,19 +880,23 @@ NZ.Input = {
 	mouseMove: false,
 	mouseWheelDelta: 0,
 	setTargetElement(targetElement) {
-		this.targetElement = targetElement;
+		this.targetElement = targetElement; // element that has `getBoundingClientRect()` to offset mouse position to
 	},
 	init() {
+		// Reset array
 		this.keys.length = 0;
 		this.mice.length = 0;
 
+		// Reset mouse position
 		this.mousePosition.x = 0;
 		this.mousePosition.y = 0;
 
+		// Add 256 keycode inputs
 		for (let i = 0; i < 256; i++) {
 			this.keys.push(this.create());
 		}
 
+		// Add 3 mouse button inputs
 		for (let i = 0; i < 3; i++) {
 			this.mice.push(this.create());
 		}
@@ -837,6 +914,7 @@ NZ.Input = {
 		this.mouseWheelDelta = 0;
 	},
 	create() {
+		// Input key/button class
 		return {
 			held: false,
 			pressed: false,
@@ -882,6 +960,7 @@ NZ.Input = {
 		return this.mice[button].held;
 	},
 	mouseRepeat(button) {
+		// The same as mouseDown
 		return this.mice[button].repeated;
 	},
 	mouseWheelUp() {
@@ -899,6 +978,15 @@ NZ.Input = {
 		}
 		NZ.Input.keys[e.keyCode].down();
 	},
+	setMousePosition(x, y) {
+		if (typeof x === 'object') {
+			y = x.y;
+			x = x.x;
+		}
+		if (y === undefined) y = x;
+		NZ.Input.position.x = NZ.Input.mouseX = NZ.Input.mousePosition.x = x;
+		NZ.Input.position.y = NZ.Input.mouseY = NZ.Input.mousePosition.y = y;
+	},
 	updateMouse(e) {
 		let b = NZ.Input.targetElement || e.srcElement;
 		if (b.getBoundingClientRect) {
@@ -910,8 +998,7 @@ NZ.Input = {
 				y: 0
 			};
 		}
-		NZ.Input.position.x = NZ.Input.mouseX = NZ.Input.mousePosition.x = e.clientX - b.x;
-		NZ.Input.position.y = NZ.Input.mouseY = NZ.Input.mousePosition.y = e.clientY - b.y;
+		NZ.Input.setMousePosition(e.clientX - b.x, e.clientY - b.y);
 		NZ.Input.movementX = NZ.Input.mouseMovement.x = e.movementX;
 		NZ.Input.movementY = NZ.Input.mouseMovement.y = e.movementY;
 	},
@@ -947,6 +1034,7 @@ NZ.Input = {
 
 NZ.Input.init();
 
+// List of HTML keycodes
 NZ.KeyCode = {
 	Backspace: 8,
 	Tab: 9,
@@ -1049,6 +1137,8 @@ NZ.KeyCode = {
 	Quote: 222
 };
 
+// Make it easier to load and add images to NZ.Draw (soon: load sound)
+// MODULES REQUIRED: NZ.Draw (soon: NZ.Sound)
 NZ.Loader = {
 	loaded: false,
 	loadAmount: 0,
@@ -1084,6 +1174,32 @@ NZ.Loader = {
 	}
 };
 
+// Quick start
+/* Modules required:
+ * - NZ.Input
+ * - NZ.Stage
+ * - NZ.Canvas (if no canvas provided)
+ * - NZ.StylePreset (if no style preset provided)
+ * - NZ.UI
+ * - NZ.OBJ
+ * - NZ.Draw
+ * - NZ.Debug
+ *	options = {
+ *		w: stage width
+ *		h: stage height
+ *		canvas: stage canvas
+ *		bgColor: color or [color1, color2]. Example: red or [white, gray]. Default [blanchedalmond, burlywood]
+ *		stylePreset: choose one from NZ.StylePreset (Will only be applied if `w` and `h` defined, otherwise it will be stylized full viewport)
+ *		uiAutoReset: execute NZ.UI.reset() every run (see NZ.Runner.run)
+ *		drawAutoReset: execute NZ.Draw.reset() every run (see NZ.Runner.run)
+ *		stageAutoClear: execute NZ.Stage.clear() every run (see NZ.Runner.run)
+ *		debugModeAmount: sets the amount of debug mode
+ *		debugModeKeyCode: sets the debug mode key code (see NZ.Runner.run for implementation)
+ *		preventContextMenu: prevent right-click to show context menu
+ *		defaultFont: set default font used to draw text (default = Maven Pro 16) (See NZ.Font for more info)
+ *		enablePersistent: enable instance to not get removed on NZ.OBJ.onSceneRestart() if it has property `persistent` set to true
+ *	};
+ */
 NZ.start = (options={}) => {
 
 	options.inputParent = options.inputParent || window;
@@ -1101,12 +1217,16 @@ NZ.start = (options={}) => {
 
 	NZ.Stage.setupCanvas(options.canvas);
 
+	// If `options.w` and `options.h` defined,
 	if (typeof options.w === 'number' && typeof options.h === 'number') {
+		// set canvas width and height
 		options.canvas.style.width = `${options.w}px`;
 		options.canvas.style.height = `${options.h}px`;
 
+		// Copy values to NZ.Stage
 		NZ.Stage.resize(options.w, options.h);
 
+		// Apply style preset if exists
 		if (options.stylePreset) {
 			const style = document.createElement('style');
 			let stylePreset = options.stylePreset;
@@ -1118,6 +1238,7 @@ NZ.start = (options={}) => {
 		}
 	}
 	else {
+		// Otherwise make it full viewport
 		const style = document.createElement('style');
 		const parentSelector = options.parent.id? `#${options.parent.id}` : options.parent.localName;
 		style.innerHTML = NZ.StylePreset.fullViewport(options.canvas.id, parentSelector);
@@ -1128,19 +1249,8 @@ NZ.start = (options={}) => {
 		options.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 	}
 
-	let color1 = 'blanchedalmond';
-	let color2 = 'burlywood';
-	if (options.bgColor) {
-		if (options.bgColor instanceof Array) {
-			color1 = options.bgColor[0];
-			color2 = options.bgColor[1];
-		}
-		else {
-			color1 = options.bgColor;
-			color2 = options.bgColor;
-		}
-	}
-	options.canvas.style.backgroundImage = `radial-gradient(${color1} 33%, ${color2})`;
+	// Style canvas background color
+	NZ.Stage.setBGColor(options.bgColor);
 
 	if (typeof options.uiAutoReset === 'boolean') {
 		NZ.UI.autoReset = options.uiAutoReset;
@@ -1158,11 +1268,15 @@ NZ.start = (options={}) => {
 		NZ.Debug.modeKeyCode = options.debugModeKeyCode;
 	}
 
+	// Append canvas
 	options.parent.appendChild(options.canvas);
 
+	// Resize stage appropriately
 	NZ.Stage.resizeEvent();
+	// Handle window.onresize to resize stage appropriately
 	NZ.Stage.setupEvent();
 
+	// Clear all object except persistent
 	NZ.Scene.on('restart', NZ.OBJ.onSceneRestart);
 
 	if (options.enablePersistent === true) {
@@ -1334,6 +1448,8 @@ NZ.Mathz.normalizeAngle = (angleDeg) => {
 
 NZ.Mathz.smoothRotate = (angleDegA, angleDegB, speed=5) => angleDegA + Math.sin(NZ.Mathz.degtorad(angleDegB - angleDegA)) * speed;
 
+// Represents mesh in 3d
+// MODULES REQUIRED: NZ.Vec3, NZ.Tri
 NZ.Mesh = function(tris=[]) {
 	this.tris = tris;
 }
@@ -1361,6 +1477,100 @@ NZ.Mesh.makeCube = function() {
 	return NZ.Mesh.LoadFromOBJText(`v -1 1 1 v -1 -1 1 v -1 1 -1 v -1 -1 -1 v 1 1 1 v 1 -1 1 v 1 1 -1 v 1 -1 -1 f 5 3 1 f 3 8 4 f 7 6 8 f 2 8 6 f 1 4 2 f 5 2 6 f 5 7 3 f 3 7 8 f 7 5 6 f 2 4 8 f 1 3 4 f 5 1 2`);
 };
 
+// Google firebase wrapper
+// SCRIPTS REQUIRED:
+/*
+ <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-app.js"></script>
+ <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-database.js"></script>
+
+ (7.24.0 can be any number. It's the latest version of Firebase)
+*/
+// Parameter `i` in most functions means buffer index
+NZ.Net = {
+	// dummy message, if you ever want to just send certain buffer
+	// but not actually have any value to send, just send this dummy
+	DUMMY: 0,
+	bufferAmount: 10,
+	buffers: [],
+	database: null,
+	databaseName: 'NZBuffers',
+	init(firebaseConfig, databaseName, bufferAmount) {
+		firebase.initializeApp(firebaseConfig);
+		this.databaseName = databaseName || this.databaseName;
+		this.bufferAmount = bufferAmount || this.bufferAmount;
+		this.database = firebase.database();
+		for (let i = 0; i < this.bufferAmount; i++) {
+			this.database.ref(`${this.databaseName}/${i}`).on('value', this.onValueEvent);
+		}
+	},
+	onValueEvent(snapshot) {
+		const key = +snapshot.key;
+		const val = snapshot.val();
+		// is there any value received
+		if (val) {
+			// is it an array
+			if (val.length) {
+				// copy array val to buffer[key]
+				NZ.Net.clearBuffer(key);
+				for (let i = 0; i < val.length; i++) {
+					NZ.Net.push(key, val[i]);
+				}
+			}
+		}
+	},
+	clearBuffer(i) {
+		this.buffers[i].length = 0;
+	},
+	push(i, value) {
+		this.buffers[i].push(value);
+	},
+	sendBuffer(i) {
+		this.database.ref(`${this.databaseName}/${i}`).set(this.buffers[i]);
+	},
+	getBuffer(i) {
+		return this.buffers[i];
+	},
+	pop(i) {
+		// Removes then returns the first element of buffers[`i`]
+		return this.buffers[i].shift();
+	},
+	send(i, ...payload) {
+		this.clearBuffer(i);
+		for (const p of payload) {
+			this.push(i, p);
+		}
+		this.sendBuffer(i);
+	},
+	read(i, callbackFn) {
+		// read through the buffer[i], executes callback, then clear the buffer[i]
+		// u may use Net.pop(i); in callbackFn to retrieve value
+		while (this.getBuffer(i).length > 0) {
+			callbackFn();
+			this.clearBuffer(i);
+		}
+	},
+	clearBuffers() {
+		// clear buffers
+		this.buffers.length = 0;
+		// create/recreate buffers
+		for (let i = 0; i < this.bufferAmount; i++) {
+			this.buffers.push([]);
+		}
+	},
+	sendEmptyBuffers() {
+		for (let i = 0; i < this.bufferAmount; i++) {
+			this.clearBuffer(i);
+			this.sendBuffer(i);
+		}
+	}
+};
+
+NZ.Net.clearBuffers();
+
+// Built-in object class and manager
+// Any custom class must inherit NZObject class
+// to be able to get managed by OBJ the object manager
+// Check "src/objects/" for custom implementation example
 class NZObject {
 	constructor() {
 		this.x = 0;
@@ -1403,6 +1613,7 @@ NZ.OBJ = {
 			for (let j = this.list[i].length - 1; j >= 0; --j) {
 				if (this.list[i][j].active) {
 					this.list[i][j].preUpdate();
+					// Check if instance is not removed
 					if (this.list[i][j]) this.list[i][j].update();
 					if (this.list[i][j]) this.list[i][j].postUpdate();
 				}
@@ -1562,6 +1773,11 @@ NZ.OBJ = {
 			}
 		}
 	},
+	// Removes the first instance from the list of `name`
+	pop(name) {
+		let i = this.getIndex(name);
+		return this.list[i].shift();
+	},
 	onAll(name, callbackFn) {
 		for (const i of this.take(name)) {
 			callbackFn(i);
@@ -1573,7 +1789,7 @@ NZ.OBJ = {
 		let i = this.getIndex(name);
 		for (let j = this.list[i].length - 1; j >= 0; --j) {
 			const k = this.list[i][j];
-			const l = (x-k.x)*(x-k.x) + (y-k.y)*(y-k.y);
+			const l = (x-k.x)*(x-k.x) + (y-k.y)*(y-k.y); // squared distance to save sqrt
 			if (l <= h) {
 				g = k;
 				h = l;
@@ -1583,6 +1799,8 @@ NZ.OBJ = {
 	}
 };
 
+// Built-in runner.
+// Modules required: NZ.Draw, NZ.UI, NZ.Time, NZ.Debug, NZ.Scene, NZ.OBJ, NZ.Input
 NZ.Runner = {
 	active: true
 };
@@ -1627,6 +1845,7 @@ NZ.Runner.run = (t) => {
 	window.requestAnimationFrame(NZ.Runner.run);
 };
 
+// Built-in scene class and manager
 class NZScene {
 	constructor() {}
 	start() {}
@@ -1688,12 +1907,13 @@ NZ.Scene = {
 	}
 };
 
+// Manages canvas display
 NZ.Stage = {
 	LOW: 0.5,
 	HIGH: 2,
 	ULTRA: 4,
 	NORMAL: 1,
-	pixelRatio: 1,
+	pixelRatio: 1, // (0.5=Low, 1=Normal, 2=High, 4=Ultra)
 	canvas: null,
 	autoClear: true,
 	w: 300,
@@ -1760,6 +1980,24 @@ NZ.Stage = {
 	},
 	setupEvent() {
 		window.addEventListener('resize', this.resizeEvent);
+	},
+	// @param {color} bgColor single color or [color1, color2]
+	setBGColor(bgColor) {
+		let color = ['white', 'mintcream']; // default color
+		if (bgColor) {
+			if (bgColor instanceof Array) {
+				color[0] = bgColor[0];
+				color[1] = bgColor[1];
+			}
+			else {
+				color[0] = bgColor;
+				color[1] = bgColor;
+			}
+		}
+		this.canvas.style.backgroundImage = `radial-gradient(${color[0]} 33%, ${color[1]})`;
+	},
+	resetBGColor() {
+		this.setBGColor();
 	}
 };
 
@@ -1859,17 +2097,20 @@ NZ.Time = {
 	}
 };
 
+// MODULES REQUIRED: NZ.Vec3, NZ.Vec2 (optional, this class focus on NZ.Vec3 but NZ.Vec2 can use some of the essentials)
 NZ.Transform = function(position=Vec3.zero, rotation=Vec3.zero) {
 	this.position = position;
 	this.rotation = rotation;
 }
 
 NZ.Transform.prototype.clone = function() {
-	return new NZ.Transform(this.position.clone(), this.rotation.clone());
+	return new NZ.Transform(this.position.clone(), this.rotation.clone()); // NZ.Vec3 clone
 };
 
+// Triangle class for use in 3d
+// MODULE REQUIRED: NZ.Vec3
 NZ.Tri = function(points, baseColor=C.white) {
-	this.p = points;
+	this.p = points; // NZ.Vec3
 	this.depth = 0;
 	this.baseColor = baseColor;
 	this.bakedColor = this.baseColor;
@@ -1878,7 +2119,7 @@ NZ.Tri = function(points, baseColor=C.white) {
 
 NZ.Tri.prototype.clone = function() {
 	const t = new NZ.Tri([
-		this.p[0].clone(),
+		this.p[0].clone(), // NZ.Vec3.clone
 		this.p[1].clone(),
 		this.p[2].clone()
 	]);
@@ -1896,11 +2137,12 @@ NZ.Tri.prototype.onAllPoints = function(fn) {
 };
 
 NZ.Tri.prototype.calculateDepth = function() {
+	// z mid method
 	this.depth = (this.p[0].z + this.p[1].z + this.p[2].z) / 3;
 };
 
 NZ.UI = {
-	autoReset: true,
+	autoReset: true, // use in NZ.Runner.run
 	cursor: 'default',
 	setCursor(cursor) {
 		this.cursor = cursor;
@@ -1918,14 +2160,23 @@ NZ.UI = {
 };
 
 NZ.Utils = {
+	// Returns a random element from given array
 	pick(arr) {
 		return arr[Math.floor(Math.random() * arr.length)];
 	},
+	// Returns a random element from given object
 	picko(obj) {
 		return this.pick(Object.values(obj));
 	},
+	// Remove a random element from given array
 	randpop(arr) {
 		return arr.splice(Math.floor(Math.random() * arr.length), 1)[0];
+	},
+	// Executes `fn` `i` times
+	repeat(i, fn) {
+		while (--i > 0) {
+			fn();
+		}
 	},
 	copyToClipboard(text) {
 		const t = document.createElement('textarea');
@@ -1975,6 +2226,7 @@ NZ.Vec2._checkArg = function(i) {
 };
 
 NZ.Vec2._checkArgs = function(x, y, returnArray=false) {
+	// Check operation arguments
 	if (arguments.length < 1) {
 		throw new Error(`At least 1 argument required, but nothing present.`);
 	}
@@ -2045,7 +2297,7 @@ NZ.Vec2.prototype.angle = function() {
 };
 
 NZ.Vec2.prototype.polar = function() {
-	return NZ.Vec2.polar(this.angle);
+	return NZ.Vec2.polar(this.angle());
 };
 
 NZ.Vec2.prototype.toString = function(fractionDigits=-1) {
@@ -2053,56 +2305,72 @@ NZ.Vec2.prototype.toString = function(fractionDigits=-1) {
 	return `(${this.x}, ${this.y})`;
 };
 
+NZ.Vec2.prototype.setMag = function(value) {
+	this.length = value;
+	return this;
+};
+
+NZ.Vec2.prototype.getMag = function() {
+	return this.length;
+};
+
 NZ.Vec2.prototype.normalize = function() {
 	const l = this.length;
 	if (l !== 0) this.div(l);
+	return this;
 };
 
 NZ.Vec2.prototype.distance = function(v) {
-		return Math.hypot(v.x-this.x, v.y-this.y);
+	return Math.hypot(v.x-this.x, v.y-this.y);
 };
 
 NZ.Vec2.prototype.direction = function(v) {
-		let d = NZ.Vec2.radtodeg(Math.atan2(v.y-this.y, v.x-this.x));
-		return d < 0? d + 360 : d;
+	let d = NZ.Vec2.radtodeg(Math.atan2(v.y-this.y, v.x-this.x));
+	return d < 0? d + 360 : d;
 };
 
 NZ.Vec2.prototype.equal = function(v) {
-		return this.x === v.x && this.y === v.y;
+	return this.x === v.x && this.y === v.y;
 };
 
 NZ.Vec2.prototype.fuzzyEqual = function(v, epsilon=NZ.Vec2.EPSILON) {
-		return (Math.abs(this.x-v.x) <= epsilon && Math.abs(this.y-v.y) <= epsilon);
+	return (Math.abs(this.x-v.x) <= epsilon && Math.abs(this.y-v.y) <= epsilon);
 };
 
 NZ.Vec2.prototype.ceil = function(s=1) {
-		this.x = Math.ceil(this.x * s) / s;
-		this.y = Math.ceil(this.y * s) / s;
-		return this;
+	this.x = Math.ceil(this.x * s) / s;
+	this.y = Math.ceil(this.y * s) / s;
+	return this;
 };
 
 NZ.Vec2.prototype.floor = function(s=1) {
-		this.x = Math.floor(this.x * s) / s;
-		this.y = Math.floor(this.y * s) / s;
-		return this;
+	this.x = Math.floor(this.x * s) / s;
+	this.y = Math.floor(this.y * s) / s;
+	return this;
 };
 
 NZ.Vec2.prototype.round = function(s=1) {
-		this.x = Math.round(this.x * s) / s;
-		this.y = Math.round(this.y * s) / s;
-		return this;
+	this.x = Math.round(this.x * s) / s;
+	this.y = Math.round(this.y * s) / s;
+	return this;
+};
+
+NZ.Vec2.prototype.limit = function(x) {
+	const l = this.length;
+	if (l > x) this.length = x;
+	return this;
 };
 
 NZ.Vec2.prototype.clamp = function(xmin, xmax, ymin, ymax) {
-		if (ymin === undefined) ymin = xmin;
-		if (ymax === undefined) ymax = xmax;
-		this.x = NZ.Vec2.clamp(this.x, xmin, xmax);
-		this.y = NZ.Vec2.clamp(this.y, ymin, ymax);
-		return this;
+	if (ymin === undefined) ymin = xmin;
+	if (ymax === undefined) ymax = xmax;
+	this.x = NZ.Vec2.clamp(this.x, xmin, xmax);
+	this.y = NZ.Vec2.clamp(this.y, ymin, ymax);
+	return this;
 };
 
 NZ.Vec2.prototype.manhattanDistance = function(v) {
-		return Math.abs(v.x - this.x) + Math.abs(v.y - this.y);
+	return Math.abs(v.x - this.x) + Math.abs(v.y - this.y);
 };
 
 NZ.Vec2.fromObject = function(i) {
@@ -2182,6 +2450,10 @@ NZ.Vec2.random = function(xmin, xmax, ymin, ymax) {
 	if (ymin === undefined) ymin = xmin;
 	if (ymax === undefined) ymax = xmax;
 	return new NZ.Vec2(NZ.Vec2.range(xmin, xmax), NZ.Vec2.range(ymin, ymax));
+};
+
+NZ.Vec2.random2D = function() {
+	return Vec2.polar(Math.random() * 360);
 };
 
 NZ.Vec2.create = function(x, y) {
@@ -2294,6 +2566,7 @@ NZ.Vec3._checkArg = function(i) {
 };
 
 NZ.Vec3._checkArgs = function(x, y, z) {
+	// Check operation arguments
 	if (arguments.length < 1) {
 		throw new Error(`At least 1 argument required, but nothing present.`);
 	}
@@ -2510,9 +2783,7 @@ Object.defineProperty(NZ.Vec3, 'zero', {
 	get: function() {
 		return new NZ.Vec3(0, 0, 0);
 	}
-});
-
-class NZGameObject extends NZObject {
+});class NZGameObject extends NZObject {
 	constructor() {
 		super();
 		this.alarm = [-1, -1, -1, -1, -1, -1];
@@ -2546,29 +2817,32 @@ class NZGameObject extends NZObject {
 	postUpdate() {
 		this.alarmUpdate();
 	}
-}
-
+}// MODULES REQUIRED: NZ.Vec3, NZ.Mat4, NZ.Tri, NZ.Mesh, NZ.Transform, NZ.Stage, NZ.C, NZ.Mathz
 class NZObject3D extends NZObject {
 	constructor(mesh, position=NZ.Vec3.zero, rotation=NZ.Vec3.zero) {
 		super();
 		this.mesh = mesh;
 		this.transform = null;
-		if (position instanceof NZ.Transform) {
-			this.transform = position.clone();
+		// If only 1 argument given,
+		if (position instanceof NZ.Transform) { // is it a Transform?
+			this.transform = position.clone(); // clone
 		}
-		else {
-			this.transform = new NZ.Transform(position, rotation);
+		else { // otherwise
+			this.transform = new NZ.Transform(position, rotation); // make a Transform
 		}
 	}
+	// Transforms, illuminates, projects, and (todo: clipping) all triangles in mesh
 	processTrisToRaster(matProj, trisToRaster) {
 		const matWorld = NZ.Mat4.makeWorld(this.transform);
 		for (let i = this.mesh.tris.length - 1; i >= 0; --i) {
 			const tri = this.mesh.tris[i].clone();
 
+			// Transform
 			tri.p[0] = NZ.Mat4.mulVec3(matWorld, tri.p[0]);
 			tri.p[1] = NZ.Mat4.mulVec3(matWorld, tri.p[1]);
 			tri.p[2] = NZ.Mat4.mulVec3(matWorld, tri.p[2]);
 
+			// Normals
 			const line1 = NZ.Vec3.sub(tri.p[1], tri.p[0]);
 			const line2 = NZ.Vec3.sub(tri.p[2], tri.p[0]);
 			const normal = NZ.Vec3.cross(line1, line2);
@@ -2576,11 +2850,13 @@ class NZObject3D extends NZObject {
 			const cameraRay = NZ.Vec3.sub(tri.p[0], NZ.Vec3.zero);
 
 			if (NZ.Vec3.dot(normal, cameraRay) < 0) {
+				// Illumination
 				const lightDirection = new NZ.Vec3(0, 0, -1);
 				lightDirection.normalize();
 				tri.lightDotProduct = NZ.Vec3.dot(normal, lightDirection);
 				tri.bakedColor = NZ.C.multiply(tri.baseColor, 0.2 + Mathz.clamp(0.8 * tri.lightDotProduct, 0, 1));
 
+				// Project
 				tri.p[0] = NZ.Mat4.mulVec3(matProj, tri.p[0]);
 				tri.p[1] = NZ.Mat4.mulVec3(matProj, tri.p[1]);
 				tri.p[2] = NZ.Mat4.mulVec3(matProj, tri.p[2]);
@@ -2601,6 +2877,7 @@ class NZObject3D extends NZObject {
 const {
 	C,
 	UI,
+	Net,
 	OBJ,
 	Tri,
 	Draw,
@@ -2619,11 +2896,12 @@ const {
 	Utils,
 	Cursor,
 	Loader,
+	BGColor,
 	KeyCode,
 	LineCap,
 	LineDash,
 	LineJoin,
 	Primitive,
 	Transform,
-	StylePreset,
+	StylePreset
 } = NZ;
