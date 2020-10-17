@@ -117,6 +117,15 @@ NZ.Input = {
 		}
 		NZ.Input.keys[e.keyCode].down();
 	},
+	setMousePosition(x, y) {
+		if (typeof x === 'object') {
+			y = x.y;
+			x = x.x;
+		}
+		if (y === undefined) y = x;
+		NZ.Input.position.x = NZ.Input.mouseX = NZ.Input.mousePosition.x = x;
+		NZ.Input.position.y = NZ.Input.mouseY = NZ.Input.mousePosition.y = y;
+	},
 	updateMouse(e) {
 		let b = NZ.Input.targetElement || e.srcElement;
 		if (b.getBoundingClientRect) {
@@ -128,8 +137,7 @@ NZ.Input = {
 				y: 0
 			};
 		}
-		NZ.Input.position.x = NZ.Input.mouseX = NZ.Input.mousePosition.x = e.clientX - b.x;
-		NZ.Input.position.y = NZ.Input.mouseY = NZ.Input.mousePosition.y = e.clientY - b.y;
+		NZ.Input.setMousePosition(e.clientX - b.x, e.clientY - b.y);
 		NZ.Input.movementX = NZ.Input.mouseMovement.x = e.movementX;
 		NZ.Input.movementY = NZ.Input.mouseMovement.y = e.movementY;
 	},
