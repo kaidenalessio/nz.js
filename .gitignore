@@ -3,4 +3,5 @@ test/
 
 # Files
 nz-quick-build.js
+nz-backup*
 debug.log
