@@ -9,9 +9,15 @@ NZ.Utils = {
 	picko(obj) {
 		return this.pick(Object.values(obj));
 	},
-	// Remove a random element from giver array
+	// Remove a random element from given array
 	randpop(arr) {
 		return arr.splice(Math.floor(Math.random() * arr.length), 1)[0];
+	},
+	// Executes `fn` `i` times
+	repeat(i, fn) {
+		while (--i > 0) {
+			fn();
+		}
 	},
 	copyToClipboard(text) {
 		const t = document.createElement('textarea');
