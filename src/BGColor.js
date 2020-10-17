@@ -12,5 +12,12 @@ NZ.BGColor = {
 	sea: ['deepskyblue', 'cornflowerblue'],
 	orchid: ['orchid', 'mediumorchid'],
 	darkOrchid: ['darkorchid', 'darkslateblue'],
-	dark: ['#1a1a1a', 'black']
+	dark: ['#1a1a1a', 'black'],
+	keys: [],
+	list: []
 };
+
+NZ.BGColor.keys = Object.keys(NZ.BGColor);
+NZ.BGColor.keys.splice(NZ.BGColor.keys.length - 2);
+NZ.BGColor.list = Object.values(NZ.BGColor);
+NZ.BGColor.list.splice(NZ.BGColor.list.length - 2);
