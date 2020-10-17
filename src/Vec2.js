@@ -264,6 +264,10 @@ NZ.Vec2.random = function(xmin, xmax, ymin, ymax) {
 	return new NZ.Vec2(NZ.Vec2.range(xmin, xmax), NZ.Vec2.range(ymin, ymax));
 };
 
+NZ.Vec2.random2D = function() {
+	return Vec2.polar(Math.random() * 360);
+};
+
 NZ.Vec2.create = function(x, y) {
 	if (y === undefined) y = x;
 	return new NZ.Vec2(x, y);
