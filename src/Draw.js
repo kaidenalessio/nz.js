@@ -478,6 +478,9 @@ NZ.Draw = {
 		this.setHVAlign(NZ.Align.c, NZ.Align.m);
 		this.text(x + tw * 0.5, y + th * 0.5, text);
 	},
+	textBG(x, y, text, options={}) {
+		this.textBackground(x, y, text, options);
+	},
 	heart(x, y, w, h, isStroke=false) {
 		w = w * 0.5;
 		h = h * 0.5;
