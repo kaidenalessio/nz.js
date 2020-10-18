@@ -110,6 +110,12 @@ NZ.Vec3.prototype.fuzzyEqual = function(v, epsilon=NZ.Vec3.EPSILON) {
 	return (Math.abs(this.x-v.x) <= epsilon && Math.abs(this.y-v.y) <= epsilon && Math.abs(this.z-v.z) <= epsilon);
 };
 
+NZ.Vec3.prototype.limit = function(x) {
+	const l = this.length;
+	if (l > x) this.length = x;
+	return this;
+};
+
 NZ.Vec3.fromObject = function(i) {
 	return new NZ.Vec3(i.x, i.y, i.z);
 };
