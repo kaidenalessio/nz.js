@@ -1,5 +1,6 @@
 let FOV_DEG = 90;
 let GAME_OVER = false;
+let WORLD_ROTATE_SPEED = 0.5;
 
 class MyVelocity {
 	constructor(limit, fraction, accFraction) {
@@ -88,21 +89,38 @@ class Fishy extends My3D {
 class World extends My3D {
 	constructor(position, rotation) {
 		super(MyMesh.makeWorld(), C.skyBlue, position, rotation);
-		this.rotVelocity.limit = 0.2;
-		this.rotForce = new Vec3(0, 0.02, 0.001);
+		this.rotVelocity.limit = WORLD_ROTATE_SPEED;
+		this.rotForce = new Vec3(0, WORLD_ROTATE_SPEED, 0.001);
 	}
 	update() {
 		this.rotVelocity.acc.add(this.rotForce);
 	}
 }
 
+class Obstacle extends My3D {
+	constructor(position, rotation) {
+		super(MyMesh.makeObstacle(), C.grey, position, rotation);
+		this.dimensions = new Vec3(1, 20, 2);
+		this.yOffset = -8;
+		this.angle = 0;
+	}
+	update() {
+		this.angle -= WORLD_ROTATE_SPEED;
+		let polar = Vec2.polar(this.angle, 11);
+		polar = new Vec3(polar.x, this.yOffset, 15 + polar.y);
+		this.transform.position.set(polar);
+	}
+}
+
 OBJ.addLink('Fishy', Fishy);
 OBJ.addLink('World', World);
+OBJ.addLink('Obstacle', Obstacle);
 
 Scene.current.start = () => {
 	GAME_OVER = false;
 	OBJ.create('Fishy', new Vec3(-10, 0, 8), new Vec3(0, 100, 0));
 	OBJ.create('World', new Vec3(0, 0, 15), new Vec3(25, 25, 25));
+	OBJ.create('Obstacle', Vec3.zero, Vec3.zero);
 };
 
 Scene.current.update = () => {
@@ -117,7 +135,7 @@ Scene.current.render = () => {
 	const matProj = Mat4.makeProjection(Stage.h / Stage.w, FOV_DEG);
 	const trisToRaster = [];
 	let my3DObjects = OBJ.take('Fishy').slice();
-	my3DObjects = my3DObjects.concat(OBJ.take('World'));
+	my3DObjects = OBJ.take('Fishy', 'World', 'Obstacle');
 	for (const m of my3DObjects) {
 		m.processTrisToRaster(matProj, trisToRaster);
 	}
