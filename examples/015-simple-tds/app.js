@@ -14,10 +14,27 @@ class Enemy extends NZObject {
 		this.size = 18;
 		this.target = OBJ.take('player')[0].pos;
 		this.angle = Vec2.direction(this.pos, this.target);
+		this.prev = this.pos.clone();
+	}
+	collide() {
+		this.angle = Vec2.direction(this.pos, this.prev);
+		this.pos.set(this.prev);
+	}
+	intersects(p, r) {
+		return Mathz.hypotsq(p.x-this.pos.x, p.y-this.pos.y) < Mathz.hypotsq(this.size, r);
 	}
 	update() {
 		this.angle = Mathz.smoothRotate(this.angle, Vec2.direction(this.pos, this.target), 20);
+		this.prev.set(this.pos);
 		this.pos.add(Vec2.polar(this.angle, this.spd));
+		for (const e of OBJ.take('enemy')) {
+			if (e.id !== this.id) {
+				if (this.intersects(e.pos, e.size)) {
+					e.collide();
+					this.collide();
+				}
+			}
+		}
 	}
 	render() {
 		Draw.setColor(C.black);
@@ -44,21 +61,32 @@ class Bullet extends NZObject {
 		this.vel = Vec2.polar(angle, this.spd);
 		this.r = Mathz.range(3, 4);
 	}
-	intersects(p, r) {
-		return Mathz.hypotsq(p.x-this.pos.x, p.y-this.pos.y) < Mathz.hypotsq(this.r, r);
+	outOfBounds() {
+		return this.pos.x < -this.r || this.pos.x > Stage.w + this.r || this.pos.y < -this.r || this.pos.y > Stage.h + this.r;
 	}
 	update() {
 		this.pos.add(this.vel);
 		for (const e of OBJ.take('enemy')) {
-			if (this.intersects(e.pos, e.size)) {
+			if (e.intersects(this.pos, this.r)) {
 				e.kill();
-				OBJ.remove(this.id);
+				this.kill();
 			}
+		}
+		if (this.outOfBounds()) {
+			this.kill();
 		}
 	}
 	render() {
 		Draw.setColor(C.orangeRed);
 		Draw.pointCircle(this.pos, this.r);
+	}
+	kill() {
+		OBJ.remove(this.id);
+		// game over check
+		if (ammo <= 0 && OBJ.count('bullet') === 0) {
+			gameOverText = 'OUT OF AMMO';
+			gameOver = true;
+		}
 	}
 }
 
@@ -77,12 +105,6 @@ class Player extends NZObject {
 		if (Input.mouseHold(0)) {
 			if (Time.time > this.shootTime && ammo > 0) {
 				ammo--;
-				// game over check
-				if (ammo <= 0) {
-					ammo = 0;
-					gameOverText = 'OUT OF AMMO';
-					gameOver = true;
-				}
 				const p = Vec2.polar(this.angle, this.size).add(this.pos);
 				OBJ.create('bullet', p.x, p.y, this.angle + Mathz.range(-2, 2));
 				this.vel.add(p.sub(this.pos).normalize().mult(Mathz.range(-1, -2)), Mathz.range(-1, -2));
@@ -96,6 +118,11 @@ class Player extends NZObject {
 		this.vel.limit(6);
 		this.vel.mult(0.9);
 		this.angle = Mathz.smoothRotate(this.angle, Vec2.direction(this.pos, this.target), 20);
+		for (const e of OBJ.take('enemy')) {
+			if (e.intersects(this.pos, this.size)) {
+				e.collide();
+			}
+		}
 	}
 	render() {
 		Draw.setColor(C.black);
@@ -116,20 +143,22 @@ Scene.current.start = () => {
 };
 
 Scene.current.update = () => {
-	if (Time.time > enemyTime) {
-		let x, y;
-		switch (Mathz.irange(4)) {
-			// left
-			case 0: y = Stage.randomY; x = -50; break;
-			// Right
-			case 1: y = Stage.randomY; x = Stage.w + 50; break;
-			// Top
-			case 2: x = Stage.randomX; y = -50; break;
-			// Bottom
-			default: x = Stage.randomX; y = Stage.h + 50; break;
+	if (OBJ.count('enemy') + killCount < killTarget) {
+		if (Time.time > enemyTime) {
+			let x, y;
+			switch (Mathz.irange(4)) {
+				// left
+				case 0: y = Stage.randomY; x = -50; break;
+				// Right
+				case 1: y = Stage.randomY; x = Stage.w + 50; break;
+				// Top
+				case 2: x = Stage.randomX; y = -50; break;
+				// Bottom
+				default: x = Stage.randomX; y = Stage.h + 50; break;
+			}
+			OBJ.create('enemy', x, y);
+			enemyTime = Time.time + Mathz.range(killTarget * 0.5, Math.max(killTarget * 0.5, killTarget - killCount)) * 50;
 		}
-		OBJ.create('enemy', x, y);
-		enemyTime = Time.time + Mathz.range(1, Math.max(0.5, 4 - killCount * 0.2)) * 100;
 	}
 };
 
