@@ -83,9 +83,11 @@ class Fishy extends My3D {
 			this.lives = 0;
 			GAME_OVER = true;
 		}
+		FOV_DEG = 80;
 		this.goInvincible();
 	}
 	addScore(value) {
+		if (this.invincible) return;
 		SCORE += value;
 		this.scoreTextScaleX = 1.5;
 		this.scoreTextScaleY = 3;
@@ -207,10 +209,14 @@ Scene.current.start = () => {
 		GAME_OVER = true;
 		return;
 	}
+	else {
+		FOV_DEG = 110;
+	}
 	OBJ.create('Fishy', new Vec3(0, 0, 4), new Vec3(0, 100, 0));
 };
 
 Scene.current.render = () => {
+	FOV_DEG += 0.1 * Math.abs(90-FOV_DEG) * Math.sign(90-FOV_DEG);
 	const matProj = Mat4.makeProjection(Stage.h / Stage.w, FOV_DEG);
 	const trisToRaster = [];
 	let my3DObjects = OBJ.take('Fishy').slice();
@@ -245,12 +251,16 @@ Scene.current.renderUI = () => {
 		Draw.setColor(hovered? C.black : C.white);
 		Draw.setHVAlign(Align.c, Align.b);
 		Draw.text(Stage.mid.w, Stage.h - 110, txt);
-		if (Input.mouseDown(0)) {
-			if (hovered) {
+		if (hovered) {
+			UI.setCursor(Cursor.pointer);
+			UI.applyCursor(Stage.canvas);
+			if (Input.mouseDown(0)) {
 				if (FIRST_TIME) FIRST_TIME = false;
 				Scene.restart();
 			}
 		}
+		Draw.setFont(Font.m);
+		Draw.textBG(Stage.mid.w, Stage.h - Font.m.size - 10, 'CONTROLS - left click/space to flap', { bgColor: C.blanchedAlmond, textColor: C.black, origin: new Vec2(0.5, 1) });
 		return;
 	}
 	for (const fish of OBJ.take('Fishy')) {
