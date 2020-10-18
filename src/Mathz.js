@@ -45,7 +45,10 @@ NZ.Mathz.randbool = (t=0.5) => Math.random() < t;
 NZ.Mathz.normalizeAngle = (angleDeg) => {
 	angleDeg = angleDeg % 360;
 	if (angleDeg > 180) angleDeg -= 360;
+	if (angleDeg < -180) angleDeg += 360;
 	return angleDeg;
 };
+
+NZ.Mathz.fuzzyEqual = (a, b, epsilon=NZ.Mathz.EPSILON) => Math.abs(b-a) <= epsilon;
 
 NZ.Mathz.smoothRotate = (angleDegA, angleDegB, speed=5) => angleDegA + Math.sin(NZ.Mathz.degtorad(angleDegB - angleDegA)) * speed;
