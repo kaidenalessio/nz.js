@@ -112,8 +112,15 @@ NZ.OBJ = {
 	getIndex(name) {
 		return ((typeof name === 'number')? name : this.names.indexOf(name));
 	},
-	take(name) {
+	takeFrom(name) {
 		return this.list[this.getIndex(name)];
+	},
+	take(...names) {
+		let h = [];
+		for (const name of names) {
+			h = h.concat(this.takeFrom(name));
+		}
+		return h;
 	},
 	count(name) {
 		return this.take(name).length;
