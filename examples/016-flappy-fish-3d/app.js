@@ -2,7 +2,7 @@ let FOV_DEG = 90;
 let SCORE = 0;
 let GAME_OVER = false;
 let FIRST_TIME = true;
-let WORLD_ROTATE_SPEED = 0.6;
+let WORLD_ROTATE_SPEED = 0.65;
 
 Font.xxlb = Font.generate(100, Font.bold);
 
@@ -50,8 +50,8 @@ class Fishy extends My3D {
 		this.flapForce = new Vec3(0, 0.5, 0);
 		this.rotVelocity.limit = 4;
 		this.bounds = {
-			min: -4.5,
-			max: 4.1
+			min: -4.6,
+			max: 4.2
 		};
 		this.lives = 3;
 		this.invincible = false;
@@ -135,12 +135,18 @@ class World extends My3D {
 }
 
 class Obstacle extends My3D {
-	constructor(position, rotation, angle) {
-		super(MyMesh.makeObstacle(), C.random(), position, rotation);
+	constructor(angle) {
+		super(MyMesh.makeObstacle(), C.random(), new Vec3(1000, 1000, 1000), Vec3.zero);
 		this.dimensions = new Vec3(1, 20, 2);
-		this.yOffset = Mathz.range(-2, 2);
+		this.yOffset = 0;
 		this.angle = angle;
 		this.passed = false;
+		this.changing = false;
+		this.randomYOffset();
+	}
+	randomYOffset() {
+		const t = SCORE / 20;
+		this.yOffset = Mathz.range(Math.min(t, 2), 2) * Mathz.randbool();
 	}
 	update() {
 		this.angle -= WORLD_ROTATE_SPEED;
@@ -150,17 +156,25 @@ class Obstacle extends My3D {
 		this.angle = Mathz.normalizeAngle(this.angle);
 		const direction = Mathz.normalizeAngle(this.angle);
 		if (Mathz.fuzzyEqual(this.angle, 90, WORLD_ROTATE_SPEED)) {
-			this.yOffset = Mathz.range(-2, 2);
-			this.setColor(C.random());
+			if (!this.changing) {
+				this.changing = true;
+				this.randomYOffset();
+				this.setColor(C.random());
+			}
 		}
+		else {
+			this.changing = false;
+		}
+		this.yOffset += Math.cos(Time.time * 0.001) * 0.02;
+		this.transform.rotation.z = this.yOffset * 2;
 		if (GAME_OVER) return;
 		// this.setColor(C.green);
-		if (Mathz.fuzzyEqual(this.angle, -90, 7)) {
+		if (Mathz.fuzzyEqual(this.angle, -90, 6)) {
 			for (const fish of OBJ.take('Fishy')) {
 				if (fish.invincible) break;
 				const bound = {
-					min: this.yOffset - 2,
-					max: this.yOffset + 2
+					min: this.yOffset - 1.99,
+					max: this.yOffset + 1.99
 				};
 				if (fish.transform.position.y < bound.min || fish.transform.position.y > bound.max) {
 					fish.velocity.vel.reset();
@@ -176,6 +190,19 @@ class Obstacle extends My3D {
 				else {
 					if (!this.passed) {
 						fish.addScore(1);
+						if (this.id === 1) {
+							const count = OBJ.count('Obstacle');
+							if (count < 6) {
+								const offsetPattern = [
+									120,
+									240,
+									60,
+									180,
+									300
+								];
+								OBJ.create('Obstacle', this.angle + offsetPattern[count-1]);
+							}
+						}
 						this.passed = true;
 					}
 				}
@@ -199,12 +226,7 @@ Scene.current.start = () => {
 	Stage.setPixelRatio(Stage.HIGH);
 	Stage.applyPixelRatio();
 	OBJ.create('World', new Vec3(0, 0, 15), new Vec3(25, 25, 25));
-	OBJ.create('Obstacle', Vec3.zero, Vec3.zero, 0);
-	OBJ.create('Obstacle', Vec3.zero, Vec3.zero, -60);
-	OBJ.create('Obstacle', Vec3.zero, Vec3.zero, -120);
-	OBJ.create('Obstacle', Vec3.zero, Vec3.zero, -180);
-	OBJ.create('Obstacle', Vec3.zero, Vec3.zero, -240);
-	OBJ.create('Obstacle', Vec3.zero, Vec3.zero, -300);
+	OBJ.create('Obstacle', 20);
 	if (FIRST_TIME) {
 		GAME_OVER = true;
 		return;
@@ -228,7 +250,6 @@ Scene.current.render = () => {
 	for (const tri of trisToRaster) {
 		Draw.setColor(tri.bakedColor);
 		Draw.pointTriangle(tri.p[0], tri.p[1], tri.p[2]);
-		Draw.stroke();
 	}
 };
 
@@ -254,7 +275,7 @@ Scene.current.renderUI = () => {
 		if (hovered) {
 			UI.setCursor(Cursor.pointer);
 			UI.applyCursor(Stage.canvas);
-			if (Input.mouseDown(0)) {
+			if (Input.mouseDown(0) || Input.keyDown(KeyCode.Space)) {
 				if (FIRST_TIME) FIRST_TIME = false;
 				Scene.restart();
 			}
