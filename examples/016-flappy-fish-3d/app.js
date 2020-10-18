@@ -1,6 +1,6 @@
 let FOV_DEG = 90;
 let GAME_OVER = false;
-let WORLD_ROTATE_SPEED = 0.5;
+let WORLD_ROTATE_SPEED = 0.6;
 
 class MyVelocity {
 	constructor(limit, fraction, accFraction) {
@@ -21,11 +21,14 @@ class MyVelocity {
 class My3D extends NZObject3D {
 	constructor(mesh, color, position, rotation) {
 		super(mesh, position, rotation);
-		for (const tri of this.mesh.tris) {
-			tri.baseColor = color;
-		}
+		this.setColor(color);
 		this.velocity = new MyVelocity(1, 0.9, 0.1);
 		this.rotVelocity = new MyVelocity(1, 0.96, 0.1);
+	}
+	setColor(c) {
+		for (const tri of this.mesh.tris) {
+			tri.baseColor = c;
+		}
 	}
 	postUpdate() {
 		this.velocity.update();
@@ -38,12 +41,12 @@ class My3D extends NZObject3D {
 class Fishy extends My3D {
 	constructor(position, rotation) {
 		super(MyMesh.makeFishy(), C.salmon, position, rotation);
-		this.gravity = new Vec3(0, -0.02, 0);
-		this.flapForce = new Vec3(0, 1, 0);
+		this.gravity = new Vec3(0, -0.015, 0);
+		this.flapForce = new Vec3(0, 0.5, 0);
 		this.rotVelocity.limit = 4;
 		this.bounds = {
-			min: -10,
-			max: 8.2
+			min: -4.5,
+			max: 4.1
 		};
 		this.lives = 3;
 	}
@@ -77,7 +80,7 @@ class Fishy extends My3D {
 		}
 	}
 	render() {
-		// Draw.textBG(0, 0, this.transform.position.y);
+		Draw.textBG(0, 0, this.transform.position.y);
 		Utils.repeat(this.lives, (i) => {
 			Draw.setColor(C.red, C.black);
 			Draw.heart(32 + i * 25, Stage.h - 30 + Math.sin(Time.time * 0.01 + i), 20, 20);
@@ -98,17 +101,37 @@ class World extends My3D {
 }
 
 class Obstacle extends My3D {
-	constructor(position, rotation) {
-		super(MyMesh.makeObstacle(), C.grey, position, rotation);
+	constructor(position, rotation, angle, color=C.grey) {
+		super(MyMesh.makeObstacle(), color, position, rotation);
 		this.dimensions = new Vec3(1, 20, 2);
-		this.yOffset = -8;
-		this.angle = 0;
+		this.yOffset = Mathz.range(-2, 2);
+		this.angle = angle;
 	}
 	update() {
 		this.angle -= WORLD_ROTATE_SPEED;
 		let polar = Vec2.polar(this.angle, 11);
 		polar = new Vec3(polar.x, this.yOffset, 15 + polar.y);
 		this.transform.position.set(polar);
+		this.angle = Mathz.normalizeAngle(this.angle);
+		const direction = Mathz.normalizeAngle(this.angle);
+		if (Mathz.fuzzyEqual(this.angle, 90, WORLD_ROTATE_SPEED)) {
+			this.yOffset = Mathz.range(-2, 2);
+		}
+		this.setColor(C.green);
+		if (Mathz.fuzzyEqual(this.angle, -90, 7)) {
+			for (const fish of OBJ.take('Fishy')) {
+				const bound = {
+					min: this.yOffset - 2,
+					max: this.yOffset + 2
+				};
+				if (fish.transform.position.y < bound.min || fish.transform.position.y > bound.max) {
+					this.setColor(C.red);
+				}
+			}
+		}
+	}
+	render() {
+		Draw.textBG(0, this.id * 32, this.id + ': ' + ~~this.angle);
 	}
 }
 
@@ -120,9 +143,14 @@ OBJ.endMark();
 
 Scene.current.start = () => {
 	GAME_OVER = false;
-	OBJ.create('Fishy', new Vec3(-10, 0, 8), new Vec3(0, 100, 0));
+	OBJ.create('Fishy', new Vec3(0, 0, 4), new Vec3(0, 100, 0));
 	OBJ.create('World', new Vec3(0, 0, 15), new Vec3(25, 25, 25));
-	OBJ.create('Obstacle', Vec3.zero, Vec3.zero);
+	OBJ.create('Obstacle', Vec3.zero, Vec3.zero, 0, C.green);
+	OBJ.create('Obstacle', Vec3.zero, Vec3.zero, -60, C.red);
+	OBJ.create('Obstacle', Vec3.zero, Vec3.zero, -120);
+	OBJ.create('Obstacle', Vec3.zero, Vec3.zero, -180);
+	OBJ.create('Obstacle', Vec3.zero, Vec3.zero, -240);
+	OBJ.create('Obstacle', Vec3.zero, Vec3.zero, -300);
 };
 
 Scene.current.update = () => {
