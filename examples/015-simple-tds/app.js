@@ -8,6 +8,40 @@ let ammo = ammoMax;
 
 let mousePos = Vec2.zero;
 
+Loader.loadStrip(Vec2.center, 'pop', 'pop_strip6.png', 6);
+
+class Pop extends NZGameObject {
+	constructor(x, y) {
+		super();
+		this.x = x;
+		this.y = y;
+		this.imageName = 'pop';
+		this.image = Draw.strips[this.imageName];
+		this.imageIndex = -1;
+		this.angle = Mathz.range(360);
+		this.alarm0();
+	}
+	alarm0() {
+		this.imageIndex++;
+		this.alarm[0] = 1;
+		if (this.imageIndex > this.image.strip) {
+			// game over check
+			if (killCount >= killTarget) {
+				gameOverText = 'YOU WON!';
+				gameOver = true;
+			}
+			OBJ.remove(this.id);
+		}
+	}
+	render() {
+		if (this.imageIndex < this.image.strip) {
+			Draw.onTransform(this.x, this.y, 1, 1, this.angle, () => {
+				Draw.strip(this.imageName, this.imageIndex, 0, 0);
+			});
+		}
+	}
+}
+
 class Enemy extends NZObject {
 	constructor(x, y) {
 		super();
@@ -46,11 +80,7 @@ class Enemy extends NZObject {
 	}
 	kill() {
 		killCount++;
-		// game over check
-		if (killCount >= killTarget) {
-			gameOverText = 'YOU WON!';
-			gameOver = true;
-		}
+		OBJ.create('pop', this.pos.x, this.pos.y);
 		OBJ.remove(this.id);
 	}
 }
@@ -85,7 +115,7 @@ class Bullet extends NZObject {
 	kill() {
 		OBJ.remove(this.id);
 		// game over check
-		if (ammo <= 0 && OBJ.count('bullet') === 0) {
+		if (ammo <= 0 && OBJ.count('bullet') === 0 && killCount < killTarget) {
 			gameOverText = 'OUT OF AMMO';
 			gameOver = true;
 		}
@@ -158,6 +188,7 @@ class Player extends NZObject {
 	}
 }
 
+OBJ.addLink('pop', Pop);
 OBJ.addLink('enemy', Enemy);
 OBJ.addLink('bullet', Bullet);
 OBJ.addLink('player', Player);
