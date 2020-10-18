@@ -7,7 +7,7 @@ NZ.Loader = {
 	loadAmount: 0,
 	loadedCount: 0,
 	get loadProgress() {
-		return this.loadedCount / Math.max(1, this.loadAmount);
+		return this.loadAmount < 1? 1 : this.loadedCount / this.loadAmount;
 	},
 	setOnLoadEvent(img) {
 		this.loadAmount++; _this = this;

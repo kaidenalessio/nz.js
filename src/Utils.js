@@ -15,7 +15,7 @@ NZ.Utils = {
 	},
 	// Executes `fn` `i` times
 	repeat(i, fn) {
-		while (--i > 0) {
+		while (i-- > 0) {
 			fn();
 		}
 	},
