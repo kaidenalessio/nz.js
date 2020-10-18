@@ -6,6 +6,8 @@ let killTarget = 20;
 let ammoMax = 100;
 let ammo = ammoMax;
 
+let mousePos = Vec2.zero;
+
 class Enemy extends NZObject {
 	constructor(x, y) {
 		super();
@@ -102,6 +104,20 @@ class Player extends NZObject {
 		this.shootTime = 0;
 		this.lives = 3;
 	}
+	wrap() {
+		if (this.pos.x < -this.size) {
+			this.pos.x = Stage.w + this.size;
+		}
+		if (this.pos.x > Stage.w + this.size) {
+			this.pos.x = -this.size;
+		}
+		if (this.pos.y < -this.size) {
+			this.pos.y = Stage.h + this.size;
+		}
+		if (this.pos.y > Stage.h + this.size) {
+			this.pos.y = -this.size;
+		}
+	}
 	update() {
 		if (Input.mouseHold(0)) {
 			if (Time.time > this.shootTime && ammo > 0) {
@@ -110,12 +126,15 @@ class Player extends NZObject {
 				OBJ.create('bullet', p.x, p.y, this.angle + Mathz.range(-2, 2));
 				this.vel.add(p.sub(this.pos).normalize().mult(Mathz.range(-1, -2)), Mathz.range(-1, -2));
 				this.shootTime = Time.time + Mathz.range(100, 120);
+				// recoil
+				Input.setMousePosition(Vec2.random(-5, 5).add(Input.mousePosition));
 			}
 		}
 		Input.testMoving4DirWASD(this.acc);
 		this.acc.mult(0.1);
 		this.vel.add(this.acc);
 		this.pos.add(this.vel);
+		this.wrap();
 		this.vel.limit(6);
 		this.vel.mult(0.9);
 		this.angle = Mathz.smoothRotate(this.angle, Vec2.direction(this.pos, this.target), 20);
@@ -144,6 +163,8 @@ OBJ.addLink('bullet', Bullet);
 OBJ.addLink('player', Player);
 
 Scene.current.start = () => {
+	UI.setCursor(Cursor.none);
+	UI.applyCursor(Stage.canvas);
 	Stage.setPixelRatio(Stage.HIGH);
 	Stage.applyPixelRatio();
 	OBJ.create('player', Stage.mid.w, Stage.mid.h);
@@ -171,14 +192,17 @@ Scene.current.update = () => {
 
 Scene.current.renderUI = () => {
 	// Crosshair
+	mousePos = mousePos.lerp(Input.mousePosition, 0.5);
+	const shooting = Input.mouseHold(0);
 	Draw.setColor(C.white);
-	Draw.pointCircle(Input.mousePosition, 10 - Input.mouseHold(0), true);
-	Draw.plus(Input.mouseX, Input.mouseY, 16 + Input.mouseHold(0));
+	Draw.pointCircle(mousePos, 10 + Math.sin(Time.time * 0.01) * shooting, true);
+	Draw.pointCircle(Input.mousePosition, 2);
+	Draw.plus(mousePos.x, mousePos.y, 16 + Math.sin(Time.time * 0.1) * 5 * shooting);
 
 	// Objective
 	for (const p of OBJ.take('player')) {
-		let x = p.pos.x;
-		let y = p.pos.y - 100;
+		let x = Mathz.clamp(p.pos.x, 64, Stage.w - 64);
+		let y = Mathz.clamp(p.pos.y - 100, 20, Stage.h - 80);
 		Draw.setFont(Font.l);
 		const bgColor = C.makeRGBA(0, 0, 0, 0.1);
 		Draw.textBackground(x, y, `Kills: ${killCount}/${killTarget}`, { origin: Vec2.center, bgColor: bgColor });
@@ -205,5 +229,6 @@ NZ.start({
 	w: 960,
 	h: 540,
 	bgColor: BGColor.grass,
-	stylePreset: StylePreset.noGapCenter
+	stylePreset: StylePreset.noGapCenter,
+	uiAutoReset: false
 });
