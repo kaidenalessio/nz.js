@@ -2,7 +2,9 @@ var NZ = NZ || {};
 
 // Built-in scene class and manager
 class NZScene {
-	constructor() {}
+	constructor(name) {
+		this.name = name;
+	}
 	start() {}
 	update() {}
 	render() {}
@@ -14,6 +16,9 @@ NZ.Scene = {
 	listener: {},
 	current: new NZScene(),
 	previous: new NZScene(),
+	get name() {
+		return this.current.name;
+	},
 	add(name, scene) {
 		if (typeof name === 'number') {
 			name += '';
@@ -25,7 +30,7 @@ NZ.Scene = {
 		return this.list[name];
 	},
 	create(name) {
-		return this.add(name, new NZScene());
+		return this.add(name, new NZScene(name));
 	},
 	on(type, listener) {
 		if (!this.listener[type]) this.listener[type] = [];
