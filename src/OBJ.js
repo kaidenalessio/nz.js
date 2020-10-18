@@ -25,13 +25,27 @@ NZ.OBJ = {
 	ID: 0,
 	list: [],
 	names: [],
+	marks: {},
 	linkedClass: {},
+	_currentMark: null,
 	_updateDisabled: false,
 	_renderDisabled: false,
 	_persistentDisabled: true,
+	mark(mark) {
+		this._currentMark = mark;
+	},
+	endMark() {
+		this._currentMark = null;
+	},
 	add(name) {
 		this.list.push([]);
 		this.names.push(name);
+		if (this._currentMark !== null) {
+			if (this.marks[this._currentMark] === undefined) {
+				this.marks[this._currentMark] = [];
+			}
+			this.marks[this._currentMark].push(name);
+		}
 	},
 	link(name, cls) {
 		this.linkedClass[name] = cls;
@@ -121,6 +135,9 @@ NZ.OBJ = {
 			h = h.concat(this.takeFrom(name));
 		}
 		return h;
+	},
+	takeMark(mark) {
+		return this.take(...this.marks[mark]);
 	},
 	count(name) {
 		return this.take(name).length;

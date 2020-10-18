@@ -112,9 +112,11 @@ class Obstacle extends My3D {
 	}
 }
 
+OBJ.mark('My3D');
 OBJ.addLink('Fishy', Fishy);
 OBJ.addLink('World', World);
 OBJ.addLink('Obstacle', Obstacle);
+OBJ.endMark();
 
 Scene.current.start = () => {
 	GAME_OVER = false;
@@ -135,7 +137,7 @@ Scene.current.render = () => {
 	const matProj = Mat4.makeProjection(Stage.h / Stage.w, FOV_DEG);
 	const trisToRaster = [];
 	let my3DObjects = OBJ.take('Fishy').slice();
-	my3DObjects = OBJ.take('Fishy', 'World', 'Obstacle');
+	my3DObjects = OBJ.takeMark('My3D');
 	for (const m of my3DObjects) {
 		m.processTrisToRaster(matProj, trisToRaster);
 	}
