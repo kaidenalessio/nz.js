@@ -15,8 +15,9 @@ NZ.Utils = {
 	},
 	// Executes `fn` `i` times
 	repeat(i, fn) {
+		let j = 0;
 		while (i-- > 0) {
-			fn();
+			fn(j++);
 		}
 	},
 	copyToClipboard(text) {
