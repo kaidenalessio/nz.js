@@ -72,7 +72,7 @@ class Player extends NZObject {
 				this.shootTime = Time.time + Mathz.range(100, 120);
 			}
 		}
-		Input.testMoving4Dir(this.acc);
+		Input.testMoving4DirWASD(this.acc);
 		this.acc.mult(0.1);
 		this.vel.add(this.acc);
 		this.pos.add(this.vel);

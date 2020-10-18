@@ -168,6 +168,10 @@ NZ.Input = {
 	testMoving4Dir(position, speed=5) {
 		position.x += (this.keyHold(39) - this.keyHold(37)) * speed;
 		position.y += (this.keyHold(40) - this.keyHold(38)) * speed;
+	},
+	testMoving4DirWASD(position, speed=5) {
+		position.x += (this.keyHold(68) - this.keyHold(65)) * speed;
+		position.y += (this.keyHold(83) - this.keyHold(87)) * speed;
 	}
 };
 
