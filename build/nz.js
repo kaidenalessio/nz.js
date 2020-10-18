@@ -789,6 +789,20 @@ NZ.Draw = {
 		this.setFill(options.textColor);
 		this.setHVAlign(NZ.Align.c, NZ.Align.m);
 		this.text(x + tw * 0.5, y + th * 0.5, text);
+	},
+	textBG(x, y, text, options={}) {
+		this.textBackground(x, y, text, options);
+	},
+	heart(x, y, w, h, isStroke=false) {
+		w = w * 0.5;
+		h = h * 0.5;
+		this.ctx.beginPath();
+		this.ctx.moveTo(x, y-h*0.5);
+		this.ctx.quadraticCurveTo(x+w, y-h, x+w, y);
+		this.ctx.lineTo(x, y+h);
+		this.ctx.lineTo(x-w, y);
+		this.ctx.quadraticCurveTo(x-w, y-h, x, y-h*0.5);
+		this.draw(isStroke);
 	}
 };
 
@@ -1029,6 +1043,10 @@ NZ.Input = {
 	testMoving4Dir(position, speed=5) {
 		position.x += (this.keyHold(39) - this.keyHold(37)) * speed;
 		position.y += (this.keyHold(40) - this.keyHold(38)) * speed;
+	},
+	testMoving4DirWASD(position, speed=5) {
+		position.x += (this.keyHold(68) - this.keyHold(65)) * speed;
+		position.y += (this.keyHold(83) - this.keyHold(87)) * speed;
 	}
 };
 
@@ -1144,7 +1162,7 @@ NZ.Loader = {
 	loadAmount: 0,
 	loadedCount: 0,
 	get loadProgress() {
-		return this.loadedCount / Math.max(1, this.loadAmount);
+		return this.loadAmount < 1? 1 : this.loadedCount / this.loadAmount;
 	},
 	setOnLoadEvent(img) {
 		this.loadAmount++; _this = this;
@@ -1198,6 +1216,7 @@ NZ.Loader = {
  *		preventContextMenu: prevent right-click to show context menu
  *		defaultFont: set default font used to draw text (default = Maven Pro 16) (See NZ.Font for more info)
  *		enablePersistent: enable instance to not get removed on NZ.OBJ.onSceneRestart() if it has property `persistent` set to true
+ *		stageRedrawOnResize: (true by default) html canvas clear its drawing everytime it gets resized, set this to true to redraw the drawing when resizing
  *	};
  */
 NZ.start = (options={}) => {
@@ -1260,6 +1279,9 @@ NZ.start = (options={}) => {
 	}
 	if (typeof options.stageAutoClear === 'boolean') {
 		NZ.Stage.autoClear = options.stageAutoClear;
+	}
+	if (typeof options.stageRedrawOnResize === 'boolean') {
+		NZ.Stage.redrawOnResize = options.stageRedrawOnResize;
 	}
 	if (options.debugModeAmount) {
 		NZ.Debug.modeAmount = options.debugModeAmount;
@@ -1443,8 +1465,11 @@ NZ.Mathz.randbool = (t=0.5) => Math.random() < t;
 NZ.Mathz.normalizeAngle = (angleDeg) => {
 	angleDeg = angleDeg % 360;
 	if (angleDeg > 180) angleDeg -= 360;
+	if (angleDeg < -180) angleDeg += 360;
 	return angleDeg;
 };
+
+NZ.Mathz.fuzzyEqual = (a, b, epsilon=NZ.Mathz.EPSILON) => Math.abs(b-a) <= epsilon;
 
 NZ.Mathz.smoothRotate = (angleDegA, angleDegB, speed=5) => angleDegA + Math.sin(NZ.Mathz.degtorad(angleDegB - angleDegA)) * speed;
 
@@ -1684,13 +1709,27 @@ NZ.OBJ = {
 	ID: 0,
 	list: [],
 	names: [],
+	marks: {},
 	linkedClass: {},
+	_currentMark: null,
 	_updateDisabled: false,
 	_renderDisabled: false,
 	_persistentDisabled: true,
+	mark(mark) {
+		this._currentMark = mark;
+	},
+	endMark() {
+		this._currentMark = null;
+	},
 	add(name) {
 		this.list.push([]);
 		this.names.push(name);
+		if (this._currentMark !== null) {
+			if (this.marks[this._currentMark] === undefined) {
+				this.marks[this._currentMark] = [];
+			}
+			this.marks[this._currentMark].push(name);
+		}
 	},
 	link(name, cls) {
 		this.linkedClass[name] = cls;
@@ -1771,8 +1810,18 @@ NZ.OBJ = {
 	getIndex(name) {
 		return ((typeof name === 'number')? name : this.names.indexOf(name));
 	},
-	take(name) {
+	takeFrom(name) {
 		return this.list[this.getIndex(name)];
+	},
+	take(...names) {
+		let h = [];
+		for (const name of names) {
+			h = h.concat(this.takeFrom(name));
+		}
+		return h;
+	},
+	takeMark(mark) {
+		return this.take(...this.marks[mark]);
 	},
 	count(name) {
 		return this.take(name).length;
@@ -1939,7 +1988,9 @@ NZ.Runner.run = (t) => {
 
 // Built-in scene class and manager
 class NZScene {
-	constructor() {}
+	constructor(name) {
+		this.name = name;
+	}
 	start() {}
 	update() {}
 	render() {}
@@ -1951,6 +2002,9 @@ NZ.Scene = {
 	listener: {},
 	current: new NZScene(),
 	previous: new NZScene(),
+	get name() {
+		return this.current.name;
+	},
 	add(name, scene) {
 		if (typeof name === 'number') {
 			name += '';
@@ -1962,7 +2016,7 @@ NZ.Scene = {
 		return this.list[name];
 	},
 	create(name) {
-		return this.add(name, new NZScene());
+		return this.add(name, new NZScene(name));
 	},
 	on(type, listener) {
 		if (!this.listener[type]) this.listener[type] = [];
@@ -2008,6 +2062,7 @@ NZ.Stage = {
 	pixelRatio: 1, // (0.5=Low, 1=Normal, 2=High, 4=Ultra)
 	canvas: null,
 	autoClear: true,
+	redrawOnResize: true,
 	w: 300,
 	h: 150,
 	mid: {
@@ -2047,9 +2102,16 @@ NZ.Stage = {
 		this.pixelRatio = 1;
 	},
 	applyPixelRatio() {
+		const tmp = document.createElement('canvas');
+		if (this.redrawOnResize) {
+			tmp.width = this.canvas.width;
+			tmp.height = this.canvas.height;
+			tmp.getContext('2d').drawImage(this.canvas, 0, 0);
+		}
 		this.canvas.width = this.w * this.pixelRatio;
 		this.canvas.height = this.h * this.pixelRatio;
 		this.canvas.ctx.resetTransform();
+		this.canvas.ctx.drawImage(tmp, 0, 0);
 		this.canvas.ctx.scale(this.pixelRatio, this.pixelRatio);
 	},
 	clear() {
@@ -2266,8 +2328,9 @@ NZ.Utils = {
 	},
 	// Executes `fn` `i` times
 	repeat(i, fn) {
-		while (--i > 0) {
-			fn();
+		let j = 0;
+		while (i-- > 0) {
+			fn(j++);
 		}
 	},
 	copyToClipboard(text) {
@@ -2742,6 +2805,12 @@ NZ.Vec3.prototype.equal = function(v) {
 
 NZ.Vec3.prototype.fuzzyEqual = function(v, epsilon=NZ.Vec3.EPSILON) {
 	return (Math.abs(this.x-v.x) <= epsilon && Math.abs(this.y-v.y) <= epsilon && Math.abs(this.z-v.z) <= epsilon);
+};
+
+NZ.Vec3.prototype.limit = function(x) {
+	const l = this.length;
+	if (l > x) this.length = x;
+	return this;
 };
 
 NZ.Vec3.fromObject = function(i) {
