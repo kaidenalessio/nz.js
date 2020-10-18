@@ -56,11 +56,19 @@ NZ.Net = {
 		const key = snapshot.key; // expected buffer index
 		const val = snapshot.val(); // expected buffer (array of values)
 		// is there any value received
-		if (val) {
+		if (snapshot.exists()) {
+			const i = +key; // convert to number type
 			// is it an array
-			if (val.length) {
+			if (typeof val.length === 'number') {
 				// copy it to local buffer
-				NZ.Net.copyBuffer(node, +key, val); // +key (convert to number type)
+				NZ.Net.copyBuffer(node, i, val);
+			}
+			else {
+				const values = [];
+				snapshot.forEach((child) => {
+					values.push(child.val());
+				});
+				NZ.Net.copyBuffer(node, i, values);
 			}
 		}
 	},
@@ -71,31 +79,38 @@ NZ.Net = {
 	stopListening(path, listener) {
 		this.fbDatabase.ref(path).off('value', listener);
 	},
-	createConnection(node) {
+	connectionExists(node) {
+		return this.connections[node] !== undefined;
+	},
+	// creates buffers and active listeners (10 by default) then store it in a list
+	createConnection(node, bufferLength=10) {
+		if (this.connectionExists(node)) return false; // failed to create, connection already exists
 		const path = `${this.parentPath}${node}`;
 		this.connections[node] = {};
-		this.connections[node].buffers = new NZNetBuffers();
+		this.connections[node].buffers = new NZNetBuffers(bufferLength);
 		this.connections[node].listeners = [];
 		for (let i = 0; i < this.connections[node].buffers.length; i++) {
 			this.connections[node].listeners.push(this.startListening(`${path}/${i}`, (snapshot) => { this.onValueEvent(node, snapshot); }));
 		}
+		return true; // connection made successfully (not really, need checks on listener pushes)
 	},
 	destroyConnection(node) {
+		if (!this.connectionExists(node)) return false;
 		const path = `${this.parentPath}${node}`;
 		for (let i = this.connections[node].listeners.length - 1; i >= 0; --i) {
 			const listener = this.connections[node].listeners[i];
 			this.stopListening(`${path}/${i}`, listener);
 		}
 		delete this.connections[node];
-	},
-	connectionExists(node) {
-		return this.connections[node] !== undefined;
+		return true;
 	},
 	copyBuffer(node, i, sourceBuffer) {
 		this.connections[node].buffers.copy(i, sourceBuffer);
 	},
 	clearBuffer(node, i) {
+		const clone = this.connections[node].buffers.get(i).slice();
 		this.connections[node].buffers.clear(i);
+		return clone;
 	},
 	push(node, i, value) {
 		this.connections[node].buffers.push(i, value);
@@ -103,9 +118,14 @@ NZ.Net = {
 	getBuffer(node, i) {
 		return this.connections[node].buffers.get(i);
 	},
+	// send and push buffer will automatically clear the buffer
 	sendBuffer(node, i) {
 		const path = `${this.parentPath}${node}/${i}`;
-		this.fbDatabase.ref(path).set(this.getBuffer(node, i));
+		this.fbDatabase.ref(path).set(this.clearBuffer(node, i));
+	},
+	pushBuffer(node, i) {
+		const path = `${this.parentPath}${node}/${i}`;
+		this.fbDatabase.ref(path).push(this.clearBuffer(node, i));
 	},
 	pop(node, i) {
 		return this.connections[node].buffers.pop(i);
@@ -126,12 +146,14 @@ NZ.Net = {
 			callbackFn(pop);
 		}
 	},
+	// send routine
 	send(node, i, ...payload) {
 		if (!this.connectionExists(node)) return false;
 		this.sendUnsafe(node, i, ...payload);
 		this.clearBuffer(node, i);
 		return true;
 	},
+	// read routine
 	read(node, i, callbackFn) {
 		if (!this.connectionExists(node)) return false;
 		this.readUnsafe(node, i, (pop) => {
@@ -140,10 +162,22 @@ NZ.Net = {
 		});
 		return true;
 	},
+	// push routine
+	pushRoutine(node, i, ...payload) {
+		this.clearBuffer(node, i);
+		for (const p of payload) {
+			this.push(node, i, p);
+		}
+		this.pushBuffer(node, i);
+	},
 	sendEmptyBuffers(node) {
-		for (let i = this.connections[node].buffers.length - 1; i >= 0; --i) {
+		for (let i = 0; i < this.connections[node].buffers.length; i++) {
 			this.clearBuffer(node, i);
 			this.sendBuffer(node, i);
 		}
 	}
 };
+
+// TODO 1: allow send push not set [complete]
+// TODO 2: refactor names, inconsistent naming and functionality (see push, pushRoutine, sendUnsafe)
+// TODO 3: rethink clearance routine implementation (see sendBuffer, pushBuffer)
