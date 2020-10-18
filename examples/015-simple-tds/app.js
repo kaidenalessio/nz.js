@@ -1,5 +1,10 @@
+let gameOver = false;
+let gameOverText = '';
 let enemyTime = 0;
 let killCount = 0;
+let killTarget = 20;
+let ammoMax = 100;
+let ammo = ammoMax;
 
 class Enemy extends NZObject {
 	constructor(x, y) {
@@ -22,6 +27,11 @@ class Enemy extends NZObject {
 	}
 	kill() {
 		killCount++;
+		// game over check
+		if (killCount >= killTarget) {
+			gameOverText = 'YOU WON!';
+			gameOver = true;
+		}
 		OBJ.remove(this.id);
 	}
 }
@@ -65,7 +75,14 @@ class Player extends NZObject {
 	}
 	update() {
 		if (Input.mouseHold(0)) {
-			if (Time.time > this.shootTime) {
+			if (Time.time > this.shootTime && ammo > 0) {
+				ammo--;
+				// game over check
+				if (ammo <= 0) {
+					ammo = 0;
+					gameOverText = 'OUT OF AMMO';
+					gameOver = true;
+				}
 				const p = Vec2.polar(this.angle, this.size).add(this.pos);
 				OBJ.create('bullet', p.x, p.y, this.angle + Mathz.range(-2, 2));
 				this.vel.add(p.sub(this.pos).normalize().mult(Mathz.range(-1, -2)), Mathz.range(-1, -2));
@@ -93,6 +110,8 @@ OBJ.addLink('bullet', Bullet);
 OBJ.addLink('player', Player);
 
 Scene.current.start = () => {
+	Stage.setPixelRatio(Stage.HIGH);
+	Stage.applyPixelRatio();
 	OBJ.create('player', Stage.mid.w, Stage.mid.h);
 };
 
@@ -110,7 +129,7 @@ Scene.current.update = () => {
 			default: x = Stage.randomX; y = Stage.h + 50; break;
 		}
 		OBJ.create('enemy', x, y);
-		enemyTime = Time.time + Mathz.range(2, Math.max(1, 4 - killCount * 0.1)) * 1000;
+		enemyTime = Time.time + Mathz.range(1, Math.max(0.5, 4 - killCount * 0.2)) * 100;
 	}
 };
 
@@ -121,9 +140,27 @@ Scene.current.renderUI = () => {
 	Draw.plus(Input.mouseX, Input.mouseY, 16 + Input.mouseHold(0));
 
 	// Objective
-	Draw.textBackground(0, 0, `Kills: ${killCount}`);
+	for (const p of OBJ.take('player')) {
+		let x = p.pos.x;
+		let y = p.pos.y - 100;
+		Draw.setFont(Font.l);
+		Draw.textBackground(x, y, `Kills: ${killCount}/${killTarget}`, { origin: Vec2.center });
+		Draw.setFont(Font.m);
+		Draw.textBackground(x, y + Font.l.size * 0.5 + 5, `Ammo: ${ammo}/${ammoMax}`, { origin: new Vec2(0.5, 0) });
+	}
+
+	if (gameOver) {
+		Draw.setFont(Font.xxl);
+		Draw.textBackground(Stage.mid.w, Stage.mid.h, gameOverText, { origin: Vec2.center });
+		Draw.setFont(Font.m);
+		Draw.textBackground(Stage.mid.w, Stage.h - Font.m.size, 'Reload the page to restart.', { origin: new Vec2(0.5, 1) });
+		NZ.Runner.stop();
+	}
 };
 
 NZ.start({
-	bgColor: BGColor.grass
+	w: 960,
+	h: 540,
+	bgColor: BGColor.grass,
+	stylePreset: StylePreset.noGapCenter
 });

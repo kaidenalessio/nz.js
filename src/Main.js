@@ -24,6 +24,7 @@ var NZ = NZ || {};
  *		preventContextMenu: prevent right-click to show context menu
  *		defaultFont: set default font used to draw text (default = Maven Pro 16) (See NZ.Font for more info)
  *		enablePersistent: enable instance to not get removed on NZ.OBJ.onSceneRestart() if it has property `persistent` set to true
+ *		stageRedrawOnResize: (true by default) html canvas clear its drawing everytime it gets resized, set this to true to redraw the drawing when resizing
  *	};
  */
 NZ.start = (options={}) => {
@@ -86,6 +87,9 @@ NZ.start = (options={}) => {
 	}
 	if (typeof options.stageAutoClear === 'boolean') {
 		NZ.Stage.autoClear = options.stageAutoClear;
+	}
+	if (typeof options.stageRedrawOnResize === 'boolean') {
+		NZ.Stage.redrawOnResize = options.stageRedrawOnResize;
 	}
 	if (options.debugModeAmount) {
 		NZ.Debug.modeAmount = options.debugModeAmount;

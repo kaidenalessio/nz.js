@@ -9,6 +9,7 @@ NZ.Stage = {
 	pixelRatio: 1, // (0.5=Low, 1=Normal, 2=High, 4=Ultra)
 	canvas: null,
 	autoClear: true,
+	redrawOnResize: true,
 	w: 300,
 	h: 150,
 	mid: {
@@ -48,9 +49,16 @@ NZ.Stage = {
 		this.pixelRatio = 1;
 	},
 	applyPixelRatio() {
+		const tmp = document.createElement('canvas');
+		if (this.redrawOnResize) {
+			tmp.width = this.canvas.width;
+			tmp.height = this.canvas.height;
+			tmp.getContext('2d').drawImage(this.canvas, 0, 0);
+		}
 		this.canvas.width = this.w * this.pixelRatio;
 		this.canvas.height = this.h * this.pixelRatio;
 		this.canvas.ctx.resetTransform();
+		this.canvas.ctx.drawImage(tmp, 0, 0);
 		this.canvas.ctx.scale(this.pixelRatio, this.pixelRatio);
 	},
 	clear() {
