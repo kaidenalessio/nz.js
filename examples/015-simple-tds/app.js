@@ -100,6 +100,7 @@ class Player extends NZObject {
 		this.angle = 0;
 		this.size = 24;
 		this.shootTime = 0;
+		this.lives = 3;
 	}
 	update() {
 		if (Input.mouseHold(0)) {
@@ -120,7 +121,13 @@ class Player extends NZObject {
 		this.angle = Mathz.smoothRotate(this.angle, Vec2.direction(this.pos, this.target), 20);
 		for (const e of OBJ.take('enemy')) {
 			if (e.intersects(this.pos, this.size)) {
-				e.collide();
+				e.kill();
+				this.lives--;
+				// game over check
+				if (this.lives <= 0) {
+					gameOverText = 'OUT OF LIVES';
+					gameOver = true;
+				}
 			}
 		}
 	}
@@ -173,9 +180,16 @@ Scene.current.renderUI = () => {
 		let x = p.pos.x;
 		let y = p.pos.y - 100;
 		Draw.setFont(Font.l);
-		Draw.textBackground(x, y, `Kills: ${killCount}/${killTarget}`, { origin: Vec2.center });
+		const bgColor = C.makeRGBA(0, 0, 0, 0.1);
+		Draw.textBackground(x, y, `Kills: ${killCount}/${killTarget}`, { origin: Vec2.center, bgColor: bgColor });
+		y += (Font.l.size + 10) * 0.5;
 		Draw.setFont(Font.m);
-		Draw.textBackground(x, y + Font.l.size * 0.5 + 5, `Ammo: ${ammo}/${ammoMax}`, { origin: new Vec2(0.5, 0) });
+		Draw.textBackground(x, y, `Ammo: ${ammo}/${ammoMax}`, { origin: new Vec2(0.5, 0), bgColor: bgColor });
+		y += Font.m.size + 16;
+		Draw.setColor(C.red);
+		Utils.repeat(p.lives, (i) => {
+			Draw.heart(x - 20 + i * 20, y + 5, 12, 12);
+		});
 	}
 
 	if (gameOver) {

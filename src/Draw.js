@@ -477,5 +477,16 @@ NZ.Draw = {
 		this.setFill(options.textColor);
 		this.setHVAlign(NZ.Align.c, NZ.Align.m);
 		this.text(x + tw * 0.5, y + th * 0.5, text);
+	},
+	heart(x, y, w, h, isStroke=false) {
+		w = w * 0.5;
+		h = h * 0.5;
+		this.ctx.beginPath();
+		this.ctx.moveTo(x, y-h*0.5);
+		this.ctx.quadraticCurveTo(x+w, y-h, x+w, y);
+		this.ctx.lineTo(x, y+h);
+		this.ctx.lineTo(x-w, y);
+		this.ctx.quadraticCurveTo(x-w, y-h, x, y-h*0.5);
+		this.draw(isStroke);
 	}
 };
