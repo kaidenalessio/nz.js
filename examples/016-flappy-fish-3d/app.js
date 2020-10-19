@@ -6,6 +6,7 @@ let FIRST_TIME = true;
 let WORLD_ROTATE_SPEED = 0.65;
 let TRANSITION_TIME = 0;
 let TRANSITION_DURATION = 200;
+let ACTION_INPUT = false;
 
 let myfontstyle = 'Indie Flower, cursive';
 Font.s.family = myfontstyle;
@@ -118,7 +119,7 @@ class Fishy extends My3D {
 		if (GAME_OVER) return;
 		this.rotVelocity.acc.add(-this.transform.rotation.x * 0.1, 0, 0);
 		Input.testMoving4Dir(this.transform.position, 0.1);
-		if (Input.mouseDown(0) || Input.keyDown(KeyCode.Space)) {
+		if (ACTION_INPUT) {
 			this.flap();
 		}
 		else if (this.transform.position.y < this.bounds.min) {
@@ -268,6 +269,20 @@ Scene.current.start = () => {
 	OBJ.create('Fishy', new Vec3(0, 0, 4), new Vec3(0, 100, 0));
 };
 
+Scene.current.update = () => {
+	ACTION_INPUT = false;
+	if (Input.touchCount > 0) {
+		for (const t of Input.activeTouches) {
+			if (Input.touchDown(t.id)) {
+				ACTION_INPUT = true;
+			}
+		}
+	}
+	else {
+		ACTION_INPUT = Input.mouseDown(0) || Input.keyDown(KeyCode.Space);
+	}
+};
+
 Scene.current.render = () => {
 	FOV_DEG += 0.1 * Math.abs(90-FOV_DEG) * Math.sign(90-FOV_DEG);
 	const matProj = Mat4.makeProjection(Stage.h / Stage.w, FOV_DEG);
@@ -306,7 +321,7 @@ Scene.current.renderUI = () => {
 		if (hovered) {
 			UI.setCursor(Cursor.pointer);
 			UI.applyCursor(Stage.canvas);
-			if (Input.mouseDown(0) || Input.keyDown(KeyCode.Space)) {
+			if (ACTION_INPUT) {
 				if (FIRST_TIME) FIRST_TIME = false;
 				Scene.restart();
 			}
@@ -388,8 +403,6 @@ Scene.current.renderUI = () => {
 };
 
 NZ.start({
-	w: 960,
-	h: 540,
 	bgColor: BGColor.sea,
 	stylePreset: StylePreset.noGapCenter
 });
