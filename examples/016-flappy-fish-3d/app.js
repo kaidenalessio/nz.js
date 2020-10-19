@@ -124,7 +124,7 @@ class Fishy extends My3D {
 			Sound.play('flap');
 			this.velocity.acc.add(this.flapForce);
 			this.transform.rotation.x = -45;
-			this.flapTime = Time.frameCount + 5;
+			this.flapTime = Time.frameCount + 20;
 		}
 	}
 	hit() {
@@ -365,12 +365,13 @@ Scene.current.update = () => {
 		// 		ACTION_INPUT = true;
 		// 	}
 		// }
-		if (Input.touchDown(0)) {
+		if (Input.touchHold(0)) {
 			ACTION_INPUT = true;
 		}
 	}
 	else {
-		ACTION_INPUT = Input.mouseDown(0) || Input.keyDown(KeyCode.Space);
+		// ACTION_INPUT = Input.mouseDown(0) || Input.keyDown(KeyCode.Space);
+		ACTION_INPUT = Input.mouseHold(0) || Input.keyHold(KeyCode.Space);
 	}
 };
 
@@ -444,7 +445,7 @@ Scene.current.renderUI = () => {
 			Draw.textTransformed(Stage.mid.w, Stage.mid.h + t, resultText, 2*s + 0.1 * t, 2*s - 0.1 * t, 0);
 			Draw.resetShadow();
 		}
-		let controlText = 'CONTROLS - left click/space to swim up';
+		let controlText = 'CONTROLS - hold left mouse button/space key to swim up';
 		if (SCORE >= TARGET_SCORE) {
 			controlText = 'Thanks for playing!';
 		}
