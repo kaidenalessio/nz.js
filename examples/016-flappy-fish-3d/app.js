@@ -1,10 +1,21 @@
 let FOV_DEG = 90;
 let SCORE = 0;
+let TARGET_SCORE = 100;
 let GAME_OVER = false;
 let FIRST_TIME = true;
 let WORLD_ROTATE_SPEED = 0.65;
+let TRANSITION_TIME = 0;
+let TRANSITION_DURATION = 200;
 
-Font.xxlb = Font.generate(100, Font.bold);
+let myfontstyle = 'Indie Flower, cursive';
+Font.s.family = myfontstyle;
+Font.m.family = myfontstyle;
+Font.l.family = myfontstyle;
+Font.xl.family = myfontstyle;
+Font.xxl.family = myfontstyle;
+Font.lb = Font.generate(Font.l.size, Font.bold, myfontstyle);
+Font.xlb = Font.generate(Font.xl.size, Font.bold, myfontstyle);
+Font.xxlb = Font.generate(100, Font.bold, myfontstyle);
 
 class MyVelocity {
 	constructor(limit, fraction, accFraction) {
@@ -78,6 +89,7 @@ class Fishy extends My3D {
 	hit() {
 		if (this.invincible) return;
 		this.lives--;
+		startTransition();
 		// game over check
 		if (this.lives <= 0) {
 			this.lives = 0;
@@ -89,6 +101,11 @@ class Fishy extends My3D {
 	addScore(value) {
 		if (this.invincible) return;
 		SCORE += value;
+		// game over check
+		if (SCORE >= TARGET_SCORE) {
+			SCORE = TARGET_SCORE;
+			GAME_OVER = true;
+		}
 		this.scoreTextScaleX = 1.5;
 		this.scoreTextScaleY = 3;
 		this.scoreTextAngle = Mathz.range(-30, 30);
@@ -220,7 +237,21 @@ OBJ.addLink('Fishy', Fishy);
 OBJ.addLink('World', World);
 OBJ.endMark();
 
+const startTransition = () => {
+	TRANSITION_TIME = Time.time + TRANSITION_DURATION;
+};
+
+const drawTransition = () => {
+	if (Time.time < TRANSITION_TIME) {
+		Draw.setAlpha(Mathz.map(TRANSITION_TIME - Time.time, TRANSITION_DURATION, 0, 1, 0));
+		Draw.setColor(C.white);
+		Draw.rect(0, 0, Stage.w, Stage.h);
+		Draw.resetAlpha();
+	}
+};
+
 Scene.current.start = () => {
+	startTransition();
 	SCORE = 0;
 	GAME_OVER = false;
 	Stage.setPixelRatio(Stage.HIGH);
@@ -232,7 +263,7 @@ Scene.current.start = () => {
 		return;
 	}
 	else {
-		FOV_DEG = 110;
+		FOV_DEG = 150;
 	}
 	OBJ.create('Fishy', new Vec3(0, 0, 4), new Vec3(0, 100, 0));
 };
@@ -271,7 +302,7 @@ Scene.current.renderUI = () => {
 		Draw.rect(rect.x, rect.y, rect.w, rect.h);
 		Draw.setColor(hovered? C.black : C.white);
 		Draw.setHVAlign(Align.c, Align.b);
-		Draw.text(Stage.mid.w, Stage.h - 110, txt);
+		Draw.text(Stage.mid.w, Stage.h - 103, txt);
 		if (hovered) {
 			UI.setCursor(Cursor.pointer);
 			UI.applyCursor(Stage.canvas);
@@ -280,18 +311,58 @@ Scene.current.renderUI = () => {
 				Scene.restart();
 			}
 		}
+		if (FIRST_TIME) {
+			Draw.setFont(Font.lb);
+			Draw.setColor(C.lavender);
+			Draw.setHVAlign(Align.c, Align.b);
+			Draw.setShadow(1, 2, 5);
+			Draw.text(Stage.mid.w, Stage.mid.h, 'STORY: Dr. Fishy wants to gather information on the oceans.\nHelp him collect bubbles and navigate through obstacles!');
+			Draw.resetShadow();
+		}
+		else {
+			const resultText = `${SCORE}%`;
+			const t = Math.sin(Time.time * 0.01 + 4);
+			Draw.setFont(Font.xxlb);
+			Draw.setColor(C.white);
+			Draw.setHVAlign(Align.c, Align.m);
+			Draw.setShadow(1, 2, 1);
+			Draw.textTransformed(Stage.mid.w, Stage.mid.h + t, resultText, 2 + 0.1 * t, 2 - 0.1 * t, 0);
+			Draw.resetShadow();
+		}
+		let controlText = 'CONTROLS - left click/space to swim up';
+		if (SCORE >= TARGET_SCORE) {
+			controlText = 'Thanks for playing!';
+		}
 		Draw.setFont(Font.m);
-		Draw.textBG(Stage.mid.w, Stage.h - Font.m.size - 10, 'CONTROLS - left click/space to flap', { bgColor: C.blanchedAlmond, textColor: C.black, origin: new Vec2(0.5, 1) });
+		Draw.textBG(Stage.mid.w, Stage.h - Font.m.size - 10, controlText, { gap: 10, bgColor: C.ivory, textColor: C.black, origin: new Vec2(0.5, 1) });
+		let titleText = 'Flappy Fish';
+		if (!FIRST_TIME) {
+			if (SCORE >= TARGET_SCORE) {
+				titleText = 'We did it!';
+			}
+			else {
+				titleText = 'Nice try!';
+			}
+		}
+		const t = Math.sin(Time.time * 0.01 + 4);
+		Draw.setFont(Font.xlb);
+		Draw.setColor(C.ivory);
+		Draw.setHVAlign(Align.c, Align.t);
+		Draw.setShadow(1, 2, 1);
+		Draw.textTransformed(Stage.mid.w, Stage.h * 0.1, titleText.toUpperCase(), 2.5 + 0.1 * t, 2.5 - 0.1 * t, 0);
+		Draw.resetShadow();
+		drawTransition();
 		return;
 	}
 	for (const fish of OBJ.take('Fishy')) {
 		Draw.setFont(Font.xxlb);
-		const tw = Draw.getTextWidth(SCORE) + 10;
-		const th = Draw.getTextHeight(SCORE) + 10;
+		const scoreText = `${SCORE}%`;
+		const tw = Draw.getTextWidth(scoreText) + 10;
+		const th = Draw.getTextHeight(scoreText) + 10;
 		Draw.setColor(C.white);
 		Draw.setHVAlign(Align.c, Align.m);
 		Draw.setShadow(1, 2, 1);
-		Draw.textTransformed(Stage.w - 10 - tw * 0.5, th * 0.5 + Math.sin(Time.time * 0.01 + 4), SCORE, fish.scoreTextScaleX, fish.scoreTextScaleY, fish.scoreTextAngle);
+		Draw.textTransformed(Stage.w - 10 - tw * 0.5, th * 0.5 + Math.sin(Time.time * 0.01 + 4), scoreText, fish.scoreTextScaleX, fish.scoreTextScaleY, fish.scoreTextAngle);
 		Draw.resetShadow();
 		Utils.repeat(fish.lives, (i) => {
 			Utils.repeat(2, (j) => {
@@ -313,6 +384,7 @@ Scene.current.renderUI = () => {
 			Draw.resetLineWidth();
 		}
 	}
+	drawTransition();
 };
 
 NZ.start({
