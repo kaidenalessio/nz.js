@@ -1,3 +1,13 @@
+Loader.loadSound('pop', 'pop.mp3');
+Loader.loadSound('hit', 'hit.mp3');
+Loader.loadSound('bgm', 'bgm.mp3');
+Loader.loadSound('flap', 'flap.mp3');
+Loader.loadSound('stream', 'stream.mp3');
+
+Sound.setVolume('bgm', 0.6);
+Sound.setVolume('flap', 0.8);
+Sound.setVolume('stream', 0.6);
+
 let FOV_DEG = 90;
 let SCORE = 0;
 let TARGET_SCORE = 100;
@@ -111,6 +121,7 @@ class Fishy extends My3D {
 	}
 	flap() {
 		if (Time.frameCount > this.flapTime) {
+			Sound.play('flap');
 			this.velocity.acc.add(this.flapForce);
 			this.transform.rotation.x = -45;
 			this.flapTime = Time.frameCount + 5;
@@ -119,6 +130,7 @@ class Fishy extends My3D {
 	hit() {
 		if (this.invincible) return;
 		this.lives--;
+		Sound.play('hit');
 		startTransition();
 		// game over check
 		if (this.lives <= 0) {
@@ -274,6 +286,7 @@ class Obstacle extends My3D {
 					if (!this.passed) {
 						if (!fish.invincible) {
 							fish.addScore(this.scoreValue);
+							Sound.play('pop');
 							this.bubble.alpha = 0;
 						}
 						if (this.id === FIRST_OBSTACLE_ID) {
@@ -321,6 +334,12 @@ const drawTransition = () => {
 };
 
 Scene.current.start = () => {
+	if (!Sound.isPlaying('bgm')) {
+		Sound.loop('bgm');
+	}
+	if (!Sound.isPlaying('stream')) {
+		Sound.loop('stream');
+	}
 	startTransition();
 	SCORE = 0;
 	GAME_OVER = false;
@@ -341,10 +360,13 @@ Scene.current.start = () => {
 Scene.current.update = () => {
 	ACTION_INPUT = false;
 	if (Input.touchCount > 0) {
-		for (const t of Input.activeTouches) {
-			if (Input.touchDown(t.id)) {
-				ACTION_INPUT = true;
-			}
+		// for (const t of Input.activeTouches) {
+		// 	if (Input.touchDown(t.id)) {
+		// 		ACTION_INPUT = true;
+		// 	}
+		// }
+		if (Input.touchDown(0)) {
+			ACTION_INPUT = true;
 		}
 	}
 	else {
@@ -371,24 +393,27 @@ Scene.current.render = () => {
 };
 
 Scene.current.renderUI = () => {
+	const s = Stage.w / 960;
 	if (GAME_OVER) {
 		const txt = FIRST_TIME? 'START' : 'RESTART';
+		Font.xxl.size = 48 * s;
 		Draw.setFont(Font.xxl);
-		const tw = Draw.getTextWidth(txt) + 40;
-		const th = Draw.getTextHeight(txt) + 20;
+		const gap = 10 * s;
+		const tw = Draw.getTextWidth(txt) + gap * 4;
+		const th = Draw.getTextHeight(txt) + gap * 2;
 		const rect = {
 			x: Stage.mid.w - tw * 0.5,
-			y: Stage.h - 100 - th,
+			y: Stage.h - 90 - th,
 			w: tw,
 			h: th
 		};
-		const m = Input.mousePosition;
+		const m = Input.position;
 		const hovered = m.x >= rect.x && m.x <= rect.x + rect.w && m.y >= rect.y && m.y <= rect.y + rect.h;
 		Draw.setColor(hovered? C.white : C.black);
 		Draw.rect(rect.x, rect.y, rect.w, rect.h);
 		Draw.setColor(hovered? C.black : C.white);
 		Draw.setHVAlign(Align.c, Align.b);
-		Draw.text(Stage.mid.w, Stage.h - 103, txt);
+		Draw.text(Stage.mid.w, rect.y + th, txt);
 		if (hovered) {
 			UI.setCursor(Cursor.pointer);
 			UI.applyCursor(Stage.canvas);
@@ -402,7 +427,11 @@ Scene.current.renderUI = () => {
 			Draw.setColor(C.lavender);
 			Draw.setHVAlign(Align.c, Align.b);
 			Draw.setShadow(1, 2, 5);
-			Draw.text(Stage.mid.w, Stage.mid.h, 'STORY: Dr. Fishy wants to gather information on the oceans.\nHelp him collect bubbles and navigate through obstacles!');
+			Draw.textTransformed(
+				Stage.mid.w, Stage.mid.h,
+				'STORY: Dr. Fishy wants to gather information on the oceans.\nHelp him collect rocks and navigate through obstacles!',
+				s, s, 0
+			);
 			Draw.resetShadow();
 		}
 		else {
@@ -412,7 +441,7 @@ Scene.current.renderUI = () => {
 			Draw.setColor(C.white);
 			Draw.setHVAlign(Align.c, Align.m);
 			Draw.setShadow(1, 2, 1);
-			Draw.textTransformed(Stage.mid.w, Stage.mid.h + t, resultText, 2 + 0.1 * t, 2 - 0.1 * t, 0);
+			Draw.textTransformed(Stage.mid.w, Stage.mid.h + t, resultText, 2*s + 0.1 * t, 2*s - 0.1 * t, 0);
 			Draw.resetShadow();
 		}
 		let controlText = 'CONTROLS - left click/space to swim up';
@@ -435,7 +464,7 @@ Scene.current.renderUI = () => {
 		Draw.setColor(C.ivory);
 		Draw.setHVAlign(Align.c, Align.t);
 		Draw.setShadow(1, 2, 1);
-		Draw.textTransformed(Stage.mid.w, Stage.h * 0.1, titleText.toUpperCase(), 2.5 + 0.1 * t, 2.5 - 0.1 * t, 0);
+		Draw.textTransformed(Stage.mid.w, Stage.h * 0.1, titleText.toUpperCase(), 2.5*s + 0.1 * t, 2.5*s - 0.1 * t, 0);
 		Draw.resetShadow();
 		drawTransition();
 		return;
