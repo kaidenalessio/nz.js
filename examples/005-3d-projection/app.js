@@ -29,7 +29,7 @@ Scene.current.render = () => {
 		// The main reason we are not using NZ.Mesh.processTrisToRaster is
 		// we dont want normals check, just transforms and projects,
 		// so we can get every triangles drawn
-		const matWorld = Mat4.makeWorld(o.transform);
+		const matWorld = Mat4.makeTransformation(o.transform);
 		for (let i = o.mesh.tris.length - 1; i >= 0; --i) {
 			const tri = o.mesh.tris[i].clone();
 			tri.p[0] = Mat4.mulVec3(matWorld, tri.p[0]); // Transforms
