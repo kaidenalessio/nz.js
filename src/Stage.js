@@ -51,9 +51,11 @@ NZ.Stage = {
 	applyPixelRatio() {
 		const tmp = document.createElement('canvas');
 		if (this.redrawOnResize) {
-			tmp.width = this.canvas.width;
-			tmp.height = this.canvas.height;
-			tmp.getContext('2d').drawImage(this.canvas, 0, 0);
+			if (this.canvas.width > 0 && this.canvas.height > 0) {
+				tmp.width = this.canvas.width;
+				tmp.height = this.canvas.height;
+				tmp.getContext('2d').drawImage(this.canvas, 0, 0);
+			}
 		}
 		this.canvas.width = this.w * this.pixelRatio;
 		this.canvas.height = this.h * this.pixelRatio;

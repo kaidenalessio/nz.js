@@ -126,6 +126,7 @@ NZ.C = {
 	moccasin: '#ffe4b5',
 	navajoWhite: '#ffdead',
 	navy: '#000080',
+	none: '#0000',
 	oldLace: '#fdf5e6',
 	olive: '#808000',
 	oliveDrab: '#6b8e23',
@@ -207,10 +208,13 @@ NZ.C = {
 	HEXToRGBComponent(hex) {
 		// https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
 		hex = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i, (m, r, g, b) => r+r+g+g+b+b));
+		if (!(hex instanceof Array)) {
+			hex = [0, 0, 0, 0];
+		}
 		return {
-			r: parseInt(hex[1], 16),
-			g: parseInt(hex[2], 16),
-			b: parseInt(hex[3], 16)
+			r: parseInt(hex[1], 16) || 0,
+			g: parseInt(hex[2], 16) || 0,
+			b: parseInt(hex[3], 16) || 0
 		};
 	},
 	RGBComponentToRGB(c, weight=1) {
@@ -884,6 +888,8 @@ NZ.Input = {
 	],
 	keys: [],
 	mice: [],
+	touches: [], // fixed list of 10 pointer
+	activeTouches: [], // list of active touches, updated every touch event
 	position: { x: 0, y: 0 },
 	mousePosition: { x: 0, y: 0 },
 	mouseMovement: { x: 0, y: 0 },
@@ -893,6 +899,9 @@ NZ.Input = {
 	movementY: 0,
 	mouseMove: false,
 	mouseWheelDelta: 0,
+	get touchCount() {
+		return this.activeTouches.length;
+	},
 	setTargetElement(targetElement) {
 		this.targetElement = targetElement; // element that has `getBoundingClientRect()` to offset mouse position to
 	},
@@ -914,6 +923,17 @@ NZ.Input = {
 		for (let i = 0; i < 3; i++) {
 			this.mice.push(this.create());
 		}
+
+		// Add 10 touch inputs
+		for (let i = 0; i < 3; i++) {
+			const n = this.create();
+			n.position = { x: 0, y: 0 };
+			n.setPosition = (x, y) => {
+				this.position.x = x;
+				this.position.y = y;
+			};
+			this.touches.push(n);
+		}
 	},
 	reset() {
 		for (let i = this.keys.length - 1; i >= 0; --i) {
@@ -922,10 +942,14 @@ NZ.Input = {
 		for (let i = this.mice.length - 1; i >= 0; --i) {
 			this.mice[i].reset();
 		}
+		for (let i = this.touches.length - 1; i >= 0; --i) {
+			this.touches[i].reset();
+		}
 		this.movementX = this.mouseMovement.x = 0;
 		this.movementY = this.mouseMovement.y = 0;
 		this.mouseMove = false;
 		this.mouseWheelDelta = 0;
+		this.activeTouches.length = 0;
 	},
 	create() {
 		// Input key/button class
@@ -983,6 +1007,15 @@ NZ.Input = {
 	mouseWheelDown() {
 		return this.mouseWheelDelta < 0;
 	},
+	touchUp(id) {
+		return this.touches[id].released;
+	},
+	touchDown(id) {
+		return this.touches[id].pressed;
+	},
+	touchHold(id) {
+		return this.touches[id].held;
+	},
 	keyUpEvent(e) {
 		NZ.Input.keys[e.keyCode].up();
 	},
@@ -992,17 +1025,22 @@ NZ.Input = {
 		}
 		NZ.Input.keys[e.keyCode].down();
 	},
+	setPosition(x, y) {
+		this.position.x = x;
+		this.position.y = y;
+	},
 	setMousePosition(x, y) {
 		if (typeof x === 'object') {
 			y = x.y;
 			x = x.x;
 		}
 		if (y === undefined) y = x;
-		NZ.Input.position.x = NZ.Input.mouseX = NZ.Input.mousePosition.x = x;
-		NZ.Input.position.y = NZ.Input.mouseY = NZ.Input.mousePosition.y = y;
+		NZ.Input.mouseX = NZ.Input.mousePosition.x = x;
+		NZ.Input.mouseY = NZ.Input.mousePosition.y = y;
+		NZ.Input.setPosition(NZ.Input.mouseX, NZ.Input.mouseY);
 	},
-	updateMouse(e) {
-		let b = NZ.Input.targetElement || e.srcElement;
+	getBoundingClientRect(targetElement) {
+		let b = NZ.Input.targetElement || targetElement;
 		if (b.getBoundingClientRect) {
 			b = b.getBoundingClientRect();
 		}
@@ -1012,6 +1050,10 @@ NZ.Input = {
 				y: 0
 			};
 		}
+		return b;
+	},
+	updateMouse(e) {
+		const b = NZ.Input.getBoundingClientRect(e.srcElement);
 		NZ.Input.setMousePosition(e.clientX - b.x, e.clientY - b.y);
 		NZ.Input.movementX = NZ.Input.mouseMovement.x = e.movementX;
 		NZ.Input.movementY = NZ.Input.mouseMovement.y = e.movementY;
@@ -1031,6 +1073,45 @@ NZ.Input = {
 	mouseWheelEvent(e) {
 		NZ.Input.mouseWheelDelta = e.wheelDelta;
 	},
+	convertTouch(t) {
+		const b = this.getBoundingClientRect(t.target);
+		return {
+			id: t.identifier,
+			x: t.clientX - b.x,
+			y: t.clientY - b.y
+		};
+	},
+	updateTouches(e) {
+		this.activeTouches.length = 0;
+		for (const t of e.changedTouches) {
+			this.activeTouches.push(this.convertTouch(t));
+		}
+	},
+	touchEndEvent(e) {
+		for (const t of e.changedTouches) {
+			const u = NZ.Input.convertTouch(t);
+			NZ.Input.touches[u.id].up();
+			NZ.Input.touches[u.id].setPosition(u.x, u.y);
+		}
+		NZ.Input.updateTouches(e);
+	},
+	touchMoveEvent(e) {
+		for (const t of e.changedTouches) {
+			const u = NZ.Input.convertTouch(t);
+			NZ.Input.touches[u.id].setPosition(u.x, u.y);
+		}
+		NZ.Input.updateTouches(e);
+	},
+	touchStartEvent(e) {
+		for (const t of e.changedTouches) {
+			const u = NZ.Input.convertTouch(t);
+			if (!NZ.Input.touches[u.id].held) {
+				NZ.Input.touches[u.id].down();
+				NZ.Input.touches[u.id].setPosition(u.x, u.y);
+			}
+		}
+		NZ.Input.updateTouches(e);
+	},
 	setupEventAt(element) {
 		element = element || window;
 		element.addEventListener('keyup', this.keyUpEvent);
@@ -1039,6 +1120,9 @@ NZ.Input = {
 		element.addEventListener('mousedown', this.mouseDownEvent);
 		element.addEventListener('mousemove', this.mouseMoveEvent);
 		element.addEventListener('mousewheel', this.mouseWheelEvent);
+		element.addEventListener('touchend', this.touchEndEvent);
+		element.addEventListener('touchmove', this.touchMoveEvent);
+		element.addEventListener('touchstart', this.touchStartEvent);
 	},
 	testMoving4Dir(position, speed=5) {
 		position.x += (this.keyHold(39) - this.keyHold(37)) * speed;
@@ -2104,9 +2188,11 @@ NZ.Stage = {
 	applyPixelRatio() {
 		const tmp = document.createElement('canvas');
 		if (this.redrawOnResize) {
-			tmp.width = this.canvas.width;
-			tmp.height = this.canvas.height;
-			tmp.getContext('2d').drawImage(this.canvas, 0, 0);
+			if (this.canvas.width > 0 && this.canvas.height > 0) {
+				tmp.width = this.canvas.width;
+				tmp.height = this.canvas.height;
+				tmp.getContext('2d').drawImage(this.canvas, 0, 0);
+			}
 		}
 		this.canvas.width = this.w * this.pixelRatio;
 		this.canvas.height = this.h * this.pixelRatio;

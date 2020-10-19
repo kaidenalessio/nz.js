@@ -104,6 +104,7 @@ NZ.C = {
 	moccasin: '#ffe4b5',
 	navajoWhite: '#ffdead',
 	navy: '#000080',
+	none: '#0000',
 	oldLace: '#fdf5e6',
 	olive: '#808000',
 	oliveDrab: '#6b8e23',
@@ -185,10 +186,13 @@ NZ.C = {
 	HEXToRGBComponent(hex) {
 		// https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
 		hex = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i, (m, r, g, b) => r+r+g+g+b+b));
+		if (!(hex instanceof Array)) {
+			hex = [0, 0, 0, 0];
+		}
 		return {
-			r: parseInt(hex[1], 16),
-			g: parseInt(hex[2], 16),
-			b: parseInt(hex[3], 16)
+			r: parseInt(hex[1], 16) || 0,
+			g: parseInt(hex[2], 16) || 0,
+			b: parseInt(hex[3], 16) || 0
 		};
 	},
 	RGBComponentToRGB(c, weight=1) {
