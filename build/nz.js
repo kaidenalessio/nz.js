@@ -2527,6 +2527,7 @@ NZ.Tri = function(points, baseColor=C.white) {
 	this.baseColor = baseColor;
 	this.bakedColor = this.baseColor;
 	this.lightDotProduct = 0;
+	this.ref = null; // any reference
 }
 
 NZ.Tri.prototype.clone = function() {
@@ -2539,6 +2540,7 @@ NZ.Tri.prototype.clone = function() {
 	t.baseColor = this.baseColor;
 	t.bakedColor = this.bakedColor;
 	t.lightDotProduct = this.lightDotProduct;
+	t.ref = this.ref;
 	return t;
 };
 
@@ -3126,6 +3128,12 @@ NZ.Vec3.clone = function(v) {
 NZ.Vec3.distance = function(v1, v2) {
 	const v = NZ.Vec3._checkArg(v1);
 	return v.distance(v2);
+};
+
+NZ.Vec3.create = function(x, y, z) {
+	if (y === undefined) y = x;
+	if (z === undefined) z = x;
+	return new NZ.Vec3(x, y, z);
 };
 
 Object.defineProperty(NZ.Vec3.prototype, 'abs', {

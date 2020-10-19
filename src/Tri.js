@@ -8,6 +8,7 @@ NZ.Tri = function(points, baseColor=C.white) {
 	this.baseColor = baseColor;
 	this.bakedColor = this.baseColor;
 	this.lightDotProduct = 0;
+	this.ref = null; // any reference
 }
 
 NZ.Tri.prototype.clone = function() {
@@ -20,6 +21,7 @@ NZ.Tri.prototype.clone = function() {
 	t.baseColor = this.baseColor;
 	t.bakedColor = this.bakedColor;
 	t.lightDotProduct = this.lightDotProduct;
+	t.ref = this.ref;
 	return t;
 };
 

@@ -173,6 +173,12 @@ NZ.Vec3.distance = function(v1, v2) {
 	return v.distance(v2);
 };
 
+NZ.Vec3.create = function(x, y, z) {
+	if (y === undefined) y = x;
+	if (z === undefined) z = x;
+	return new NZ.Vec3(x, y, z);
+};
+
 Object.defineProperty(NZ.Vec3.prototype, 'abs', {
 	get: function() {
 		return new NZ.Vec3(Math.abs(this.x), Math.abs(this.y), Math.abs(this.z));
