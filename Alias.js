@@ -18,6 +18,7 @@ const {
 	Input,
 	Mathz,
 	Scene,
+	Sound,
 	Stage,
 	Utils,
 	Cursor,

@@ -1,7 +1,7 @@
 var NZ = NZ || {};
 
 // Built-in runner.
-// Modules required: NZ.Draw, NZ.UI, NZ.Time, NZ.Debug, NZ.Scene, NZ.OBJ, NZ.Input
+// Modules required: NZ.Draw, NZ.UI, NZ.Time, NZ.Debug, NZ.Scene, NZ.OBJ, NZ.Input, NZ.Sound
 NZ.Runner = {
 	active: true
 };
@@ -35,6 +35,7 @@ NZ.Runner.run = (t) => {
 		NZ.UI.applyCursor(NZ.Stage.canvas);
 	}
 	NZ.Time.update(t);
+	NZ.Sound.update();
 	if (NZ.Input.keyDown(NZ.Debug.modeKeyCode)) if (++NZ.Debug.mode >= NZ.Debug.modeAmount) NZ.Debug.mode = 0;
 	NZ.Scene.update();
 	NZ.OBJ.update();

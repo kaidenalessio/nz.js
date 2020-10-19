@@ -1239,8 +1239,8 @@ NZ.KeyCode = {
 	Quote: 222
 };
 
-// Make it easier to load and add images to NZ.Draw (soon: load sound)
-// MODULES REQUIRED: NZ.Draw (soon: NZ.Sound)
+// Make it easier to load and add images and sounds
+// MODULES REQUIRED: NZ.Draw, NZ.Sound
 NZ.Loader = {
 	loaded: false,
 	loadAmount: 0,
@@ -1273,6 +1273,24 @@ NZ.Loader = {
 		img.src = src;
 		NZ.Draw.addStrip(origin, name, img, strip);
 		this.setOnLoadEvent(img);
+	},
+	loadSound(name, ...paths) {
+		const sources = [];
+		for (const p of paths) {
+			const ext = p.split('.').pop();
+			if (NZ.Sound.supportedExt.includes(ext)) {
+				const type = ext === 'mp3'? 'mpeg' : ext;
+				sources.push(`<source src="${p}" type="audio/${type}">`);
+			}
+			else {
+				console.warn(`Sound file extension not supported: .${ext}`);
+			}
+		}
+		if (sources.length > 0) {
+			const audio = new Audio();
+			audio.innerHTML = sources.join('');
+			NZ.Sound.add(name, audio);
+		}
 	}
 };
 
@@ -2025,7 +2043,7 @@ NZ.OBJ = {
 };
 
 // Built-in runner.
-// Modules required: NZ.Draw, NZ.UI, NZ.Time, NZ.Debug, NZ.Scene, NZ.OBJ, NZ.Input
+// Modules required: NZ.Draw, NZ.UI, NZ.Time, NZ.Debug, NZ.Scene, NZ.OBJ, NZ.Input, NZ.Sound
 NZ.Runner = {
 	active: true
 };
@@ -2059,6 +2077,7 @@ NZ.Runner.run = (t) => {
 		NZ.UI.applyCursor(NZ.Stage.canvas);
 	}
 	NZ.Time.update(t);
+	NZ.Sound.update();
 	if (NZ.Input.keyDown(NZ.Debug.modeKeyCode)) if (++NZ.Debug.mode >= NZ.Debug.modeAmount) NZ.Debug.mode = 0;
 	NZ.Scene.update();
 	NZ.OBJ.update();
@@ -2134,6 +2153,112 @@ NZ.Scene = {
 	},
 	renderUI() {
 		if (this.current.renderUI) this.current.renderUI();
+	}
+};
+
+NZ.Sound = {
+	list: [],
+	names: [],
+	supportedExt: ['ogg', 'mp3', 'wav'],
+	getIndex(name) {
+		return ((typeof name === 'number')? name : this.names.indexOf(name));
+	},
+	add(name, audio) {
+		audio.loopFrom = 0;
+		audio.loopTo = 1;
+		this.list.push(audio);
+		this.names.push(name);
+		return this.list[this.getIndex(name)];
+	},
+	exists(name) {
+		return (this.list[this.getIndex(name)] !== undefined);
+	},
+	get(name) {
+		if (name instanceof Audio) {
+			return name;
+		}
+		if (!this.exists(name)) {
+			throw new Error(`Sound not found: ${name}`);
+			return null;
+		}
+		return this.list[this.getIndex(name)];
+	},
+	play(name) {
+		const audio = this.get(name);
+		if (audio) {
+			audio.currentTime = 0;
+			audio.play();
+		}
+	},
+	loop(name) {
+		const audio = this.get(name);
+		if (audio) {
+			audio.loop = true;
+			audio.currentTime = 0;
+			audio.play();
+		}
+	},
+	stop(name) {
+		const audio = this.get(name);
+		if (audio) {
+			audio.pause();
+			audio.currentTime = 0;
+			audio.loop = false;
+		}
+	},
+	pause(name) {
+		const audio = this.get(name);
+		if (audio) {
+			audio.pause();
+		}
+	},
+	resume(name) {
+		const audio = this.get(name);
+		if (audio) {
+			audio.play();
+		}
+	},
+	isPlaying(name) {
+		const audio = this.get(name);
+		if (audio) {
+			return audio.currentTime > 0 && !audio.paused;
+		}
+		return false;
+	},
+	playAtOnce(name) {
+		if (!this.isPlaying(name)) {
+			this.play(name);
+		}
+	},
+	setVolume(name, value) {
+		const audio = this.get(name);
+		if (audio) {
+			audio.volume = Math.min(1, Math.max(0, value));
+		}
+	},
+	getVolume(name) {
+		const audio = this.get(name);
+		if (audio) {
+			return audio.volume;
+		}
+		return 0;
+	},
+	setLoopRange(name, from, to) {
+		const audio = this.get(name);
+		if (audio) {
+			audio.loopFrom = from;
+			audio.loopTo = to;
+		}
+	},
+	update() {
+		for (let i = this.list.length - 1; i >= 0; --i) {
+			const audio = this.list[i];
+			if (audio.loop) {
+				if (audio.currentTime >= audio.duration * audio.loopTo) {
+					audio.currentTime = audio.duration * audio.loopFrom;
+				}
+			}
+		}
 	}
 };
 
@@ -3139,6 +3264,7 @@ const {
 	Input,
 	Mathz,
 	Scene,
+	Sound,
 	Stage,
 	Utils,
 	Cursor,

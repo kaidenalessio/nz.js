@@ -1,7 +1,7 @@
 var NZ = NZ || {};
 
-// Make it easier to load and add images to NZ.Draw (soon: load sound)
-// MODULES REQUIRED: NZ.Draw (soon: NZ.Sound)
+// Make it easier to load and add images and sounds
+// MODULES REQUIRED: NZ.Draw, NZ.Sound
 NZ.Loader = {
 	loaded: false,
 	loadAmount: 0,
@@ -34,5 +34,23 @@ NZ.Loader = {
 		img.src = src;
 		NZ.Draw.addStrip(origin, name, img, strip);
 		this.setOnLoadEvent(img);
+	},
+	loadSound(name, ...paths) {
+		const sources = [];
+		for (const p of paths) {
+			const ext = p.split('.').pop();
+			if (NZ.Sound.supportedExt.includes(ext)) {
+				const type = ext === 'mp3'? 'mpeg' : ext;
+				sources.push(`<source src="${p}" type="audio/${type}">`);
+			}
+			else {
+				console.warn(`Sound file extension not supported: .${ext}`);
+			}
+		}
+		if (sources.length > 0) {
+			const audio = new Audio();
+			audio.innerHTML = sources.join('');
+			NZ.Sound.add(name, audio);
+		}
 	}
 };
