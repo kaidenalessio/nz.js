@@ -6,6 +6,7 @@ let FIRST_TIME = true;
 let WORLD_ROTATE_SPEED = 0.65;
 let TRANSITION_TIME = 0;
 let TRANSITION_DURATION = 200;
+let ACTION_TIME = 0;
 let ACTION_INPUT = false;
 
 let myfontstyle = 'Indie Flower, cursive';
@@ -271,15 +272,20 @@ Scene.current.start = () => {
 
 Scene.current.update = () => {
 	ACTION_INPUT = false;
-	if (Input.touchCount > 0) {
-		for (const t of Input.activeTouches) {
-			if (Input.touchDown(t.id)) {
-				ACTION_INPUT = true;
+	if (Time.frameCount > ACTION_TIME) {
+		if (Input.touchCount > 0) {
+			for (const t of Input.activeTouches) {
+				if (Input.touchDown(t.id)) {
+					ACTION_INPUT = true;
+				}
 			}
 		}
-	}
-	else {
-		ACTION_INPUT = Input.mouseDown(0) || Input.keyDown(KeyCode.Space);
+		else {
+			ACTION_INPUT = Input.mouseDown(0) || Input.keyDown(KeyCode.Space);
+		}
+		if (ACTION_INPUT) {
+			ACTION_TIME = Time.frameCount + 5;
+		}
 	}
 };
 
@@ -403,6 +409,6 @@ Scene.current.renderUI = () => {
 };
 
 NZ.start({
-	bgColor: BGColor.sea,
-	stylePreset: StylePreset.noGapCenter
+	parent: document.getElementById('myParent'),
+	bgColor: BGColor.sea
 });
