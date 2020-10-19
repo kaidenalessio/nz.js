@@ -6,8 +6,30 @@ let FIRST_TIME = true;
 let WORLD_ROTATE_SPEED = 0.65;
 let TRANSITION_TIME = 0;
 let TRANSITION_DURATION = 200;
-let ACTION_TIME = 0;
 let ACTION_INPUT = false;
+let FIRST_OBSTACLE_ID = 0;
+
+const BUBBLE_COLORS = [C.lavender, C.moccasin, C.salmon];
+const OBSTACLE_COLORS = [
+	C.brown,
+	C.burlyWood,
+	C.cadetBlue,
+	C.coral,
+	C.cornflowerBlue,
+	C.darkOrange,
+	C.darkSlateBlue,
+	C.deepPink,
+	C.gold,
+	C.hotPink,
+	C.indigo,
+	C.lavender,
+	C.lightBlue,
+	C.lightSlateGray,
+	C.pink,
+	C.plum,
+	C.rosyBrown,
+	C.salmon
+];
 
 let myfontstyle = 'Indie Flower, cursive';
 Font.s.family = myfontstyle;
@@ -42,10 +64,12 @@ class My3D extends NZObject3D {
 		this.setColor(this.baseColor);
 		this.velocity = new MyVelocity(1, 0.9, 0.1);
 		this.rotVelocity = new MyVelocity(1, 0.96, 0.1);
+		this.alpha = 1;
 	}
 	setColor(c) {
 		for (const tri of this.mesh.tris) {
 			tri.baseColor = c;
+			tri.ref = this;
 		}
 	}
 	postUpdate() {
@@ -73,6 +97,7 @@ class Fishy extends My3D {
 		this.scoreTextScaleX = 1;
 		this.scoreTextScaleY = 1;
 		this.scoreTextAngle = 0;
+		this.flapTime = 0;
 		this.flap();
 	}
 	goInvincible() {
@@ -85,8 +110,11 @@ class Fishy extends My3D {
 		this.invincible = false;
 	}
 	flap() {
-		this.velocity.acc.add(this.flapForce);
-		this.transform.rotation.x = -45;
+		if (Time.frameCount > this.flapTime) {
+			this.velocity.acc.add(this.flapForce);
+			this.transform.rotation.x = -45;
+			this.flapTime = Time.frameCount + 5;
+		}
 	}
 	hit() {
 		if (this.invincible) return;
@@ -101,7 +129,6 @@ class Fishy extends My3D {
 		this.goInvincible();
 	}
 	addScore(value) {
-		if (this.invincible) return;
 		SCORE += value;
 		// game over check
 		if (SCORE >= TARGET_SCORE) {
@@ -153,39 +180,76 @@ class World extends My3D {
 	}
 }
 
+class Bubble extends My3D {
+	constructor(parent) {
+		super(MyMesh.makeBubble(), C.white, Vec3.zero, Vec3.zero);
+		this.parent = parent;
+		this.rotVelocity.limit = 5;
+		this.rotForce = Vec3.create(1, 0, 1).mult(this.rotVelocity.limit);
+	}
+	update() {
+		this.transform.position.set(this.parent.transform.position);
+		this.rotVelocity.acc.add(this.rotForce);
+	}
+}
+
 class Obstacle extends My3D {
 	constructor(angle) {
-		super(MyMesh.makeObstacle(), C.random(), new Vec3(1000, 1000, 1000), Vec3.zero);
+		super(MyMesh.makeObstacle(), Utils.pick(OBSTACLE_COLORS), new Vec3(1000, 1000, 1000), Vec3.zero);
 		this.dimensions = new Vec3(1, 20, 2);
 		this.yOffset = 0;
 		this.angle = angle;
 		this.passed = false;
 		this.changing = false;
+		this.scoreValue = 1;
 		this.randomYOffset();
+		this.alpha = 0;
+		this.alphaTo = 0;
+		if (Mathz.normalizeAngle(this.angle) < 90) {
+			this.alphaTo = 1;
+		}
+		this.passedCount = 0;
+		this.bubble = OBJ.create('Bubble', this);
+		this.updateBubble();
+	}
+	updateBubble() {
+		this.scoreValue = Mathz.choose(1, 2, 2, 4);
+		let cid = 0;
+		if (this.scoreValue > 1) cid = 1;
+		if (this.scoreValue > 2) cid = 2;
+		this.bubble.setColor(BUBBLE_COLORS[Mathz.clamp(cid, 0, BUBBLE_COLORS.length - 1)]);
+		this.bubble.transform.scale.set(this.scoreValue * 0.15);
 	}
 	randomYOffset() {
 		const t = SCORE / 20;
 		this.yOffset = Mathz.range(Math.min(t, 2), 2) * Mathz.randbool();
 	}
 	update() {
+		this.alpha = Mathz.clamp(Mathz.range(this.alpha, this.alphaTo, 0.05), 0, 1);
 		this.angle -= WORLD_ROTATE_SPEED;
 		let polar = Vec2.polar(this.angle, 11);
 		polar = new Vec3(polar.x, this.yOffset, 15 + polar.y);
 		this.transform.position.set(polar);
 		this.angle = Mathz.normalizeAngle(this.angle);
-		const direction = Mathz.normalizeAngle(this.angle);
+		if (Mathz.fuzzyEqual(this.angle, 180, WORLD_ROTATE_SPEED)) {
+			this.alphaTo = 0;
+		}
 		if (Mathz.fuzzyEqual(this.angle, 90, WORLD_ROTATE_SPEED)) {
 			if (!this.changing) {
 				this.changing = true;
 				this.randomYOffset();
-				this.setColor(C.random());
+				this.setColor(Utils.pick(OBSTACLE_COLORS));
+				this.updateBubble();
+				this.bubble.alpha = 1;
+				this.alphaTo = 1;
 			}
 		}
 		else {
 			this.changing = false;
 		}
 		this.yOffset += Math.cos(Time.time * 0.001) * 0.02;
-		this.transform.rotation.z = this.yOffset * 2;
+		this.transform.rotation.y = -Vec2.direction(new Vec2(this.transform.position.x, this.transform.position.z), new Vec2(0, 15));
+		// this.transform.rotation.z = this.yOffset;
 		if (GAME_OVER) return;
 		// this.setColor(C.green);
 		if (Mathz.fuzzyEqual(this.angle, -90, 6)) {
@@ -208,8 +272,11 @@ class Obstacle extends My3D {
 				}
 				else {
 					if (!this.passed) {
-						fish.addScore(1);
-						if (this.id === 1) {
+						if (!fish.invincible) {
+							fish.addScore(this.scoreValue);
+							this.bubble.alpha = 0;
+						}
+						if (this.id === FIRST_OBSTACLE_ID) {
 							const count = OBJ.count('Obstacle');
 							if (count < 6) {
 								const offsetPattern = [
@@ -234,6 +301,7 @@ class Obstacle extends My3D {
 }
 
 OBJ.mark('My3D');
+OBJ.addLink('Bubble', Bubble);
 OBJ.addLink('Obstacle', Obstacle);
 OBJ.addLink('Fishy', Fishy);
 OBJ.addLink('World', World);
@@ -259,7 +327,7 @@ Scene.current.start = () => {
 	Stage.setPixelRatio(Stage.HIGH);
 	Stage.applyPixelRatio();
 	OBJ.create('World', new Vec3(0, 0, 15), new Vec3(25, 25, 25));
-	OBJ.create('Obstacle', 20);
+	FIRST_OBSTACLE_ID = OBJ.create('Obstacle', 20).id;
 	if (FIRST_TIME) {
 		GAME_OVER = true;
 		return;
@@ -272,20 +340,15 @@ Scene.current.start = () => {
 
 Scene.current.update = () => {
 	ACTION_INPUT = false;
-	if (Time.frameCount > ACTION_TIME) {
-		if (Input.touchCount > 0) {
-			for (const t of Input.activeTouches) {
-				if (Input.touchDown(t.id)) {
-					ACTION_INPUT = true;
-				}
+	if (Input.touchCount > 0) {
+		for (const t of Input.activeTouches) {
+			if (Input.touchDown(t.id)) {
+				ACTION_INPUT = true;
 			}
 		}
-		else {
-			ACTION_INPUT = Input.mouseDown(0) || Input.keyDown(KeyCode.Space);
-		}
-		if (ACTION_INPUT) {
-			ACTION_TIME = Time.frameCount + 5;
-		}
+	}
+	else {
+		ACTION_INPUT = Input.mouseDown(0) || Input.keyDown(KeyCode.Space);
 	}
 };
 
@@ -300,9 +363,11 @@ Scene.current.render = () => {
 	}
 	trisToRaster.sort((a, b) => a.depth < b.depth? 1 : -1);
 	for (const tri of trisToRaster) {
+		Draw.setAlpha(tri.ref.alpha);
 		Draw.setColor(tri.bakedColor);
 		Draw.pointTriangle(tri.p[0], tri.p[1], tri.p[2]);
 	}
+	Draw.resetAlpha();
 };
 
 Scene.current.renderUI = () => {
