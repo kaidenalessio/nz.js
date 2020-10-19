@@ -14,7 +14,7 @@ class NZObject3D extends NZObject {
 	}
 	// Transforms, illuminates, projects, and (todo: clipping) all triangles in mesh
 	processTrisToRaster(matProj, trisToRaster) {
-		const matWorld = NZ.Mat4.makeWorld(this.transform);
+		const matWorld = NZ.Mat4.makeTransformation(this.transform);
 		for (let i = this.mesh.tris.length - 1; i >= 0; --i) {
 			const tri = this.mesh.tris[i].clone();
 
@@ -22,6 +22,9 @@ class NZObject3D extends NZObject {
 			tri.p[0] = NZ.Mat4.mulVec3(matWorld, tri.p[0]);
 			tri.p[1] = NZ.Mat4.mulVec3(matWorld, tri.p[1]);
 			tri.p[2] = NZ.Mat4.mulVec3(matWorld, tri.p[2]);
+
+			// Simple in camera view check
+			if (tri.p[0].z <= 0 && tri.p[1].z <= 0 && tri.p[2].z <= 0) continue;
 
 			// Normals
 			const line1 = NZ.Vec3.sub(tri.p[1], tri.p[0]);
