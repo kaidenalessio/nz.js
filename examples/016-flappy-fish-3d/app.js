@@ -430,7 +430,7 @@ Scene.current.renderUI = () => {
 			Draw.setShadow(1, 2, 5);
 			Draw.textTransformed(
 				Stage.mid.w, Stage.mid.h,
-				'STORY: Dr. Fishy wants to gather information on the oceans.\nHelp him collect rocks and navigate through obstacles!',
+				'STORY: Dr. Fishy wants to gather information on the oceans.\nHelp him collect rocks while navigate through obstacles!',
 				s, s, 0
 			);
 			Draw.resetShadow();
