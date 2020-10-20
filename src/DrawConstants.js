@@ -11,14 +11,14 @@ NZ.Align = {
 };
 
 NZ.LineCap = {
-	Butt: 'butt',
-	Round: 'round'
+	butt: 'butt',
+	round: 'round'
 };
 
 NZ.LineJoin = {
-	Miter: 'miter',
-	Round: 'round',
-	Bevel: 'bevel'
+	miter: 'miter',
+	round: 'round',
+	bevel: 'bevel'
 };
 
 NZ.LineDash = {
