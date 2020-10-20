@@ -34,6 +34,11 @@ NZ.start = (options={}) => {
 	options.canvas = options.canvas || NZ.Canvas;
 	options.canvas.id = 'NZCanvas';
 
+	if (options.inputParent.tabIndex !== undefined) {
+		// make html div tag trigger key event
+		options.inputParent.tabIndex = options.inputParent.tabIndex;
+	}
+
 	NZ.Input.setupEventAt(options.inputParent);
 	NZ.Input.setTargetElement(options.canvas);
 
