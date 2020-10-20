@@ -2,10 +2,11 @@
 // Current situation: to minimize the effect, use high poly model
 // Todo: implement depth buffer or other depth calculation algorithm
 let CLOCK_MODEL = 2; // 1=low poly, 2=high poly, 3=very high poly
+let TIME_SPEED = 0.01; // real time=0.0001
 
 class Cubey extends NZObject3D {
-	constructor() {
-		super(Mesh.makeCubeHigh(), new Transform());
+	constructor(mesh=Mesh.makeCube()) {
+		super(mesh, new Transform());
 	}
 	setColor(c) {
 		this.mesh.onAllTris((tri) => {
@@ -16,11 +17,19 @@ class Cubey extends NZObject3D {
 
 class Tick extends Cubey {
 	constructor(scaleX, scaleY, zOffset, color) {
-		super();
+		super(Mesh.makeCubeHigh());
 		this.setColor(color);
-		this.transform.scale.set(scaleX, scaleY, 0.1);
-		this.transform.position.set(0, scaleY, -1 - 0.2 * zOffset);
+		this.transform.scale.set(scaleX, scaleY, scaleX);
+		this.transform.position.set(0, scaleY * 0.8, -0.075 - 0.02 * zOffset);
 		Mesh.applyTransform(this.mesh, this.transform);
+		this.transform.reset();
+	}
+}
+
+class Mark extends Cubey {
+	constructor() {
+		super();
+		this.setColor(C.black);
 	}
 }
 
@@ -29,12 +38,25 @@ class Clock extends NZObject3D {
 		super(Mesh.makeCylinder(CLOCK_MODEL));
 		this.dimensions = new Vec3(2, 2, 0.1); // just info
 		this.transform.position = position;
-		this.tickSec = OBJ.create('Tick', 0.1, 0.65, 2, C.red);
-		this.tickMin = OBJ.create('Tick', 0.15, 0.6, 1, C.blue);
-		this.tickHou = OBJ.create('Tick', 0.15, 0.5, 0, C.black);
+		this.tickSec = OBJ.create('Tick', 0.005, 0.37, 2, C.red);
+		this.tickMin = OBJ.create('Tick', 0.01, 0.27, 1, C.black);
+		this.tickHou = OBJ.create('Tick', 0.01, 0.22, 0, C.black);
 		this.ticks = [this.tickSec, this.tickMin, this.tickHou];
+		this.marks = [];
+		Utils.repeat(12, (i) => {
+			const n = OBJ.create('Mark');
+
+			n.transform.scale.set(0.01, 0.04, 0.01);
+			n.transform.position.set(0, 0.8, -0.08); // offset
+			Mesh.applyTransform(n.mesh, n.transform);
+			n.transform.reset();
+
+			n.transform.rotation.set(0, 0, -i * 30); // offset
+			Mesh.applyTransform(n.mesh, n.transform);
+			n.transform.reset();
+			this.marks.push(n);
+		});
 		this.time = 0;
-		this.updateTick();
 	}
 	updateTick() {
 		// Position
@@ -43,10 +65,16 @@ class Clock extends NZObject3D {
 			t.transform.rotation.y = this.transform.rotation.y;
 		}
 		// Rotation
-		const t = -this.time * 0.001;
+		const t = -this.time * TIME_SPEED;
 		this.tickSec.transform.rotation.z = (t % 60) * 60;
 		this.tickMin.transform.rotation.z = ((t/60) % 60) * 60;
-		this.tickHou.transform.rotation.z = ((t/360) % 60) * 60;
+		this.tickHou.transform.rotation.z = ((t/720) % 60) * 60;
+	}
+	updateMark() {
+		for (const m of this.marks) {
+			m.transform.position.set(this.transform.position);
+			m.transform.rotation.y = this.transform.rotation.y;
+		}
 	}
 	update() {
 		const tmp = CLOCK_MODEL;
@@ -65,22 +93,23 @@ class Clock extends NZObject3D {
 		this.time += Time.deltaTime;
 		const boost = 1 + Input.keyHold(KeyCode.Space);
 		const move = Vec2.zero;
-		Input.testMoving4DirWASD(move);
-		move.mult(0.01);
+		Input.testMoving4DirWASD(move, boost * 0.01);
 		this.transform.position.add(move.x, 0, -move.y);
 		this.transform.rotation.y += boost * (Input.keyHold(KeyCode.Left) - Input.keyHold(KeyCode.Right));
 		this.transform.rotation.y += -Input.movementX * Input.mouseHoldAny();
 		this.updateTick();
+		this.updateMark();
 	}
 }
 
 OBJ.mark('3d');
 OBJ.addLink('Tick', Tick);
+OBJ.addLink('Mark', Mark);
 OBJ.addLink('Clock', Clock);
 OBJ.endMark();
 
 Scene.current.start = () => {
-	Debug.mode = 1;
+	// Debug.mode = 1;
 	Stage.setPixelRatio(Stage.HIGH);
 	Stage.applyPixelRatio();
 	OBJ.create('Clock', new Vec3(0, 0, 2));
@@ -125,5 +154,6 @@ Scene.current.renderUI = () => {
 
 NZ.start({
 	bgColor: BGColor.lemon,
-	debugModeAmount: 2
+	debugModeAmount: 2,
+	preventContextMenu: true
 });
