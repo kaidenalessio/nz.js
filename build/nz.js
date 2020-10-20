@@ -2571,6 +2571,12 @@ NZ.Transform.YZX = 'YZX';
 NZ.Transform.ZXY = 'ZXY';
 NZ.Transform.ZYX = 'ZYX';
 
+NZ.Transform.prototype.reset = function() {
+	this.position.set(0);
+	this.rotation.set(0);
+	this.scale.set(1);
+};
+
 NZ.Transform.prototype.clone = function() {
 	return new NZ.Transform(this.position.clone(), this.rotation.clone(), this.scale.clone()); // NZ.Vec3 clone
 };
