@@ -1475,7 +1475,7 @@ NZ.Mat4.multVec3 = function(m, i) {
 };
 
 NZ.Mat4.mulMat4 = function(m1, m2) {
-	const m = new Mat4();
+	const m = new NZ.Mat4();
 	for (let i = 0; i < 4; i++) {
 		for (let j = 0; j < 4; j++) {
 			m.m[j][i] = m1.m[j][0] * m2.m[0][i] + m1.m[j][1] * m2.m[1][i] + m1.m[j][2] * m2.m[2][i] + m1.m[j][3] * m2.m[3][i];
@@ -1489,7 +1489,7 @@ NZ.Mat4.multMat4 = function(m1, m2) {
 };
 
 NZ.Mat4.makeIdentity = function() {
-	const m = new Mat4();
+	const m = new NZ.Mat4();
 	m.m[0][0] = 1;
 	m.m[1][1] = 1;
 	m.m[2][2] = 1;
@@ -1499,7 +1499,7 @@ NZ.Mat4.makeIdentity = function() {
 
 NZ.Mat4.makeProjection = function(aspectRatio=0.5625, fovDeg=90, near=0.1, far=1000) {
 	const fovRad = 1 / Math.tan(NZ.Mat4.degtorad(fovDeg * 0.5));
-	const m = new Mat4();
+	const m = new NZ.Mat4();
 	m.m[0][0] = aspectRatio * fovRad;
 	m.m[1][1] = fovRad;
 	m.m[2][2] = far / (far - near);
@@ -1508,7 +1508,7 @@ NZ.Mat4.makeProjection = function(aspectRatio=0.5625, fovDeg=90, near=0.1, far=1
 	return m;
 };
 
-NZ.Mat4.makeRotationX = function(angleDeg, m=new Mat4()) {
+NZ.Mat4.makeRotationX = function(angleDeg, m=new NZ.Mat4()) {
 	angleDeg = NZ.Mat4.degtorad(angleDeg);
 	m.m[0][0] = 1;
 	m.m[1][1] = Math.cos(angleDeg);
@@ -1519,7 +1519,7 @@ NZ.Mat4.makeRotationX = function(angleDeg, m=new Mat4()) {
 	return m;
 };
 
-NZ.Mat4.makeRotationY = function(angleDeg, m=new Mat4()) {
+NZ.Mat4.makeRotationY = function(angleDeg, m=new NZ.Mat4()) {
 	angleDeg = NZ.Mat4.degtorad(angleDeg);
 	m.m[0][0] = Math.cos(angleDeg);
 	m.m[0][2] = -Math.sin(angleDeg);
@@ -1530,7 +1530,7 @@ NZ.Mat4.makeRotationY = function(angleDeg, m=new Mat4()) {
 	return m;
 };
 
-NZ.Mat4.makeRotationZ = function(angleDeg, m=new Mat4()) {
+NZ.Mat4.makeRotationZ = function(angleDeg, m=new NZ.Mat4()) {
 	angleDeg = NZ.Mat4.degtorad(angleDeg);
 	m.m[0][0] = Math.cos(angleDeg);
 	m.m[0][1] = Math.sin(angleDeg);
@@ -1547,7 +1547,7 @@ NZ.Mat4.makeTranslation = function(x, y, z) {
 		y = x.y;
 		x = x.x;
 	}
-	const m = new Mat4();
+	const m = new NZ.Mat4();
 	m.m[0][0] = 1;
 	m.m[1][1] = 1;
 	m.m[2][2] = 1;
@@ -1566,7 +1566,7 @@ NZ.Mat4.makeScale = function(x, y, z) {
 	}
 	if (z === undefined) z = x;
 	if (y === undefined) y = x;
-	const m = new Mat4();
+	const m = new NZ.Mat4();
 	m.m[0][0] = x;
 	m.m[1][1] = y;
 	m.m[2][2] = z;
