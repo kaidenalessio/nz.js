@@ -1,4 +1,4 @@
-Loader.loadSound('explode', 'explode.wav');
+Loader.loadSound('explode', 'explode.mp3');
 Loader.loadSound('sunnyday', 'sunnyday.mp3');
 
 // SE=sound effect (usually play once)
