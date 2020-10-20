@@ -109,6 +109,24 @@ NZ.Input = {
 	keyRepeat(keyCode) {
 		return this.keys[keyCode].repeated;
 	},
+	keyUpAny() {
+		for (let i = this.keys.length - 1; i >= 0; --i) { if (this.keys[i].released) return true; } return false;
+	},
+	keyDownAny() {
+		for (let i = this.keys.length - 1; i >= 0; --i) { if (this.keys[i].pressed) return true; } return false;
+	},
+	keyHoldAny() {
+		for (let i = this.keys.length - 1; i >= 0; --i) { if (this.keys[i].held) return true; } return false;
+	},
+	keyUpNone() {
+		return !this.keyUpAny();
+	},
+	keyDownNone() {
+		return !this.keyDownAny();
+	},
+	keyHoldNone() {
+		return !this.keyHoldAny();
+	},
 	mouseUp(button) {
 		return this.mice[button].released;
 	},
@@ -127,6 +145,24 @@ NZ.Input = {
 	},
 	mouseWheelDown() {
 		return this.mouseWheelDelta < 0;
+	},
+	mouseUpAny() {
+		for (let i = this.mice.length - 1; i >= 0; --i) { if (this.mice[i].released) return true; } return false;
+	},
+	mouseDownAny() {
+		for (let i = this.mice.length - 1; i >= 0; --i) { if (this.mice[i].pressed) return true; } return false;
+	},
+	mouseHoldAny() {
+		for (let i = this.mice.length - 1; i >= 0; --i) { if (this.mice[i].held) return true; } return false;
+	},
+	mouseUpNone() {
+		return !this.mouseUpAny();
+	},
+	mouseDownNone() {
+		return !this.mouseDownAny();
+	},
+	mouseHoldNone() {
+		return !this.mouseHoldAny();
 	},
 	touchUp(id) {
 		return this.touches[id].released;
