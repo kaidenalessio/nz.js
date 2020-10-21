@@ -24,7 +24,8 @@ var NZ = NZ || {};
  *		preventContextMenu: prevent right-click to show context menu
  *		defaultFont: set default font used to draw text (default = Maven Pro 16) (See NZ.Font for more info)
  *		enablePersistent: enable instance to not get removed on NZ.OBJ.onSceneRestart() if it has property `persistent` set to true
- *		stageRedrawOnResize: (true by default) html canvas clear its drawing everytime it gets resized, set this to true to redraw the drawing when resizing
+ *		stageRedrawOnResize: (enabled by default) html canvas clear its drawing everytime it gets resized, set this to true to redraw the drawing when resizing
+ *		stageAutoResize: (enabled by default) auto resize canvas when the stage gets resized, set this to false will strecth the canvas when resizing viewport
  *	};
  */
 NZ.start = (options={}) => {
@@ -109,7 +110,9 @@ NZ.start = (options={}) => {
 	// Resize stage appropriately
 	NZ.Stage.resizeEvent();
 	// Handle window.onresize to resize stage appropriately
-	NZ.Stage.setupEvent();
+	if (options.stageAutoResize !== false) {
+		NZ.Stage.setupEvent();
+	}
 
 	// Clear all object except persistent
 	NZ.Scene.on('restart', NZ.OBJ.onSceneRestart);
