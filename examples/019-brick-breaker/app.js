@@ -1,3 +1,9 @@
+Loader.loadSound('Wall', 'wall.mp3');
+Loader.loadSound('Brick', 'brick.mp3');
+Loader.loadSound('Spawn', 'paddle.mp3');
+Loader.loadSound('Paddle', 'wall.mp3');
+Loader.loadSound('Explode', 'explode.mp3');
+
 const rectIntersectsCircle = (b, c) => c.x + c.r >= b.x && c.x - c.r <= b.x + b.w && c.y + c.r >= b.y && c.y - c.r <= b.y + b.h;
 
 const BRICK_W = 60;
@@ -79,7 +85,11 @@ class Brick extends Block {
 	hit(b) {
 		this.level -= 1;
 		if (this.level <= 0) {
+			Sound.play('Explode');
 			OBJ.remove(this.id);
+		}
+		else {
+			Sound.play('Brick');
 		}
 		// game over check
 		if (!GAME_OVER) {
@@ -162,6 +172,7 @@ class Ball extends NZObject {
 					}
 				}
 				shakeScreen();
+				Sound.play('Paddle');
 			}
 		}
 	}
@@ -169,17 +180,20 @@ class Ball extends NZObject {
 		if (this.x - this.r <= 0) {
 			this.x = this.r;
 			this.vx = -this.vx;
-			shakeScreen(1, 100);
+			Sound.play('Wall');
+			shakeScreen();
 		}
 		if (this.x + this.r >= Stage.w) {
 			this.x = Stage.w - this.r;
 			this.vx = -this.vx;
-			shakeScreen(1, 100);
+			Sound.play('Wall');
+			shakeScreen();
 		}
 		if (this.y - this.r <= 0) {
 			this.y = this.r;
 			this.vy = -this.vy;
-			shakeScreen(1, 100);
+			Sound.play('Wall');
+			shakeScreen();
 		}
 		if (this.y - this.r >= Stage.h) {
 			this.kill();
@@ -196,6 +210,7 @@ class Ball extends NZObject {
 		Draw.circle(this.x + SHAKE_X, this.y + SHAKE_Y, this.r);
 	}
 	kill() {
+		Sound.play('Spawn');
 		OBJ.remove(this.id);
 		// game over check
 		if (!GAME_OVER) {
@@ -242,6 +257,8 @@ Scene.current.start = () => {
 			OBJ.create('Brick', Stage.mid.w + (-brick.count*0.5+i) * (brick.w + brick.gap) + brick.gap * 0.5, 100 + j * (brick.h + brick.gap), brick.w, brick.h, brick.level);
 		});
 	});
+	Sound.play('Spawn');
+	shakeScreen();
 };
 
 Scene.current.update = () => {
@@ -284,6 +301,7 @@ Scene.current.renderUI = () => {
 				n.applyForce(Vec2.polar(BALL_SPAWN_ANGLE, BALL_SPEED));
 				BALL_COUNT--;
 				shakeScreen();
+				Sound.play('Spawn');
 			}
 			const p = {
 				x: paddle.center,
