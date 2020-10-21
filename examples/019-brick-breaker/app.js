@@ -1,8 +1,12 @@
+Loader.loadSound('BGM', 'bgm.mp3');
 Loader.loadSound('Wall', 'wall.mp3');
 Loader.loadSound('Brick', 'brick.mp3');
 Loader.loadSound('Spawn', 'paddle.mp3');
 Loader.loadSound('Paddle', 'wall.mp3');
 Loader.loadSound('Explode', 'explode.mp3');
+
+Sound.setVolume('BGM', 0.5);
+Sound.setVolume('Explode', 0.5);
 
 const rectIntersectsCircle = (b, c) => c.x + c.r >= b.x && c.x - c.r <= b.x + b.w && c.y + c.r >= b.y && c.y - c.r <= b.y + b.h;
 
@@ -15,7 +19,8 @@ const BRICK_COLORS = [
 	C.salmon
 ];
 
-let BALL_COUNT = 3;
+const BALL_COUNT_DEFAULT = 5;
+let BALL_COUNT = BALL_COUNT_DEFAULT;
 let BALL_COLOR = C.mediumSpringGreen;
 let BALL_SPEED = 10;
 let BALL_RADIUS = 10;
@@ -33,6 +38,8 @@ let SHAKE_Y = 0;
 let SHAKE_MAG = 0;
 let SHAKE_DUR = 0;
 let SHAKE_TIME = 0;
+
+let ACTION_INPUT = false;
 
 const shakeScreen = (mag=2, duration=200) => {
 	SHAKE_MAG = mag;
@@ -228,7 +235,10 @@ class Paddle extends Block {
 		this.x -= this.w * 0.5;
 	}
 	update() {
-		this.x += PADDLE_SPD * (Input.keyHold(KeyCode.Right) - Input.keyHold(KeyCode.Left));
+		if (ACTION_INPUT) {
+			this.x = Mathz.range(this.x, Input.position.x - this.w * 0.5, 0.1);
+		}
+		this.x += PADDLE_SPD * ((Input.keyHold(KeyCode.Right) || Input.keyHold(KeyCode.D)) - (Input.keyHold(KeyCode.Left) || Input.keyHold(KeyCode.A)));
 		this.x = Mathz.clamp(this.x, 0, Stage.w - this.w);
 	}
 	render() {
@@ -242,7 +252,10 @@ OBJ.addLink('Brick', Brick);
 OBJ.addLink('Ball', Ball);
 
 Scene.current.start = () => {
-	BALL_COUNT = 3;
+	if (!Sound.isPlaying('BGM')) {
+		Sound.loop('BGM');
+	}
+	BALL_COUNT = BALL_COUNT_DEFAULT;
 	GAME_OVER = false;
 	OBJ.create('Paddle', Stage.mid.w, Stage.h - 50);
 	const brick = {
@@ -262,6 +275,8 @@ Scene.current.start = () => {
 };
 
 Scene.current.update = () => {
+	ACTION_INPUT = false;
+	ACTION_INPUT = Input.mouseHold(0) || Input.touchHold(0);
 	if (Time.time < SHAKE_TIME) {
 		const t = ((SHAKE_TIME - Time.time) / SHAKE_DUR) * SHAKE_MAG;
 		SHAKE_X = Mathz.range(-t, t);
@@ -284,7 +299,7 @@ Scene.current.renderUI = () => {
 		Draw.textBG(Stage.mid.w, Stage.mid.h, GAME_OVER_TEXT, { origin: Vec2.center });
 		Draw.setFont(Font.m);
 		Draw.textBG(Stage.mid.w, Stage.h - 22, 'Press space to restart', { origin: Vec2.center });
-		if (Input.keyDown(KeyCode.Space)) {
+		if (Input.keyDown(KeyCode.Space) || Input.touchDown(0) || Input.mouseDown(0)) {
 			Scene.restart();
 		}
 		return;
@@ -296,10 +311,13 @@ Scene.current.renderUI = () => {
 	if (BALL_COUNT > 0) {
 		BALL_SPAWN_ANGLE = 270 + 80 * Math.sin(Time.time * 0.01);
 		for (const paddle of OBJ.take('Paddle')) {
-			if (Input.keyDown(KeyCode.Space)) {
+			if (Input.keyDown(KeyCode.Space) || (OBJ.count('Ball') < 1 && (Input.touchDown(0) || Input.mouseDown(0)))) {
 				const n = OBJ.create('Ball', paddle.center, paddle.y - BALL_RADIUS);
 				n.applyForce(Vec2.polar(BALL_SPAWN_ANGLE, BALL_SPEED));
 				BALL_COUNT--;
+				if (!Sound.isPlaying('BGM')) {
+					Sound.loop('BGM');
+				}
 				shakeScreen();
 				Sound.play('Spawn');
 			}
@@ -323,6 +341,6 @@ Scene.current.renderUI = () => {
 NZ.start({
 	w: 360,
 	h: 640,
-	stylePreset: StylePreset.noGapCenter,
-	bgColor: BGColor.dark
+	bgColor: BGColor.dark,
+	stylePreset: StylePreset.noGapCenter
 });
