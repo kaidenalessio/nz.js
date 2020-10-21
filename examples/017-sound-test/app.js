@@ -1,17 +1,17 @@
-Loader.loadSound('explode', 'explode.mp3');
+Loader.loadSound('splash', 'splash.mp3');
 Loader.loadSound('sunnyday', 'sunnyday.mp3');
 
 // SE=sound effect (usually play once)
 const playSE = () => {
-	Sound.play('explode');
+	Sound.play('splash');
 };
 
 const stopSE = () => {
-	Sound.stop('explode');
+	Sound.stop('splash');
 };
 
 const playAtOnceSE = () => {
-	Sound.playAtOnce('explode');
+	Sound.playAtOnce('splash');
 };
 
 // BGM=background music (usually loop until stop)
