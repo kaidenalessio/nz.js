@@ -2,6 +2,7 @@ var NZ = NZ || {};
 
 // Collection of drawing functions and have image storage
 // Only supports canvas rendering at the moment no webgl
+// TO ADD: Blend mode (see globalCompositeOperatio)
 NZ.Draw = {
 	_defaultCtx: null,
 	_defaultFont: {
@@ -449,6 +450,39 @@ NZ.Draw = {
 	},
 	roundRectRotated(x, y, w, h, r, angle, isStroke=false, origin={ x: 0.5, y: 0.5 }) {
 		this.roundRectTransformed(x, y, w, h, r, isStroke, 1, 1, angle, origin);
+	},
+	imageTransformed(name, x, y, xscale, yscale, angle) {
+		this.onTransform(x, y, xscale, yscale, angle, () => this.image(name, 0, 0));
+	},
+	imageRotated(name, x, y, angle) {
+		this.imageTransformed(name, x, y, 1, 1, angle);
+	},
+	imageExt(name, x, y, xscale, yscale, angle, alpha) { // to add: blend mode
+		this.setAlpha(alpha);
+		this.imageTransformed(name, x, y, xscale, yscale, angle);
+		this.resetAlpha();
+	},
+	spriteTransformed(name, index, x, y, xscale, yscale, angle) {
+		this.onTransform(x, y, xscale, yscale, angle, () => this.sprite(name, index, 0, 0));
+	},
+	spriteRotated(name, index, x, y, angle) {
+		this.spriteTransformed(name, index, x, y, 1, 1, angle);
+	},
+	spriteExt(name, index, x, y, xscale, yscale, angle, alpha) {
+		this.setAlpha(alpha);
+		this.spriteTransformed(name, index, x, y, xscale, yscale, angle);
+		this.resetAlpha();
+	},
+	stripTransformed(name, index, x, y, xscale, yscale, angle) {
+		this.onTransform(x, y, xscale, yscale, angle, () => this.strip(name, index, 0, 0));
+	},
+	stripRotated(name, index, x, y, angle) {
+		this.stripTransformed(name, index, x, y, 1, 1, angle);
+	},
+	stripExt(name, index, x, y, xscale, yscale, angle, alpha) {
+		this.setAlpha(alpha);
+		this.stripTransformed(name, index, x, y, xscale, yscale, angle);
+		this.resetAlpha();
 	},
 	reset() {
 		this.resetCtx();
