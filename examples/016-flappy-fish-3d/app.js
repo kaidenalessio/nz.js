@@ -503,7 +503,10 @@ Scene.current.renderUI = () => {
 	drawTransition();
 };
 
+const myParent = document.getElementById('myParent');
+
 NZ.start({
-	parent: document.getElementById('myParent'),
+	parent: myParent,
+	inputParent: myParent,
 	bgColor: BGColor.sea
 });
