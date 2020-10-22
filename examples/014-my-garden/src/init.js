@@ -11,13 +11,18 @@ const Manager = {
 	gameOverText: 'game over',
 	oxygenText: `O\u2082`,
 	addOxygen(x) {
-		this.oxygen += x;
+		if (!this.gameOver) {
+			this.oxygen += x;
+		}
 	},
 	doGameOver(text) {
-		this.gameOver = true;
-		this.gameOverText = text;
+		if (!this.gameOver) {
+			this.gameOver = true;
+			this.gameOverText = text;
+		}
 	},
 	update() {
+		if (this.gameOver) return;
 		this.timer -= Time.deltaTime;
 		// game over check
 		if (this.timer <= 0) {

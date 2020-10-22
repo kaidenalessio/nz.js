@@ -163,8 +163,9 @@ class MyOxygen extends NZGameObject {
 		this.vel.add(this.acc);
 		this.pos.add(this.vel);
 		this.acc.add(0, -this.vel.y * Mathz.range(0.001, 0.005));
-		if (Input.mouseDown(0) || Input.keyDown(KeyCode.Space)) {
-			if (this.containsPoint(Input.mouseX, Input.mouseY)) {
+		if (this.containsPoint(Input.mouseX, Input.mouseY)) {
+			UI.applyCursor(Stage.canvas, Cursor.pointer);
+			if (Input.mouseDown(0) || Input.keyDown(KeyCode.Space)) {
 				Manager.addOxygen(Math.ceil(this.r * 0.2));
 				OBJ.create('oxygenpop', this.pos, this.r * 0.2);
 				OBJ.remove(this.id);
