@@ -41,7 +41,7 @@ class Vehicle extends NZObject {
 		this.acceleration = Vec2.zero;
 		this.velocity = Vec2.zero;
 		this.position = new Vec2(x, y);
-		this.maxspeed = 10;
+		this.maxspeed = 8;
 		this.maxforce = 0.2;
 	}
 	applyForce(force) {
@@ -93,21 +93,55 @@ class Car extends Vehicle {
 		this.pathTracer = OBJ.create('PathTracer', x, y);
 		this.angle = 0;
 		this.frontTire = this.position.clone();
-		this.maxforce = Mathz.range(0.3, 0.8);
 		this.imageIndex = 0;
 		this.imageScale = 0.8;
+		this.isPlayer = false;
+		this.friction = 0.98;
+		this.direction = 0;
+		this.rotateSpd = 5;
+		this.rotateFric = 0.99;
 		this.w = 24;
 	}
+	forward() {
+		this.applyForce(Vec2.polar(this.direction, this.maxforce));
+	}
+	backward() {
+		this.applyForce(Vec2.polar(this.direction - 180, this.maxforce * 0.5));
+	}
+	rotate(spd) {
+		this.direction += spd;
+		this.velocity.mult(this.rotateFric);
+		if (Input.keyHold(KeyCode.Up)) {
+			this.forward();
+		}
+	}
 	update() {
-		this.seek(this.pathTracer.position);
-		if (this.pathTracer.target) {
-			if (this.pathTracer.position.distance(this.pathTracer.target) < this.pathTracer.w && this.pathTracer.position.distance(this.position) < (this.w * this.maxforce * 10)) {
-				this.pathTracer.next();
+		if (!this.isPlayer) {
+			this.seek(this.pathTracer.position);
+			if (this.pathTracer.target) {
+				if (this.pathTracer.position.distance(this.pathTracer.target) < this.pathTracer.w && this.pathTracer.position.distance(this.position) < (this.w * this.maxforce * 10)) {
+					this.pathTracer.next();
+				}
 			}
+		}
+		else {
+			if (Input.keyHold(KeyCode.Right)) {
+				this.rotate(this.rotateSpd);
+			}
+			if (Input.keyHold(KeyCode.Left)) {
+				this.rotate(-this.rotateSpd);
+			}
+			if (Input.keyHold(KeyCode.Up)) {
+				this.forward();
+			}
+			if (Input.keyHold(KeyCode.Down)) {
+				this.backward();
+			}
+			this.velocity.mult(this.friction);
 		}
 	}
 	render() {
-		this.angle = Mathz.smoothRotate(this.angle, this.velocity.angle(), 20);
+		this.angle = Mathz.smoothRotate(this.angle, this.isPlayer? this.direction : this.velocity.angle(), 20);
 		this.frontTire.set(Vec2.polar(this.angle, this.w * 0.45)).add(this.position);
 		Draw.setColor(C.black);
 		Draw.roundRectRotated(this.frontTire.x, this.frontTire.y, 6, 3, 1, this.angle);
@@ -123,15 +157,17 @@ class Car extends Vehicle {
 OBJ.addLink('Car', Car);
 OBJ.addLink('PathTracer', PathTracer);
 
-let paths, car;
+let paths, playerCar;
 
 Scene.current.start = () => {
 	paths = TrackNodeLinkedList.createCustomPath();
-	car = OBJ.create('Car', 562, 451);
-	car.pathTracer.setTrackNode(paths[0]);
+	playerCar = OBJ.create('Car', 562, 451);
+	playerCar.imageIndex = 6;
+	playerCar.isPlayer = true;
 	Utils.repeat(10, (i) => {
 		const n = OBJ.create('Car', 562, 451);
-		n.imageIndex = i % 7;
+		n.imageIndex = i % 6;
+		n.maxforce = Mathz.range(0.2, 0.8);
 		n.pathTracer.setTrackNode(paths[0]);
 	});
 };
@@ -140,10 +176,10 @@ Scene.current.update = () => {
 	const cars = OBJ.takeFrom('Car');
 	for (const car of cars) {
 		for (const other of cars) {
-			if (car.id != other.id) {
+			if (!car.isPlayer && car.id != other.id) {
 				if (car.position.distance(other.position) < (car.w + other.w)) {
 					car.applyForce(Vec2.polar(Vec2.sub(other.position, car.position).angle() + Mathz.range(180), car.maxforce));
-					other.applyForce(Vec2.polar(Vec2.sub(car.position, other.position).angle() + Mathz.range(180), other.maxforce));
+					if (!other.isPlayer) other.applyForce(Vec2.polar(Vec2.sub(car.position, other.position).angle() + Mathz.range(180), other.maxforce));
 				}
 			}
 		}
@@ -154,12 +190,7 @@ Scene.current.render = () => {
 	Draw.image('track', Stage.mid.w, Stage.mid.h);
 	if (Debug.mode > 0) {
 		for (const n of paths) {
-			if (n.data === car.pathTracer.trackNode.data) {
-				n.data.draw(C.red);
-			}
-			else {
-				n.data.draw();
-			}
+			n.data.draw();
 		}
 		Input.testLogMouseOnClick();
 	}
