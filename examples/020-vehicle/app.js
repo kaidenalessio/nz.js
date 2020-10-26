@@ -1,5 +1,5 @@
-Loader.loadImage(Vec2.center, 'car', 'car.png');
 Loader.loadImage(Vec2.center, 'track', 'track.png');
+Loader.loadStrip(Vec2.center, 'car', 'car_strip7.png', 7);
 
 class TrackNode {
 	constructor(x, y) {
@@ -41,8 +41,8 @@ class Vehicle extends NZObject {
 		this.acceleration = Vec2.zero;
 		this.velocity = Vec2.zero;
 		this.position = new Vec2(x, y);
-		this.maxspeed = 4;
-		this.maxforce = 0.1;
+		this.maxspeed = 10;
+		this.maxforce = 0.2;
 	}
 	applyForce(force) {
 		this.acceleration.add(force);
@@ -65,6 +65,7 @@ class PathTracer extends Vehicle {
 		this.maxforce = this.maxspeed;
 		this.trackNode = null;
 		this.target = null;
+		this.w = 10;
 	}
 	setTrackNode(node) {
 		this.trackNode = node;
@@ -76,9 +77,6 @@ class PathTracer extends Vehicle {
 	update() {
 		if (this.target) {
 			this.seek(this.target);
-			if (this.position.distance(this.target) < 10) {
-				this.next();
-			}
 		}
 	}
 	render() {
@@ -95,20 +93,29 @@ class Car extends Vehicle {
 		this.pathTracer = OBJ.create('PathTracer', x, y);
 		this.angle = 0;
 		this.frontTire = this.position.clone();
-		this.w = 32;
+		this.maxforce = Mathz.range(0.3, 0.8);
+		this.imageIndex = 0;
+		this.imageScale = 0.8;
+		this.w = 24;
 	}
 	update() {
 		this.seek(this.pathTracer.position);
+		if (this.pathTracer.target) {
+			if (this.pathTracer.position.distance(this.pathTracer.target) < this.pathTracer.w && this.pathTracer.position.distance(this.position) < (this.w * this.maxforce * 10)) {
+				this.pathTracer.next();
+			}
+		}
 	}
 	render() {
 		this.angle = Mathz.smoothRotate(this.angle, this.velocity.angle(), 20);
 		this.frontTire.set(Vec2.polar(this.angle, this.w * 0.45)).add(this.position);
 		Draw.setColor(C.black);
-		Draw.roundRectRotated(this.frontTire.x, this.frontTire.y, 10, 6, 2, this.angle);
-		Draw.imageTransformed('car', this.position.x, this.position.y, 1, 1, this.angle);
+		Draw.roundRectRotated(this.frontTire.x, this.frontTire.y, 6, 3, 1, this.angle);
+		Draw.stripTransformed('car', this.imageIndex, this.position.x, this.position.y, this.imageScale, this.imageScale, this.angle);
 		if (Debug.mode > 0) {
 			Draw.setColor(C.magenta);
 			Draw.rectRotated(this.position.x, this.position.y, this.w, this.w * 0.5, this.angle);
+			Draw.pointCircle(this.position, this.w, true);
 		}
 	}
 }
@@ -122,6 +129,25 @@ Scene.current.start = () => {
 	paths = TrackNodeLinkedList.createCustomPath();
 	car = OBJ.create('Car', 562, 451);
 	car.pathTracer.setTrackNode(paths[0]);
+	Utils.repeat(10, (i) => {
+		const n = OBJ.create('Car', 562, 451);
+		n.imageIndex = i % 7;
+		n.pathTracer.setTrackNode(paths[0]);
+	});
+};
+
+Scene.current.update = () => {
+	const cars = OBJ.takeFrom('Car');
+	for (const car of cars) {
+		for (const other of cars) {
+			if (car.id != other.id) {
+				if (car.position.distance(other.position) < (car.w + other.w)) {
+					car.applyForce(Vec2.polar(Vec2.sub(other.position, car.position).angle() + Mathz.range(180), car.maxforce));
+					other.applyForce(Vec2.polar(Vec2.sub(car.position, other.position).angle() + Mathz.range(180), other.maxforce));
+				}
+			}
+		}
+	}
 };
 
 Scene.current.render = () => {
