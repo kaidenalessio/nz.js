@@ -1,3 +1,4 @@
+Loader.loadImage(Vec2.center, 'car', 'car.png');
 Loader.loadImage(Vec2.center, 'track', 'track.png');
 
 class TrackNode {
@@ -81,8 +82,10 @@ class PathTracer extends Vehicle {
 		}
 	}
 	render() {
-		Draw.setColor(C.magenta);
-		Draw.rectRotated(this.position.x, this.position.y, 16, 16, this.velocity.angle());
+		if (Debug.mode > 0) {
+			Draw.setColor(C.magenta);
+			Draw.rectRotated(this.position.x, this.position.y, 16, 16, this.velocity.angle());
+		}
 	}
 }
 
@@ -91,6 +94,7 @@ class Car extends Vehicle {
 		super(x, y);
 		this.pathTracer = OBJ.create('PathTracer', x, y);
 		this.angle = 0;
+		this.frontTire = this.position.clone();
 		this.w = 32;
 	}
 	update() {
@@ -98,8 +102,14 @@ class Car extends Vehicle {
 	}
 	render() {
 		this.angle = Mathz.smoothRotate(this.angle, this.velocity.angle(), 20);
+		this.frontTire.set(Vec2.polar(this.angle, this.w * 0.45)).add(this.position);
 		Draw.setColor(C.black);
-		Draw.rectRotated(this.position.x, this.position.y, this.w, this.w * 0.5, this.angle);
+		Draw.roundRectRotated(this.frontTire.x, this.frontTire.y, 10, 6, 2, this.angle);
+		Draw.imageTransformed('car', this.position.x, this.position.y, 1, 1, this.angle);
+		if (Debug.mode > 0) {
+			Draw.setColor(C.magenta);
+			Draw.rectRotated(this.position.x, this.position.y, this.w, this.w * 0.5, this.angle);
+		}
 	}
 }
 
@@ -116,20 +126,23 @@ Scene.current.start = () => {
 
 Scene.current.render = () => {
 	Draw.image('track', Stage.mid.w, Stage.mid.h);
-	for (const n of paths) {
-		if (n.data === car.pathTracer.trackNode.data) {
-			n.data.draw(C.red);
+	if (Debug.mode > 0) {
+		for (const n of paths) {
+			if (n.data === car.pathTracer.trackNode.data) {
+				n.data.draw(C.red);
+			}
+			else {
+				n.data.draw();
+			}
 		}
-		else {
-			n.data.draw();
-		}
+		Input.testLogMouseOnClick();
 	}
-	Input.testLogMouseOnClick();
 };
 
 NZ.start({
 	w: 1280,
 	h: 640,
 	bgColor: BGColor.lemon,
-	stylePreset: StylePreset.noGapCenter
+	stylePreset: StylePreset.noGapCenter,
+	debugModeAmount: 2
 });
