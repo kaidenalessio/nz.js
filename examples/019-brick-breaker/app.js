@@ -167,7 +167,11 @@ class Ball extends NZObject {
 					// and touch the right part of paddle
 					if (this.x > paddle.center) {
 						// move right
-						this.vx = -this.vx;
+						// control ball direction based on distance between
+						const d = Math.abs(this.x - paddle.center) / (paddle.w * 0.5);
+						const polar = Vec2.polar(280+70*d, BALL_SPEED);
+						this.vx = polar.x;
+						this.vy = polar.y;
 					}
 				}
 				// if ball moving right
@@ -175,7 +179,11 @@ class Ball extends NZObject {
 					// and touch the left part of paddle
 					if (this.x < paddle.center) {
 						// move left
-						this.vx = -this.vx;
+						// control ball direction based on distance between
+						const d = Math.abs(this.x - paddle.center) / (paddle.w * 0.5);
+						const polar = Vec2.polar(260-70*d, BALL_SPEED);
+						this.vx = polar.x;
+						this.vy = polar.y;
 					}
 				}
 				shakeScreen();
@@ -223,7 +231,7 @@ class Ball extends NZObject {
 		if (!GAME_OVER) {
 			if (BALL_COUNT <= 0 && OBJ.count('Ball') < 1) {
 				GAME_OVER = true;
-				GAME_OVER_TEXT = 'Out of ball';
+				GAME_OVER_TEXT = 'Out of balls';
 			}
 		}
 	}
