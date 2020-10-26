@@ -1201,6 +1201,11 @@ NZ.Input = {
 	testMoving4DirWASD(position, speed=5) {
 		position.x += (this.keyHold(68) - this.keyHold(65)) * speed;
 		position.y += (this.keyHold(83) - this.keyHold(87)) * speed;
+	},
+	testLogMouseOnClick() {
+		if (this.mouseDown(0)) {
+			console.log(`${this.mouseX}, ${this.mouseY}`);
+		}
 	}
 };
 

@@ -124,10 +124,7 @@ Scene.current.render = () => {
 			n.data.draw();
 		}
 	}
-	Draw.text(64, 64, Vec2.fromObject(Input.mousePosition).toString());
-	if (Input.mouseDown(0)) {
-		console.log(Input.mouseX, Input.mouseY);
-	}
+	Input.testLogMouseOnClick();
 };
 
 NZ.start({
