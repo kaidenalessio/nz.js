@@ -1,3 +1,5 @@
+Loader.loadImage(Vec2.center, 'track', 'track.png');
+
 class TrackNode {
 	constructor(x, y) {
 		this.position = new Vec2(x, y);
@@ -13,16 +15,18 @@ class TrackNodeLinkedList {
 		this.data = data || new TrackNode();
 		this.next = null;
 	}
-	static createCustomPath(w, h) {
+	static createCustomPath() {
 		const paths = [];
-		paths.push(new TrackNodeLinkedList(new TrackNode(w * 0.1, h * 0.5)));
-		paths.push(new TrackNodeLinkedList(new TrackNode(w * 0.3, h * 0.2)));
-		paths.push(new TrackNodeLinkedList(new TrackNode(w * 0.5, h * 0.1)));
-		paths.push(new TrackNodeLinkedList(new TrackNode(w * 0.8, h * 0.2)));
-		paths.push(new TrackNodeLinkedList(new TrackNode(w * 0.9, h * 0.8)));
-		paths.push(new TrackNodeLinkedList(new TrackNode(w * 0.7, h * 0.9)));
-		paths.push(new TrackNodeLinkedList(new TrackNode(w * 0.5, h * 0.6)));
-		paths.push(new TrackNodeLinkedList(new TrackNode(w * 0.2, h * 0.7)));
+		paths.push(new TrackNodeLinkedList(new TrackNode(562, 451)));
+		paths.push(new TrackNodeLinkedList(new TrackNode(806, 508)));
+		paths.push(new TrackNodeLinkedList(new TrackNode(1000, 447)));
+		paths.push(new TrackNodeLinkedList(new TrackNode(1082, 243)));
+		paths.push(new TrackNodeLinkedList(new TrackNode(945, 124)));
+		paths.push(new TrackNodeLinkedList(new TrackNode(715, 133)));
+		paths.push(new TrackNodeLinkedList(new TrackNode(471, 212)));
+		paths.push(new TrackNodeLinkedList(new TrackNode(257, 174)));
+		paths.push(new TrackNodeLinkedList(new TrackNode(195, 346)));
+		paths.push(new TrackNodeLinkedList(new TrackNode(274, 530)));
 		for (let i = 0; i < paths.length; i++) {
 			paths[i].next = paths[(i+1)%paths.length];
 		}
@@ -38,12 +42,6 @@ class Vehicle extends NZObject {
 		this.position = new Vec2(x, y);
 		this.maxspeed = 4;
 		this.maxforce = 0.1;
-		this.trackNode = null;
-		this.angle = 0;
-		this.w = 32;
-	}
-	next() {
-		this.trackNode = this.trackNode.next;
 	}
 	applyForce(force) {
 		this.acceleration.add(force);
@@ -53,13 +51,50 @@ class Vehicle extends NZObject {
 		const steer = Vec2.sub(desired, this.velocity).limit(this.maxforce);
 		this.applyForce(steer);
 	}
-	update() {
-		if (this.trackNode) {
-			this.seek(this.trackNode.data.position);
-		}
+	postUpdate() {
 		this.velocity.add(this.acceleration).limit(this.maxspeed);
 		this.position.add(this.velocity);
 		this.acceleration.reset();
+	}
+}
+
+class PathTracer extends Vehicle {
+	constructor(x, y) {
+		super(x, y);
+		this.maxforce = this.maxspeed;
+		this.trackNode = null;
+		this.target = null;
+	}
+	setTrackNode(node) {
+		this.trackNode = node;
+		this.target = this.trackNode.data.position;
+	}
+	next() {
+		this.setTrackNode(this.trackNode.next);
+	}
+	update() {
+		if (this.target) {
+			this.seek(this.target);
+			if (this.position.distance(this.target) < 10) {
+				this.next();
+			}
+		}
+	}
+	render() {
+		Draw.setColor(C.magenta);
+		Draw.rectRotated(this.position.x, this.position.y, 16, 16, this.velocity.angle());
+	}
+}
+
+class Car extends Vehicle {
+	constructor(x, y) {
+		super(x, y);
+		this.pathTracer = OBJ.create('PathTracer', x, y);
+		this.angle = 0;
+		this.w = 32;
+	}
+	update() {
+		this.seek(this.pathTracer.position);
 	}
 	render() {
 		this.angle = Mathz.smoothRotate(this.angle, this.velocity.angle(), 20);
@@ -68,31 +103,36 @@ class Vehicle extends NZObject {
 	}
 }
 
-OBJ.addLink('Vehicle', Vehicle);
+OBJ.addLink('Car', Car);
+OBJ.addLink('PathTracer', PathTracer);
 
-let paths, vhc;
+let paths, car;
 
 Scene.current.start = () => {
-	paths = TrackNodeLinkedList.createCustomPath(Stage.w, Stage.h);
-	vhc = OBJ.create('Vehicle', Stage.mid.w, Stage.mid.h);
-	vhc.trackNode = paths[0];
-};
-
-Scene.current.update = () => {
-	if (Input.keyDown(KeyCode.Space)) {
-		vhc.next();
-	}
+	paths = TrackNodeLinkedList.createCustomPath();
+	car = OBJ.create('Car', 562, 451);
+	car.pathTracer.setTrackNode(paths[0]);
 };
 
 Scene.current.render = () => {
+	Draw.image('track', Stage.mid.w, Stage.mid.h);
 	for (const n of paths) {
-		if (n.data === vhc.trackNode.data) {
+		if (n.data === car.pathTracer.trackNode.data) {
 			n.data.draw(C.red);
 		}
 		else {
 			n.data.draw();
 		}
 	}
+	Draw.text(64, 64, Vec2.fromObject(Input.mousePosition).toString());
+	if (Input.mouseDown(0)) {
+		console.log(Input.mouseX, Input.mouseY);
+	}
 };
 
-NZ.start();
+NZ.start({
+	w: 1280,
+	h: 640,
+	bgColor: BGColor.lemon,
+	stylePreset: StylePreset.noGapCenter
+});
