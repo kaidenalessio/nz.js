@@ -2708,8 +2708,8 @@ NZ.Utils = {
 };
 
 NZ.Vec2 = function(x, y) {
-	this.x = x;
-	this.y = y;
+	this.x = x || 0;
+	this.y = y || 0;
 }
 
 NZ.Vec2.EPSILON = 1e-6;
@@ -3062,9 +3062,9 @@ Object.defineProperty(NZ.Vec2, 'center', {
 });
 
 NZ.Vec3 = function(x, y, z) {
-	this.x = x;
-	this.y = y;
-	this.z = z;
+	this.x = x || 0;
+	this.y = y || 0;
+	this.z = z || 0;
 	this.w = 1;
 }
 

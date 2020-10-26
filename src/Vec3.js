@@ -1,9 +1,9 @@
 var NZ = NZ || {};
 
 NZ.Vec3 = function(x, y, z) {
-	this.x = x;
-	this.y = y;
-	this.z = z;
+	this.x = x || 0;
+	this.y = y || 0;
+	this.z = z || 0;
 	this.w = 1;
 }
 

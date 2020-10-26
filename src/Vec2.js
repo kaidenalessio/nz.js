@@ -1,8 +1,8 @@
 var NZ = NZ || {};
 
 NZ.Vec2 = function(x, y) {
-	this.x = x;
-	this.y = y;
+	this.x = x || 0;
+	this.y = y || 0;
 }
 
 NZ.Vec2.EPSILON = 1e-6;
