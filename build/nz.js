@@ -2812,7 +2812,7 @@ NZ.Vec2.prototype.clone = function() {
 };
 
 NZ.Vec2.prototype.angle = function() {
-	return NZ.Vec2.direction(this, NZ.Vec2.zero);
+	return NZ.Vec2.direction(NZ.Vec2.zero, this);
 };
 
 NZ.Vec2.prototype.polar = function() {

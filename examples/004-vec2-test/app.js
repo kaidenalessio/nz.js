@@ -37,7 +37,7 @@ Scene.current.update = () => {
 };
 
 Scene.current.render = () => {
-	const angle = Vec2.sub(v1, v2).angle();
+	const angle = Vec2.sub(v2, v1).angle();
 	const normalizedAngle = Mathz.normalizeAngle(angle);
 	const distance = v1.distance(v2);
 	const polar0 = Vec2.polar(0, distance).add(v1); // .add to offset it
