@@ -141,6 +141,9 @@ class Ball extends NZObject {
 	updateMovement() {
 		this.xprev = this.x;
 		this.yprev = this.y;
+		if (Math.abs(this.vy) < 1) {
+			this.vy = Math.sign(this.vy);
+		}
 		this.x += this.vx;
 		this.y += this.vy;
 	}
@@ -160,6 +163,7 @@ class Ball extends NZObject {
 		}
 		for (const paddle of OBJ.take('Paddle')) {
 			if (this.bottom >= paddle.top && this.bottom < paddle.bottom && this.right >= paddle.left && this.left <= paddle.right) {
+				const d = Math.abs(this.x - paddle.center) / (paddle.w * 0.5); // normalized distance between
 				this.y = paddle.y - this.r;
 				this.vy = -this.vy;
 				// if ball moving left
@@ -168,10 +172,7 @@ class Ball extends NZObject {
 					if (this.x > paddle.center) {
 						// move right
 						// control ball direction based on distance between
-						const d = Math.abs(this.x - paddle.center) / (paddle.w * 0.5);
-						const polar = Vec2.polar(280+70*d, BALL_SPEED);
-						this.vx = polar.x;
-						this.vy = polar.y;
+						this.applyForce(Vec2.polar(280+70*d, BALL_SPEED));
 					}
 				}
 				// if ball moving right
@@ -179,11 +180,7 @@ class Ball extends NZObject {
 					// and touch the left part of paddle
 					if (this.x < paddle.center) {
 						// move left
-						// control ball direction based on distance between
-						const d = Math.abs(this.x - paddle.center) / (paddle.w * 0.5);
-						const polar = Vec2.polar(260-70*d, BALL_SPEED);
-						this.vx = polar.x;
-						this.vy = polar.y;
+						this.applyForce(Vec2.polar(260-70*d, BALL_SPEED));
 					}
 				}
 				shakeScreen();
