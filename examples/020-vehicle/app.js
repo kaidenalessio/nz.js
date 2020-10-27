@@ -1,6 +1,21 @@
 Loader.loadImage(Vec2.center, 'track', 'track.png');
 Loader.loadStrip(Vec2.center, 'car', 'car_strip7.png', 7);
 
+const Camera = {
+	x: 0,
+	y: 0,
+	xto: 0,
+	yto: 0,
+	follow(p) {
+		this.xto = Stage.mid.w - p.x;
+		this.yto = Stage.mid.h - p.y;
+	},
+	update() {
+		this.x = Mathz.range(this.x, this.xto, 0.2);
+		this.y = Mathz.range(this.y, this.yto, 0.2);
+	}
+};
+
 class TrackNode {
 	constructor(x, y) {
 		this.position = new Vec2(x, y);
@@ -137,7 +152,9 @@ class Car extends Vehicle {
 			if (Input.keyHold(KeyCode.Down)) {
 				this.backward();
 			}
-			this.velocity.mult(this.friction);
+			if (!(Input.keyHold(KeyCode.Up) || Input.keyHold(KeyCode.Down))) {
+				this.velocity.mult(this.friction);
+			}
 		}
 	}
 	render() {
@@ -177,9 +194,16 @@ Scene.current.update = () => {
 	for (const car of cars) {
 		for (const other of cars) {
 			if (!car.isPlayer && car.id != other.id) {
-				if (car.position.distance(other.position) < (car.w + other.w)) {
-					car.applyForce(Vec2.polar(Vec2.sub(other.position, car.position).angle() + Mathz.range(180), car.maxforce));
-					if (!other.isPlayer) other.applyForce(Vec2.polar(Vec2.sub(car.position, other.position).angle() + Mathz.range(180), other.maxforce));
+				const d = car.position.distance(other.position);
+				if (d < (car.w + other.w)) {
+					const dis = Vec2.sub(other.position, car.position);
+					const dir = dis.angle();
+					// force
+					car.applyForce(Vec2.polar(dir + Mathz.range(180), car.maxforce));
+					// for other
+					if (!other.isPlayer) {
+						other.applyForce(Vec2.polar(dir - 180 + Mathz.range(180), other.maxforce));
+					}
 				}
 			}
 		}
@@ -187,6 +211,10 @@ Scene.current.update = () => {
 };
 
 Scene.current.render = () => {
+	Camera.update();
+	Camera.follow(playerCar.position);
+	Draw.ctx.save();
+	Draw.ctx.translate(Camera.x, Camera.y);
 	Draw.image('track', Stage.mid.w, Stage.mid.h);
 	if (Debug.mode > 0) {
 		for (const n of paths) {
@@ -194,6 +222,10 @@ Scene.current.render = () => {
 		}
 		Input.testLogMouseOnClick();
 	}
+};
+
+Scene.current.renderUI = () => {
+	Draw.ctx.restore();
 };
 
 NZ.start({
