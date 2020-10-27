@@ -204,7 +204,7 @@ class Barrier extends NZObject {
 		return p.x > this.x && p.x < this.x + this.w && p.y > this.y && p.y < this.y + this.h;
 	}
 	render() {
-		Draw.setColor(C.lavender);
+		Draw.setColor(C.black);
 		Draw.rect(this.x, this.y, this.w, this.h);
 	}
 }
@@ -237,18 +237,23 @@ Scene.current.update = () => {
 		this.barrier.drawing = false;
 	}
 	if (Input.mouseDown(2)) {
-		const options = {
-			target: Vec2.fromObject(Input.mousePosition),
-			lifeSpan: 240
-		};
-		OBJ.create('Population', options);
+		if (this.barrier.drawing) {
+			this.barrier.drawing = false;
+		}
+		else {
+			const options = {
+				target: Vec2.fromObject(Input.mousePosition),
+				lifeSpan: 240
+			};
+			OBJ.create('Population', options);
+		}
 	}
 };
 
 Scene.current.renderUI = () => {
 	if (this.barrier.drawing && Input.mouseHold(0)) {
 		Draw.setAlpha(0.5);
-		Draw.setColor(C.lavender);
+		Draw.setColor(C.black);
 		Draw.rect(this.barrier.x, this.barrier.y, this.barrier.w, this.barrier.h);
 	}
 };
