@@ -89,6 +89,14 @@ class Rocket extends Vehicle {
 		if (this.pos.x > Stage.w || this.pos.x < 0 || this.pos.y > Stage.h || this.pos.y < 0) {
 			this.crashed = true;
 		}
+		else {
+			for (const b of OBJ.take('Barrier')) {
+				if (b.containsPoint(this.pos)) {
+					this.crashed = true;
+					break;
+				}
+			}
+		}
 	}
 	update() {
 		this.distanceToTarget = Vec2.distance(this.pos, this.population.target);
@@ -184,10 +192,51 @@ class Population extends NZObject {
 	}
 }
 
+class Barrier extends NZObject {
+	constructor(x, y, w, h) {
+		super();
+		this.x = x;
+		this.y = y;
+		this.w = w;
+		this.h = h;
+	}
+	containsPoint(p) {
+		return p.x > this.x && p.x < this.x + this.w && p.y > this.y && p.y < this.y + this.h;
+	}
+	render() {
+		Draw.setColor(C.lavender);
+		Draw.rect(this.x, this.y, this.w, this.h);
+	}
+}
+
+OBJ.addLink('Barrier', Barrier);
 OBJ.addLink('Population', Population);
+
+Scene.current.start = () => {
+	this.barrier = {
+		x: 0,
+		y: 0,
+		get w() {
+			return Input.mouseX - this.x;
+		},
+		get h() {
+			return Input.mouseY - this.y;
+		},
+		drawing: false
+	};
+};
 
 Scene.current.update = () => {
 	if (Input.mouseDown(0)) {
+		this.barrier.x = Input.mouseX;
+		this.barrier.y = Input.mouseY;
+		this.barrier.drawing = true;
+	}
+	else if (this.barrier.drawing && Input.mouseUp(0)) {
+		OBJ.create('Barrier', this.barrier.x, this.barrier.y, this.barrier.w, this.barrier.h);
+		this.barrier.drawing = false;
+	}
+	if (Input.mouseDown(2)) {
 		const options = {
 			target: Vec2.fromObject(Input.mousePosition),
 			lifeSpan: 240
@@ -196,4 +245,14 @@ Scene.current.update = () => {
 	}
 };
 
-NZ.start();
+Scene.current.renderUI = () => {
+	if (this.barrier.drawing && Input.mouseHold(0)) {
+		Draw.setAlpha(0.5);
+		Draw.setColor(C.lavender);
+		Draw.rect(this.barrier.x, this.barrier.y, this.barrier.w, this.barrier.h);
+	}
+};
+
+NZ.start({
+	preventContextMenu: true
+});
