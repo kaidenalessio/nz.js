@@ -357,6 +357,10 @@ mouse.update = () => {
 	mouse.imageAngle = Mathz.smoothRotate(mouse.angle, mouse.imageAngle, 20);
 };
 
+let gameTime = 0;
+let gameOver = false;
+let gameTimeText = '';
+
 Scene.current.start = () => {
 	grid = new Grid(Mathz.irange(5, 25), Mathz.irange(5, 25));
 	grid.generator.algorithm = Mathz.choose(grid.generator.DFS, grid.generator.PRIM);
@@ -364,6 +368,8 @@ Scene.current.start = () => {
 	grid.start();
 	mouse.reset();
 	cheese.reset(grid.w - 1, grid.h - 1);
+	gameTime = 0;
+	gameOver = false;
 };
 
 Scene.current.render = () => {
@@ -393,7 +399,18 @@ Scene.current.renderUI = () => {
 		if (mouse.i === cheese.i && mouse.j === cheese.j) {
 			Draw.setFont(Font.xl);
 			Draw.textBG(mouse.x, mouse.y - Cell.w + Math.cos(Time.time * 0.01) * 2, 'Yum! I love cheese.', { origin: new Vec2(0.5, 1) });
+			if (!gameOver) {
+				gameTimeText = `Time ${Time.toClockWithLeadingZero(gameTime)}.${(gameTime/1000).toFixed(2).split('.').pop()}`;
+				gameOver = true;
+			}
 		}
+		if (gameOver) {
+			const w = Cell.convertToWorld(-0.5, grid.h);
+			Draw.setFont(Font.m);
+			Draw.textBG(w.x, w.y, gameTimeText);
+		}
+		else
+			gameTime += Time.deltaTime;
 	}
 	if (Input.keyRepeat(KeyCode.Space))
 		Scene.restart();
