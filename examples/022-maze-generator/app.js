@@ -90,9 +90,26 @@ class Cell {
 }
 
 class Grid {
+	static EASY = 'EASY';
+	static NORMAL = 'NORMAL';
+	static HARD = 'HARD';
+	static NOVICE = 'NOVICE';
+	static EXPERT = 'EXPERT';
+	static getDifficultyLevel(w, h) {
+		if ((w+h) > 49)
+			return Grid.EXPERT;
+		if ((w+h) > 39)
+			return Grid.NOVICE;
+		if ((w+h) > 29)
+			return Grid.HARD;
+		if ((w+h) > 19)
+			return Grid.NORMAL;
+		return Grid.EASY;
+	}
 	constructor(w, h) {
 		this.w = w || 10;
 		this.h = h || 10;
+		this.difficultyLevel = Grid.getDifficultyLevel(this.w, this.h);
 		this.cells = [];
 		this.generator = {
 			DFS: 0,
@@ -368,7 +385,7 @@ Scene.current.renderUI = () => {
 		default: algorithmName = 'Randomized depth-first search'; break;
 	}
 	Draw.setFont(Font.m);
-	Draw.textBG(0, 0, `${algorithmName} (${grid.w}x${grid.h})`);
+	Draw.textBG(0, 0, `${algorithmName} ${grid.difficultyLevel} (${grid.w}x${grid.h})`);
 	if (!grid.generator.generating) {
 		Draw.textBG(0, 26, 'Press space to restart level.');
 		Draw.textBG(0, 52, 'Press arrow keys to move mouse.');
