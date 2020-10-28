@@ -15,8 +15,8 @@ class Cell {
 	static BOTTOM = 3;
 	static convertToWorld(i, j) {
 		return {
-			x: 100 + i * Cell.w,
-			y: 100 + j * Cell.w
+			x: 150 + i * Cell.w,
+			y: 150 + j * Cell.w
 		};
 	}
 	constructor(i, j) {
@@ -244,22 +244,39 @@ class Sprite {
 		this.j = j;
 		this.x = 0;
 		this.y = 0;
+		this.xdraw = 0;
+		this.ydraw = 0;
+		this.angle = 0;
+		this.imageXScale = 1;
+		this.imageYScale = 1;
 		this.imageAngle = 0;
 		this.updateWorldPosition();
+		this.updateDrawPos();
 	}
 	reset(i, j) {
 		this.i = i || 0;
 		this.j = j || 0;
+		this.imageAngle = 0;
 		this.updateWorldPosition();
+		this.updateDrawPos();
 	}
 	updateWorldPosition() {
 		const w = Cell.convertToWorld(this.i, this.j);
 		this.x = w.x;
 		this.y = w.y;
 	}
-	update() {}
+	updateDrawPos() {
+		this.xdraw = this.x;
+		this.ydraw = this.y;
+	}
+	update() {
+		this.xdraw = this.x;
+		this.ydraw = this.y + Math.sin(Time.time * 0.01) * 2;
+	}
 	draw() {
-		Draw.imageRotated(this.imageName, this.x, this.y, this.imageAngle);
+		this.imageXScale = Mathz.range(this.imageXScale, 1, 0.2);
+		this.imageYScale = Mathz.range(this.imageYScale, 1, 0.2);
+		Draw.imageTransformed(this.imageName, this.xdraw, this.ydraw, this.imageXScale, this.imageYScale, this.imageAngle);
 	}
 }
 
@@ -275,41 +292,56 @@ mouse.update = () => {
 	let i = mouse.i;
 	let j = mouse.j;
 	const cell = grid.getCell(i, j);
-	if (Input.keyDown(KeyCode.Up)) {
+	const keyUp = Input.keyDown(KeyCode.Up);
+	const keyLeft = Input.keyDown(KeyCode.Left);
+	const keyDown = Input.keyDown(KeyCode.Down);
+	const keyRight = Input.keyDown(KeyCode.Right);
+	if (keyUp) {
 		if (j > 0) {
 			if (!grid.getCell(i, j-1).edges[Cell.BOTTOM] && !cell.edges[Cell.TOP])
 				j--;
 		}
-		mouse.imageAngle = 270;
+		mouse.angle = 270;
 	}
-	if (Input.keyDown(KeyCode.Left)) {
+	if (keyLeft) {
 		if (i > 0) {
 			if (!grid.getCell(i-1, j).edges[Cell.RIGHT] && !cell.edges[Cell.LEFT])
 				i--;
 		}
-		mouse.imageAngle = 180;
+		mouse.angle = 180;
 	}
-	if (Input.keyDown(KeyCode.Down)) {
+	if (keyDown) {
 		if (j < grid.h - 1) {
 			if (!grid.getCell(i, j+1).edges[Cell.TOP] && !cell.edges[Cell.BOTTOM])
 				j++;
 		}
-		mouse.imageAngle = 90;
+		mouse.angle = 90;
 	}
-	if (Input.keyDown(KeyCode.Right)) {
+	if (keyRight) {
 		if (i < grid.w - 1) {
 			if (!grid.getCell(i+1, j).edges[Cell.LEFT] && !cell.edges[Cell.RIGHT])
 				i++;
 		}
-		mouse.imageAngle = 0;
+		mouse.angle = 0;
+	}
+	if (keyUp || keyLeft || keyDown || keyRight) {
+		mouse.imageXScale = 1.25;
+		mouse.imageYScale = 0.75;
+	}
+	if (Input.keyDown(KeyCode.Enter)) {
+		i = 0;
+		j = 0;
 	}
 	mouse.i = i;
 	mouse.j = j;
 	mouse.updateWorldPosition();
+	mouse.xdraw = Mathz.range(mouse.xdraw, mouse.x, 0.5);
+	mouse.ydraw = Mathz.range(mouse.ydraw, mouse.y, 0.5);
+	mouse.imageAngle = Mathz.smoothRotate(mouse.angle, mouse.imageAngle, 20);
 };
 
 Scene.current.start = () => {
-	grid = new Grid(Mathz.irange(10, 25), Mathz.irange(10, 25));
+	grid = new Grid(Mathz.irange(5, 25), Mathz.irange(5, 25));
 	grid.generator.algorithm = Mathz.choose(grid.generator.DFS, grid.generator.PRIM);
 	grid.init();
 	grid.start();
@@ -322,6 +354,7 @@ Scene.current.render = () => {
 		grid.update();
 	grid.render();
 	if (!grid.generator.generating) {
+		cheese.update();
 		mouse.update();
 		cheese.draw();
 		mouse.draw();
@@ -336,9 +369,14 @@ Scene.current.renderUI = () => {
 	}
 	Draw.setFont(Font.m);
 	Draw.textBG(0, 0, `${algorithmName} (${grid.w}x${grid.h})`);
-	if (mouse.i === cheese.i && mouse.j === cheese.j) {
-		Draw.setFont(Font.xl);
-		Draw.textBG(mouse.x, mouse.y - Cell.w, 'Yum! I love cheese.', { origin: new Vec2(0.5, 1) });
+	if (!grid.generator.generating) {
+		Draw.textBG(0, 26, 'Press space to restart level.');
+		Draw.textBG(0, 52, 'Press arrow keys to move mouse.');
+		Draw.textBG(0, 78, 'Press enter to reset mouse position.');
+		if (mouse.i === cheese.i && mouse.j === cheese.j) {
+			Draw.setFont(Font.xl);
+			Draw.textBG(mouse.x, mouse.y - Cell.w + Math.cos(Time.time * 0.01) * 2, 'Yum! I love cheese.', { origin: new Vec2(0.5, 1) });
+		}
 	}
 	if (Input.keyRepeat(KeyCode.Space))
 		Scene.restart();
