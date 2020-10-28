@@ -90,13 +90,16 @@ class Grid {
 		this.DFS = {
 			v: null,
 			openset: [],
+			searching: false,
 			reset() {
 				this.v = null;
 				this.openset.length = 0;
+				this.searching = false;
 			},
 			start(v) {
 				this.reset();
 				this.v = v;
+				this.searching = true;
 				this.openset.push(this.v);
 			},
 			update() {
@@ -134,6 +137,9 @@ class Grid {
 						}
 					}
 				}
+				else {
+					this.searching = false;
+				}
 			}
 		};
 	}
@@ -161,34 +167,41 @@ class Grid {
 		this.DFS.start(Utils.pick(this.cells));
 	}
 	update() {
-		this.DFS.update();
+		if (this.DFS.searching) {
+			Utils.repeat(this.w * this.h + 1, () => {
+				this.DFS.update();
+			});
+		}
 	}
 	render() {
 		Draw.setColor(C.black);
 		for (const v of this.cells) {
 			v.draw();
 		}
-		Draw.setColor(C.green);
-		this.DFS.v.drawDot();
-		Draw.setColor(C.blue);
-		if (this.DFS.openset.length)
-			this.DFS.openset[this.DFS.openset.length - 1].drawDot();
-		// Draw.textBG(0, 26, this.DFS.openset[this.DFS.openset.length - 1].toString());
+		if (this.DFS.searching) {
+			Draw.setColor(C.green);
+			this.DFS.v.drawDot();
+			if (this.DFS.openset.length) {
+				Draw.setColor(C.blue);
+				this.DFS.openset[this.DFS.openset.length - 1].drawDot();
+			}
+		}
 	}
 }
 
 let grid;
 
 Scene.current.start = () => {
-	grid = new Grid(Mathz.irange(3, 10), Mathz.irange(3, 10));
+	grid = new Grid(Mathz.irange(10, 25), Mathz.irange(10, 25));
 	grid.init();
 	grid.start();
 };
 
 Scene.current.render = () => {
-	// if (Input.keyRepeat(KeyCode.Space))
-		grid.update();
+	grid.update();
 	grid.render();
+	if (Input.keyRepeat(KeyCode.Space))
+		Scene.restart();
 };
 
 NZ.start();
