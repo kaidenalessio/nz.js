@@ -129,6 +129,8 @@ class Population extends NZObject {
 		this.lifeSpan = options.lifeSpan || 100;
 		this.instances = [];
 		this.matingPool = [];
+		this.generation = 0;
+		this.best = null;
 		this.life = 0;
 		this.forEach(i => {
 			this.instances.push(new Rocket(this, DNA.makeGenes(this.lifeSpan)));
@@ -142,16 +144,18 @@ class Population extends NZObject {
 			fn(this.instances[i], i);
 		}
 	}
-	evaluate() {
-		let maxFit = 0;
+	calcAllFitness() {
+		this.best = this.instances[0];
 		this.forEach(i => {
 			i.calcFitness();
-			if (i.fitness > maxFit) maxFit = i.fitness;
+			if (i.fitness > this.best.fitness) this.best = i;
 		});
-
-		const maxFitInverse = 1 / maxFit;
+	}
+	normalizeAllFitness() {
+		const maxFitInverse = 1 / this.best.fitness;
 		this.forEach(i => i.fitness *= maxFitInverse);
-
+	}
+	createMatingPool() {
 		this.matingPool.length = 0;
 		this.forEach(i => {
 			let n = i.fitness * 10;
@@ -159,6 +163,11 @@ class Population extends NZObject {
 				this.matingPool.push(i);
 			}
 		});
+	}
+	evaluate() {
+		this.calcAllFitness();
+		this.normalizeAllFitness();
+		this.createMatingPool();
 	}
 	selection() {
 		const h = [];
@@ -185,16 +194,24 @@ class Population extends NZObject {
 		while (iter-- > 0) {
 			this.forEach(i => i.update());
 			if (++this.life >= this.lifeSpan) {
-				this.evaluate();
-				this.selection();
-				this.life = 0;
 				break;
 			}
+		}
+		this.calcAllFitness();
+		if (this.life >= this.lifeSpan) {
+			this.evaluate();
+			this.selection();
+			this.generation++;
+			this.life = 0;
 		}
 		this.forEach(i => i.render());
 		Draw.setColor(C.gold);
 		const r = 2 + 8 * (1-this.lifeScale);
 		Draw.pointCircle(this.target, r + Math.sin(Time.frameCount * 0.5) * r * 0.2);
+		// Draw.textBG(this.target.x, this.target.y - 10, 'Generation: ' + this.generation, { origin: new Vec2(0.5, 1), bgColor: 'rgba(0, 0, 0, 0.1)', textColor: C.black });
+		if (this.best) {
+			Draw.textBG(this.best.pos.x, this.best.pos.y - 10, `Best fit: ${~~this.best.fitness}`, { origin: new Vec2(0.5, 1), bgColor: 'rgba(0, 0, 0, 0.1)', textColor: C.black });
+		}
 	}
 }
 
