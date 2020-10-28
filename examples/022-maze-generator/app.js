@@ -146,10 +146,11 @@ class Grid {
 				}
 				else {
 					// dead end
-					this.v = this.openset.pop();
+					if (this.openset.length < 1)
+						this.generating = false;
+					else
+						this.v = this.openset.pop();
 				}
-				if (this.openset.length < 1)
-					this.generating = false;
 			},
 			prim() {
 				if (this.openset.length) {
@@ -429,10 +430,12 @@ Scene.current.renderUI = () => {
 	Draw.setFont(Font.m);
 	Draw.textBG(0, 0, `${algorithmName} ${grid.difficultyLevel} (${grid.w}x${grid.h}) ${Time.FPS}`);
 	if (!grid.generator.generating) {
-		Draw.textBG(0, Stage.h, 'Press space to restart level.' + ' Press arrow keys to move mouse.' + ' Press enter to reset mouse position.', { origin: Vec2.down });
+		Draw.textBG(0, Stage.h, 'Press space to restart level.' + ' Press arrow keys to move mouse.' + ' Press enter to reset time and mouse position.', { origin: Vec2.down });
 		if (mouse.equals(cheese)) {
 			Draw.setFont(Font.l);
-			Draw.textBG(mouse.x, mouse.y - Cell.w + Math.cos(Time.time * 0.01) * 2, 'Yum! I love cheese.', { origin: new Vec2(0.5, 1) });
+			const txt = 'Yum! I love cheese.';
+			const tw = Draw.getTextWidth(txt) * 0.5 + 5;
+			Draw.textBG(Mathz.clamp(mouse.x, tw, Stage.w - tw), Mathz.clamp(mouse.y - Cell.w + Math.cos(Time.time * 0.01) * 2, Font.l.size + 10, Stage.h), txt, { origin: new Vec2(0.5, 1) });
 			OBJ.create('Crumbs', Vec2.polar(mouse.angle, 14).add(mouse));
 			if (!gameOver) {
 				gameTimeText.push(getGameTimeText());
