@@ -87,31 +87,55 @@ class Grid {
 		this.w = w || 10;
 		this.h = h || 10;
 		this.cells = [];
-		this.DFS = {
+		this.generator = {
+			DFS: 0,
+			PRIM: 1,
+			algorithm: 0,
 			v: null,
 			openset: [],
-			searching: false,
+			generating: false,
 			reset() {
 				this.v = null;
 				this.openset.length = 0;
-				this.searching = false;
+				this.generating = false;
 			},
 			start(v) {
 				this.reset();
 				this.v = v;
-				this.searching = true;
-				this.openset.push(this.v);
+				this.generating = true;
+				if (this.algorithm === this.PRIM) {
+					this.openset.push(this.v);
+				}
 			},
-			update() {
+			dfs() {
+				this.v.discovered = true;
+				const neighbours = [];
+				for (const n of this.v.neighbours) {
+					if (!this.openset.includes(n) && !n.discovered)
+						neighbours.push(n);
+				}
+				if (neighbours.length) {
+					const next = Utils.pick(neighbours);
+					Cell.removeNeighbourEdges(this.v, next);
+					this.openset.push(this.v);
+					this.v = next;
+				}
+				else {
+					// dead end
+					this.v = this.openset.pop();
+				}
+				if (this.openset.length < 1)
+					this.generating = false;
+			},
+			prim() {
 				if (this.openset.length) {
 					this.v = this.openset.pop();
 					if (!this.v.discovered) {
 						this.v.discovered = true;
 						const neighbours = [];
 						for (const n of this.v.neighbours) {
-							if (!this.openset.includes(n) && !n.discovered) {
+							if (!this.openset.includes(n) && !n.discovered)
 								neighbours.push(n);
-							}
 						}
 						if (neighbours.length) {
 							while (neighbours.length) {
@@ -127,18 +151,39 @@ class Grid {
 							const next = this.openset[this.openset.length - 1];
 							const nextNeighbours = [];
 							for (const n of next.neighbours) {
-								if (n.discovered) {
+								if (n.discovered)
 									nextNeighbours.push(n);
-								}
 							}
-							if (nextNeighbours.length) {
+							if (nextNeighbours.length)
 								Cell.removeNeighbourEdges(next, Utils.pick(nextNeighbours));
-							}
 						}
 					}
 				}
 				else {
-					this.searching = false;
+					this.generating = false;
+				}
+			},
+			update() {
+				if (this.generating) {
+					switch (this.algorithm) {
+						case this.PRIM: this.prim(); break;
+						default: this.dfs(); break;
+					}
+				}
+			},
+			draw() {
+				if (this.generating) {
+					Draw.setColor(C.red);
+					switch (this.algorithm) {
+						case this.PRIM:
+							if (this.openset.length)
+								this.openset[this.openset.length - 1].drawDot();
+							break;
+						default:
+							this.v.drawDot();
+							break;
+					}
+					Draw.stroke();
 				}
 			}
 		};
@@ -164,12 +209,12 @@ class Grid {
 	}
 	start() {
 		this.forEach(v => v.findNeighbours(this));
-		this.DFS.start(Utils.pick(this.cells));
+		this.generator.start(Utils.pick(this.cells));
 	}
 	update() {
-		if (this.DFS.searching) {
-			Utils.repeat(this.w * this.h + 1, () => {
-				this.DFS.update();
+		if (this.generator.generating) {
+			Utils.repeat(6, () => {
+				this.generator.update();
 			});
 		}
 	}
@@ -178,14 +223,7 @@ class Grid {
 		for (const v of this.cells) {
 			v.draw();
 		}
-		if (this.DFS.searching) {
-			Draw.setColor(C.green);
-			this.DFS.v.drawDot();
-			if (this.DFS.openset.length) {
-				Draw.setColor(C.blue);
-				this.DFS.openset[this.DFS.openset.length - 1].drawDot();
-			}
-		}
+		this.generator.draw();
 	}
 }
 
@@ -198,7 +236,8 @@ Scene.current.start = () => {
 };
 
 Scene.current.render = () => {
-	grid.update();
+	// if (Input.keyRepeat(KeyCode.Space))
+		grid.update();
 	grid.render();
 	if (Input.keyRepeat(KeyCode.Space))
 		Scene.restart();
