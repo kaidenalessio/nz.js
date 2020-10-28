@@ -213,9 +213,8 @@ class Barrier extends NZObject {
 		return p.x > this.x && p.x < this.x + this.w && p.y > this.y && p.y < this.y + this.h;
 	}
 	render() {
-		Draw.setColor(C.slateBlue, C.black);
+		Draw.setColor(C.slateBlue);
 		Draw.rect(this.x, this.y, this.w, this.h);
-		if (this.hovered) Draw.stroke();
 	}
 }
 
@@ -232,11 +231,31 @@ Scene.current.start = () => {
 		get h() {
 			return Input.mouseY - this.y;
 		},
-		drawing: false
+		drawing: false,
+		hovering: false
 	};
 };
 
 Scene.current.update = () => {
+	let barriersHovered = [];
+	for (const b of OBJ.take('Barrier')) {
+		if (b.hovered) {
+			barriersHovered.push(b);
+		}
+	}
+	if (barriersHovered.length < 1) this.barrier.hovering = null;
+	else {
+		for (const b of barriersHovered) {
+			if (!this.barrier.hovering) {
+				this.barrier.hovering = b;
+			}
+			else {
+				if (!this.barrier.hovering.hovered) {
+					this.barrier.hovering = null;
+				}
+			}
+		}
+	}
 	if (Input.mouseDown(0)) {
 		this.barrier.x = Input.mouseX;
 		this.barrier.y = Input.mouseY;
@@ -257,15 +276,11 @@ Scene.current.update = () => {
 			this.barrier.drawing = false;
 		}
 		else {
-			let onBarrier = false;
-			for (const b of OBJ.take('Barrier')) {
-				if (b.hovered) {
-					OBJ.remove(b.id);
-					onBarrier = true;
-					break;
-				}
+			if (this.barrier.hovering) {
+				OBJ.remove(this.barrier.hovering.id);
+				this.barrier.hovering = null;
 			}
-			if (!onBarrier) {
+			else {
 				const options = {
 					target: Vec2.fromObject(Input.mousePosition),
 					popSize: 100,
@@ -297,11 +312,10 @@ Scene.current.renderUI = () => {
 		tooltip = 'Drag to adjust size.\nRelease to place barrier.';
 	}
 	else {
-		for (const b of OBJ.take('Barrier')) {
-			if (b.hovered) {
-				tooltip = 'Right click to remove barrier.';
-				break;
-			}
+		if (this.barrier.hovering) {
+			tooltip = 'Right click to remove barrier.';
+			Draw.setColor(C.black);
+			Draw.rect(this.barrier.hovering.x, this.barrier.hovering.y, this.barrier.hovering.w, this.barrier.hovering.h, true);
 		}
 	}
 	if (tooltip) {
