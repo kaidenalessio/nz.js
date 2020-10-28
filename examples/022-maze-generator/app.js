@@ -15,8 +15,8 @@ class Cell {
 	static BOTTOM = 3;
 	static convertToWorld(i, j) {
 		return {
-			x: 150 + i * Cell.w,
-			y: 150 + j * Cell.w
+			x: 32 + i * Cell.w,
+			y: 48 + j * Cell.w
 		};
 	}
 	constructor(i, j) {
@@ -254,6 +254,32 @@ class Grid {
 	}
 }
 
+class Crumbs extends NZObject {
+	constructor(pos) {
+		super();
+		this.pos = pos;
+		this.acc = new Vec2(0, 0.1);
+		this.vel = Vec2.polar(Mathz.range(200, 340), 3);
+		this.w = Mathz.range(1, 2);
+		this.winc = 0.07;
+		this.c = Mathz.choose(C.orange, C.darkOrange, C.darkOrange);
+	}
+	update() {
+		this.vel.add(this.acc);
+		this.pos.add(this.vel);
+	}
+	render() {
+		Draw.setColor(this.c);
+		Draw.pointCircle(this.pos, this.w);
+		this.w -= this.winc;
+		if (this.w < this.winc) {
+			OBJ.remove(this.id);
+		}
+	}
+}
+
+OBJ.addLink('Crumbs', Crumbs);
+
 class Sprite {
 	constructor(imageName, i, j) {
 		this.imageName = imageName;
@@ -269,6 +295,9 @@ class Sprite {
 		this.imageAngle = 0;
 		this.updateWorldPosition();
 		this.updateDrawPos();
+	}
+	equals(other) {
+		return this.i === other.i && this.j === other.j;
 	}
 	reset(i, j) {
 		this.i = i || 0;
@@ -298,6 +327,7 @@ class Sprite {
 }
 
 // origin, name, src
+Loader.loadImage(Vec2.center, 'clock', 'clock.png');
 Loader.loadImage(Vec2.center, 'mouse', 'mouse.png');
 Loader.loadImage(Vec2.center, 'cheese', 'cheese.png');
 
@@ -309,33 +339,34 @@ mouse.update = () => {
 	let i = mouse.i;
 	let j = mouse.j;
 	const cell = grid.getCell(i, j);
-	const keyUp = Input.keyDown(KeyCode.Up);
-	const keyLeft = Input.keyDown(KeyCode.Left);
-	const keyDown = Input.keyDown(KeyCode.Down);
-	const keyRight = Input.keyDown(KeyCode.Right);
+	const keyUp = Input.keyRepeat(KeyCode.Up);
+	const keyLeft = Input.keyRepeat(KeyCode.Left);
+	const keyDown = Input.keyRepeat(KeyCode.Down);
+	const keyRight = Input.keyRepeat(KeyCode.Right);
+	const oncheese = mouse.equals(cheese);
 	if (keyUp) {
-		if (j > 0) {
+		if (!oncheese && j > 0) {
 			if (!grid.getCell(i, j-1).edges[Cell.BOTTOM] && !cell.edges[Cell.TOP])
 				j--;
 		}
 		mouse.angle = 270;
 	}
 	if (keyLeft) {
-		if (i > 0) {
+		if (!oncheese && i > 0) {
 			if (!grid.getCell(i-1, j).edges[Cell.RIGHT] && !cell.edges[Cell.LEFT])
 				i--;
 		}
 		mouse.angle = 180;
 	}
 	if (keyDown) {
-		if (j < grid.h - 1) {
+		if (!oncheese && j < grid.h - 1) {
 			if (!grid.getCell(i, j+1).edges[Cell.TOP] && !cell.edges[Cell.BOTTOM])
 				j++;
 		}
 		mouse.angle = 90;
 	}
 	if (keyRight) {
-		if (i < grid.w - 1) {
+		if (!oncheese && i < grid.w - 1) {
 			if (!grid.getCell(i+1, j).edges[Cell.LEFT] && !cell.edges[Cell.RIGHT])
 				i++;
 		}
@@ -348,6 +379,8 @@ mouse.update = () => {
 	if (Input.keyDown(KeyCode.Enter)) {
 		i = 0;
 		j = 0;
+		gameTime = 0;
+		gameOver = false;
 	}
 	mouse.i = i;
 	mouse.j = j;
@@ -359,10 +392,12 @@ mouse.update = () => {
 
 let gameTime = 0;
 let gameOver = false;
-let gameTimeText = '';
+let gameTimeText = [];
+
+const getGameTimeText = () => `${Time.toClockWithLeadingZero(gameTime)}.${(gameTime/1000).toFixed(2).split('.').pop()}`;
 
 Scene.current.start = () => {
-	grid = new Grid(Mathz.irange(5, 25), Mathz.irange(5, 25));
+	grid = new Grid(Mathz.irange(3, 25), Mathz.irange(3, 25));
 	grid.generator.algorithm = Mathz.choose(grid.generator.DFS, grid.generator.PRIM);
 	grid.init();
 	grid.start();
@@ -370,6 +405,7 @@ Scene.current.start = () => {
 	cheese.reset(grid.w - 1, grid.h - 1);
 	gameTime = 0;
 	gameOver = false;
+	gameTimeText.length = 0;
 };
 
 Scene.current.render = () => {
@@ -391,29 +427,39 @@ Scene.current.renderUI = () => {
 		default: algorithmName = 'Randomized depth-first search'; break;
 	}
 	Draw.setFont(Font.m);
-	Draw.textBG(0, 0, `${algorithmName} ${grid.difficultyLevel} (${grid.w}x${grid.h})`);
+	Draw.textBG(0, 0, `${algorithmName} ${grid.difficultyLevel} (${grid.w}x${grid.h}) ${Time.FPS}`);
 	if (!grid.generator.generating) {
-		Draw.textBG(0, 26, 'Press space to restart level.');
-		Draw.textBG(0, 52, 'Press arrow keys to move mouse.');
-		Draw.textBG(0, 78, 'Press enter to reset mouse position.');
-		if (mouse.i === cheese.i && mouse.j === cheese.j) {
-			Draw.setFont(Font.xl);
+		Draw.textBG(0, Stage.h, 'Press space to restart level.' + ' Press arrow keys to move mouse.' + ' Press enter to reset mouse position.', { origin: Vec2.down });
+		if (mouse.equals(cheese)) {
+			Draw.setFont(Font.l);
 			Draw.textBG(mouse.x, mouse.y - Cell.w + Math.cos(Time.time * 0.01) * 2, 'Yum! I love cheese.', { origin: new Vec2(0.5, 1) });
+			OBJ.create('Crumbs', Vec2.polar(mouse.angle, 14).add(mouse));
 			if (!gameOver) {
-				gameTimeText = `Time ${Time.toClockWithLeadingZero(gameTime)}.${(gameTime/1000).toFixed(2).split('.').pop()}`;
+				gameTimeText.push(getGameTimeText());
 				gameOver = true;
 			}
 		}
-		if (gameOver) {
-			const w = Cell.convertToWorld(-0.5, grid.h);
-			Draw.setFont(Font.m);
-			Draw.textBG(w.x, w.y, gameTimeText);
+		if (gameTimeText) {
+			const w = Cell.convertToWorld(-0.5, grid.h - 0.1);
+			Draw.setFont(Font.s);
+			Draw.setColor(C.darkOrange);
+			Draw.setHVAlign(Align.l, Align.m);
+			Utils.repeat(gameTimeText.length + !gameOver, (i) => {
+				const x = w.x + 67 * (i%12);
+				const y = w.y + 10 * ~~(i/12);
+				Draw.text(x + 8, y, i < gameTimeText.length? gameTimeText[i] : getGameTimeText());
+				Draw.imageTransformed('clock', x, y, 0.5, 0.5, 0);
+			});
 		}
-		else
+		if (!gameOver)
 			gameTime += Time.deltaTime;
 	}
 	if (Input.keyRepeat(KeyCode.Space))
 		Scene.restart();
 };
 
-NZ.start();
+NZ.start({
+	w: 832,
+	h: 900,
+	stylePreset: StylePreset.noGapCenter
+});
