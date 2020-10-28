@@ -13,11 +13,18 @@ class Cell {
 	static LEFT = 1;
 	static RIGHT = 2;
 	static BOTTOM = 3;
+	static convertToWorld(i, j) {
+		return {
+			x: 100 + i * Cell.w,
+			y: 100 + j * Cell.w
+		};
+	}
 	constructor(i, j) {
 		this.i = i;
 		this.j = j;
-		this.x = 100 + this.i * Cell.w;
-		this.y = 100 + this.j * Cell.w;
+		const w = Cell.convertToWorld(this.i, this.j);
+		this.x = w.x;
+		this.y = w.y;
 		this.edges = [1, 1, 1, 1];
 		this.discovered = false;
 		this.neighbours = [];
@@ -52,7 +59,7 @@ class Cell {
 		}
 	}
 	addNeighbour(grid, iOffset, jOffset) {
-		this.neighbours.push(grid.cells[grid.getIndex(this.i + iOffset, this.j + jOffset)]);
+		this.neighbours.push(grid.getCell(this.i + iOffset, this.j + jOffset));
 	}
 	findNeighbours(grid) {
 		if (this.i > 0)
@@ -197,6 +204,9 @@ class Grid {
 	getIndex(i, j) {
 		return i + j * this.w;
 	}
+	getCell(i, j) {
+		return this.cells[this.getIndex(i, j)];
+	}
 	add(v) {
 		this.cells.push(v);
 	}
@@ -227,21 +237,95 @@ class Grid {
 	}
 }
 
+class Sprite {
+	constructor(imageName, i, j) {
+		this.imageName = imageName;
+		this.i = i;
+		this.j = j;
+		this.x = 0;
+		this.y = 0;
+		this.imageAngle = 0;
+		this.updateWorldPosition();
+	}
+	reset(i, j) {
+		this.i = i || 0;
+		this.j = j || 0;
+		this.updateWorldPosition();
+	}
+	updateWorldPosition() {
+		const w = Cell.convertToWorld(this.i, this.j);
+		this.x = w.x;
+		this.y = w.y;
+	}
+	update() {}
+	draw() {
+		Draw.imageRotated(this.imageName, this.x, this.y, this.imageAngle);
+	}
+}
+
+// origin, name, src
+Loader.loadImage(Vec2.center, 'mouse', 'mouse.png');
+Loader.loadImage(Vec2.center, 'cheese', 'cheese.png');
+
 let grid;
+let mouse = new Sprite('mouse', 0, 0);
+let cheese = new Sprite('cheese', 0, 0);
+
+mouse.update = () => {
+	let i = mouse.i;
+	let j = mouse.j;
+	const cell = grid.getCell(i, j);
+	if (Input.keyDown(KeyCode.Up)) {
+		if (j > 0) {
+			if (!grid.getCell(i, j-1).edges[Cell.BOTTOM] && !cell.edges[Cell.TOP])
+				j--;
+		}
+		mouse.imageAngle = 270;
+	}
+	if (Input.keyDown(KeyCode.Left)) {
+		if (i > 0) {
+			if (!grid.getCell(i-1, j).edges[Cell.RIGHT] && !cell.edges[Cell.LEFT])
+				i--;
+		}
+		mouse.imageAngle = 180;
+	}
+	if (Input.keyDown(KeyCode.Down)) {
+		if (j < grid.h - 1) {
+			if (!grid.getCell(i, j+1).edges[Cell.TOP] && !cell.edges[Cell.BOTTOM])
+				j++;
+		}
+		mouse.imageAngle = 90;
+	}
+	if (Input.keyDown(KeyCode.Right)) {
+		if (i < grid.w - 1) {
+			if (!grid.getCell(i+1, j).edges[Cell.LEFT] && !cell.edges[Cell.RIGHT])
+				i++;
+		}
+		mouse.imageAngle = 0;
+	}
+	mouse.i = i;
+	mouse.j = j;
+	mouse.updateWorldPosition();
+};
 
 Scene.current.start = () => {
 	grid = new Grid(Mathz.irange(10, 25), Mathz.irange(10, 25));
 	grid.generator.algorithm = Mathz.choose(grid.generator.DFS, grid.generator.PRIM);
 	grid.init();
 	grid.start();
+	mouse.reset();
+	cheese.reset(grid.w - 1, grid.h - 1);
 };
 
 Scene.current.render = () => {
 	// if (Input.keyRepeat(KeyCode.Space))
 		grid.update();
 	grid.render();
-	if (Input.keyRepeat(KeyCode.Space))
-		Scene.restart();
+	if (!grid.generator.generating) {
+		mouse.update();
+		cheese.draw();
+		mouse.draw();
+	}
 };
 
 Scene.current.renderUI = () => {
@@ -250,7 +334,14 @@ Scene.current.renderUI = () => {
 		case grid.generator.PRIM: algorithmName = 'Prim/Jarnik'; break;
 		default: algorithmName = 'Randomized depth-first search'; break;
 	}
-	Draw.textBG(0, 0, algorithmName);
+	Draw.setFont(Font.m);
+	Draw.textBG(0, 0, `${algorithmName} (${grid.w}x${grid.h})`);
+	if (mouse.i === cheese.i && mouse.j === cheese.j) {
+		Draw.setFont(Font.xl);
+		Draw.textBG(mouse.x, mouse.y - Cell.w, 'Yum! I love cheese.', { origin: new Vec2(0.5, 1) });
+	}
+	if (Input.keyRepeat(KeyCode.Space))
+		Scene.restart();
 };
 
 NZ.start();
