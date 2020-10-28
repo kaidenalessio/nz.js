@@ -231,6 +231,7 @@ let grid;
 
 Scene.current.start = () => {
 	grid = new Grid(Mathz.irange(10, 25), Mathz.irange(10, 25));
+	grid.generator.algorithm = Mathz.choose(grid.generator.DFS, grid.generator.PRIM);
 	grid.init();
 	grid.start();
 };
@@ -241,6 +242,15 @@ Scene.current.render = () => {
 	grid.render();
 	if (Input.keyRepeat(KeyCode.Space))
 		Scene.restart();
+};
+
+Scene.current.renderUI = () => {
+	let algorithmName = '';
+	switch (grid.generator.algorithm) {
+		case grid.generator.PRIM: algorithmName = 'Prim/Jarnik'; break;
+		default: algorithmName = 'Randomized depth-first search'; break;
+	}
+	Draw.textBG(0, 0, algorithmName);
 };
 
 NZ.start();
