@@ -173,16 +173,31 @@ class Population extends NZObject {
 		const h = [];
 		this.forEach(i => {
 			let child;
+			// Select random parents
 			const parentA = Utils.pick(this.matingPool);
 			const parentB = Utils.pick(this.matingPool);
+			// if one of the parent has completed
 			if (parentA.completed || parentB.completed) {
-				child = Mathz.choose(parentA.dna, parentB.dna).clone();
-				child.mutationChance = 0.001; // 0.01% chance for each gene
+				const heir = parentA.completed? parentA : parentB;
+				// inherit traits from that one parent
+				child = heir.dna.clone();
+				// doesnt matter 0 or 1 as long as it's not in between,
+				// to tell that this dna is being dominated 100% of either parentA or B
+				child.crossoverValue = Mathz.choose(0, 1);
+				// mutate with 0.01% chance for each gene
+				child.mutationChance = 0.001;
 				child.mutation();
 			}
+			// if none of the selected parents have completed
 			else {
+				// crossover,
+				// inherit parentA + parentB with random midpoint (0-1)
+				// example:
+				// midpoint 0.2 means 20% parentA + 80% parentB;
+				// midpoint 0.63 means 63% parentA + 37% parentB;
 				child = parentA.dna.crossover(parentB.dna);
-				child.mutation(); // 0.01% default
+				// mutate with 0.1% (default) chance for each gene
+				child.mutation();
 			}
 			h.push(new Rocket(this, child));
 		});
