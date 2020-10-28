@@ -72,6 +72,7 @@ class Rocket extends Vehicle {
 		this.dna = dna;
 		this.crashed = false;
 		this.completed = false;
+		this.activeTime = 0;
 		this.distanceToTarget = 0;
 		const c = this.dna.crossoverValue;
 		this.c = C.makeRGBA(c * 255, 0, (1-c) * 255, 0.5);
@@ -81,8 +82,10 @@ class Rocket extends Vehicle {
 	}
 	calcFitness() {
 		const maxDistance = Math.max(Stage.w, Stage.h);
-		this.fitness = Mathz.map(this.distanceToTarget, 0, maxDistance, maxDistance, 0);
-		if (this.completed) this.fitness *= 10;
+		const distanceScore = Mathz.map(this.distanceToTarget, 0, maxDistance, 1, 0); // the closest the better (0-1)
+		const timeScore = (1 - this.activeTime / this.population.lifeSpan); // the fastest deactivate the better (0-1)
+		this.fitness = distanceScore * 100 + timeScore * 50;
+		if (this.completed) this.fitness *= 100;
 		if (this.crashed) this.fitness *= 0.1;
 	}
 	checkCollision() {
@@ -108,6 +111,7 @@ class Rocket extends Vehicle {
 			this.checkCollision();
 		}
 		if (!this.completed && !this.crashed) {
+			this.activeTime++;
 			this.updatePhysics();
 		}
 	}
@@ -121,7 +125,7 @@ class Population extends NZObject {
 	constructor(options) {
 		super();
 		this.target = options.target || Vec2.zero;
-		this.popSize = 200;
+		this.popSize = options.popSize || 100;
 		this.lifeSpan = options.lifeSpan || 100;
 		this.instances = [];
 		this.matingPool = [];
@@ -164,10 +168,12 @@ class Population extends NZObject {
 			const parentB = Utils.pick(this.matingPool);
 			if (parentA.completed || parentB.completed) {
 				child = Mathz.choose(parentA.dna, parentB.dna).clone();
+				child.mutationChance = 0.001; // 0.01% chance for each gene
+				child.mutation();
 			}
 			else {
 				child = parentA.dna.crossover(parentB.dna);
-				child.mutation();
+				child.mutation(); // 0.01% default
 			}
 			h.push(new Rocket(this, child));
 		});
@@ -200,12 +206,16 @@ class Barrier extends NZObject {
 		this.w = w;
 		this.h = h;
 	}
+	get hovered() {
+		return this.containsPoint(Input.mousePosition);
+	}
 	containsPoint(p) {
 		return p.x > this.x && p.x < this.x + this.w && p.y > this.y && p.y < this.y + this.h;
 	}
 	render() {
-		Draw.setColor(C.black);
+		Draw.setColor(C.slateBlue, C.black);
 		Draw.rect(this.x, this.y, this.w, this.h);
+		if (this.hovered) Draw.stroke();
 	}
 }
 
@@ -233,7 +243,9 @@ Scene.current.update = () => {
 		this.barrier.drawing = true;
 	}
 	else if (this.barrier.drawing && Input.mouseUp(0)) {
-		OBJ.create('Barrier', this.barrier.x, this.barrier.y, this.barrier.w, this.barrier.h);
+		if (Math.abs(this.barrier.w) > 10 && Math.abs(this.barrier.h) > 10) {
+			OBJ.create('Barrier', this.barrier.x, this.barrier.y, this.barrier.w, this.barrier.h);
+		}
 		this.barrier.drawing = false;
 	}
 	if (Input.mouseDown(2)) {
@@ -241,21 +253,56 @@ Scene.current.update = () => {
 			this.barrier.drawing = false;
 		}
 		else {
-			const options = {
-				target: Vec2.fromObject(Input.mousePosition),
-				lifeSpan: 240
-			};
-			OBJ.create('Population', options);
+			let onBarrier = false;
+			for (const b of OBJ.take('Barrier')) {
+				if (b.hovered) {
+					OBJ.remove(b.id);
+					onBarrier = true;
+					break;
+				}
+			}
+			if (!onBarrier) {
+				const options = {
+					target: Vec2.fromObject(Input.mousePosition),
+					popSize: 100,
+					lifeSpan: 240
+				};
+				OBJ.create('Population', options);
+				if (OBJ.count('Population') > 3) {
+					OBJ.remove(OBJ.take('Population')[0].id);
+				}
+			}
 		}
 	}
 };
 
 Scene.current.renderUI = () => {
+	let tooltip = '';
+	if (OBJ.count('Population') < 1) {
+		tooltip = 'Right click to place target.';
+	}
+	if (OBJ.count('Barrier') < 1) {
+		tooltip += '\nHold left click to create barrier.';
+	}
 	if (this.barrier.drawing && Input.mouseHold(0)) {
 		Draw.setAlpha(0.5);
 		Draw.setColor(C.black);
 		Draw.rect(this.barrier.x, this.barrier.y, this.barrier.w, this.barrier.h);
+		Draw.resetAlpha();
+		tooltip = 'Drag to adjust size.\nRelease to place barrier.';
 	}
+	else {
+		for (const b of OBJ.take('Barrier')) {
+			if (b.hovered) {
+				tooltip = 'Right click to remove barrier.';
+				break;
+			}
+		}
+	}
+	if (tooltip) {
+		Draw.textBG(Input.mouseX, Input.mouseY, tooltip, { origin: new Vec2(0.5, 1) });
+	}
+	Draw.textBG(0, 0, Time.FPS);
 };
 
 NZ.start({
