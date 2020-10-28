@@ -243,8 +243,12 @@ Scene.current.update = () => {
 		this.barrier.drawing = true;
 	}
 	else if (this.barrier.drawing && Input.mouseUp(0)) {
-		if (Math.abs(this.barrier.w) > 10 && Math.abs(this.barrier.h) > 10) {
-			OBJ.create('Barrier', this.barrier.x, this.barrier.y, this.barrier.w, this.barrier.h);
+		const w = Math.abs(this.barrier.w);
+		const h = Math.abs(this.barrier.h);
+		if (w > 10 && h > 10) {
+			const x = Math.min(this.barrier.x, Input.mouseX);
+			const y = Math.min(this.barrier.y, Input.mouseY);
+			OBJ.create('Barrier', x, y, w, h);
 		}
 		this.barrier.drawing = false;
 	}
@@ -282,7 +286,8 @@ Scene.current.renderUI = () => {
 		tooltip = 'Right click to place target.';
 	}
 	if (OBJ.count('Barrier') < 1) {
-		tooltip += '\nHold left click to create barrier.';
+		if (tooltip.length > 0) tooltip += '\n';
+		tooltip += 'Hold left click to create barrier.';
 	}
 	if (this.barrier.drawing && Input.mouseHold(0)) {
 		Draw.setAlpha(0.5);
