@@ -23,6 +23,12 @@ NZ.Time = {
 		}
 		this.frameCount++;
 	},
+	sin(amplitude=1, frequency=0.01) {
+		return Math.sin(this.time * frequency) * amplitude;
+	},
+	cos(amplitude=1, frequency=0.01) {
+		return Math.cos(this.time * frequency) * amplitude;
+	},
 	toSeconds(timeMs) {
 		return Math.floor(timeMs * 0.001);
 	},
