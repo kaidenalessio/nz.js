@@ -21,6 +21,17 @@ NZ.Font = {
 	familyDefault: 'Maven Pro, sans-serif',
 	generate(size, style='', family=NZ.Font.familyDefault) {
 		return { size, style, family };
+	},
+	createGoogleFontLink(fontName) {
+		const n = document.createElement('link');
+		n.href = `https://fonts.googleapis.com/css2?family=${fontName.split(' ').join('+')}&display=swap`;
+		n.rel = 'stylesheet';
+		return n;
+	},
+	embedGoogleFonts(...fontNames) {
+		for (const fontName of fontNames) {
+			document.head.appendChild(this.createGoogleFontLink(fontName));
+		}
 	}
 };
 

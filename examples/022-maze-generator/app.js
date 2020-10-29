@@ -464,5 +464,6 @@ Scene.current.renderUI = () => {
 NZ.start({
 	w: 832,
 	h: 900,
-	stylePreset: StylePreset.noGapCenter
+	stylePreset: StylePreset.noGapCenter,
+	embedGoogleFonts: 'Maven Pro'
 });

@@ -903,6 +903,17 @@ NZ.Font = {
 	familyDefault: 'Maven Pro, sans-serif',
 	generate(size, style='', family=NZ.Font.familyDefault) {
 		return { size, style, family };
+	},
+	createGoogleFontLink(fontName) {
+		const n = document.createElement('link');
+		n.href = `https://fonts.googleapis.com/css2?family=${fontName.split(' ').join('+')}&display=swap`;
+		n.rel = 'stylesheet';
+		return n;
+	},
+	embedGoogleFonts(...fontNames) {
+		for (const fontName of fontNames) {
+			document.head.appendChild(this.createGoogleFontLink(fontName));
+		}
 	}
 };
 
@@ -1378,6 +1389,7 @@ NZ.Loader = {
  * - NZ.UI
  * - NZ.OBJ
  * - NZ.Draw
+ * - NZ.Font
  * - NZ.Debug
  *	options = {
  *		w: stage width
@@ -1395,6 +1407,7 @@ NZ.Loader = {
  *		enablePersistent: enable instance to not get removed on NZ.OBJ.onSceneRestart() if it has property `persistent` set to true
  *		stageRedrawOnResize: (enabled by default) html canvas clear its drawing everytime it gets resized, set this to true to redraw the drawing when resizing
  *		stageAutoResize: (enabled by default) auto resize canvas when the stage gets resized, set this to false will strecth the canvas when resizing viewport
+ *		embedGoogleFonts: array of font names/specimen from fonts.google.com
  *	};
  */
 NZ.start = (options={}) => {
@@ -1488,6 +1501,17 @@ NZ.start = (options={}) => {
 
 	if (options.enablePersistent === true) {
 		NZ.OBJ.enablePersistent();
+	}
+	
+	if (options.embedGoogleFonts) {
+		let fontNames = [];
+		if (options.embedGoogleFonts instanceof Array) {
+			fontNames = options.embedGoogleFonts;
+		}
+		if (typeof options.embedGoogleFonts === 'string') {
+			fontNames.push(options.embedGoogleFonts);
+		}
+		NZ.Font.embedGoogleFonts(...fontNames);
 	}
 
 	NZ.Scene.restart();
