@@ -28,6 +28,7 @@ var NZ = NZ || {};
  *		stageRedrawOnResize: (enabled by default) html canvas clear its drawing everytime it gets resized, set this to true to redraw the drawing when resizing
  *		stageAutoResize: (enabled by default) auto resize canvas when the stage gets resized, set this to false will strecth the canvas when resizing viewport
  *		embedGoogleFonts: array of font names/specimen from fonts.google.com
+ *		favicon: favicon href, provide this will automatically appends a link to head
  *	};
  */
 NZ.start = (options={}) => {
@@ -132,6 +133,13 @@ NZ.start = (options={}) => {
 			fontNames.push(options.embedGoogleFonts);
 		}
 		NZ.Font.embedGoogleFonts(...fontNames);
+	}
+
+	if (options.favicon) {
+		const n = document.createElement('link');
+		n.rel = 'icon';
+		n.href = options.favicon;
+		document.head.appendChild(n);
 	}
 
 	NZ.Scene.restart();
