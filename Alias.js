@@ -28,6 +28,7 @@ const {
 	LineCap,
 	LineDash,
 	LineJoin,
+	BoundRect,
 	Primitive,
 	Transform,
 	StylePreset

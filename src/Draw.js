@@ -347,6 +347,9 @@ NZ.Draw = {
 	gridRect(column, row, cellWidth, cellHeight, isStroke=false) {
 		this.rect(column * cellWidth, row * cellHeight, cellWidth, cellHeight, isStroke);
 	},
+	boundRect(boundRect, isStroke=false) {
+		this.rect(boundRect.left, boundRect.top, boundRect.w, boundRect.h, isStroke);
+	},
 	primitiveBegin() {
 		this.vertices.length = 0;
 	},

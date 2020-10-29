@@ -1,3 +1,5 @@
+const Boot = Scene.create('Boot');
+
 Boot.start = () => {
 	// load image and sound
 };
