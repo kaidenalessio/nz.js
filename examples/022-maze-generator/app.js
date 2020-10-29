@@ -255,19 +255,13 @@ class Grid {
 	}
 }
 
-class Crumbs extends NZObject {
+class Particle extends NZObject {
 	constructor(pos) {
 		super();
 		this.pos = pos;
-		this.acc = new Vec2(0, 0.1);
-		this.vel = Vec2.polar(Mathz.range(200, 340), 3);
 		this.w = Mathz.range(1, 2);
 		this.winc = 0.07;
-		this.c = Mathz.choose(C.orange, C.darkOrange, C.darkOrange);
-	}
-	update() {
-		this.vel.add(this.acc);
-		this.pos.add(this.vel);
+		this.c = C.black;
 	}
 	render() {
 		Draw.setColor(this.c);
@@ -279,7 +273,32 @@ class Crumbs extends NZObject {
 	}
 }
 
+class Crumbs extends Particle {
+	constructor(pos) {
+		super(pos);
+		this.acc = new Vec2(0, 0.1);
+		this.vel = Vec2.polar(Mathz.range(200, 340), 3);
+		this.c = Mathz.choose(C.orange, C.darkOrange, C.darkOrange);
+	}
+	update() {
+		this.vel.add(this.acc);
+		this.pos.add(this.vel);
+	}
+	
+}
+
+class Footsteps extends Particle {
+	constructor(pos) {
+		super();
+		this.pos = pos;
+		this.w = Cell.w * 0.25;
+		this.winc = 0.2;
+		this.c = C.makeRGBA(0, 0.1);
+	}
+}
+
 OBJ.addLink('Crumbs', Crumbs);
+OBJ.addLink('Footsteps', Footsteps);
 
 class Sprite {
 	constructor(imageName, i, j) {
@@ -387,6 +406,9 @@ mouse.update = () => {
 		mouse.angle = 0;
 	}
 	if (keyUp || keyLeft || keyDown || keyRight) {
+		if (i !== mouse.i || j !== mouse.j) {
+			OBJ.create('Footsteps', Vec2.fromObject(mouse));
+		}
 		mouse.imageXScale = 1.25;
 		mouse.imageYScale = 0.75;
 	}
@@ -449,7 +471,7 @@ Scene.current.renderUI = () => {
 			const txt = 'Yum! I love cheese.';
 			const tw = Draw.getTextWidth(txt) * 0.5 + 5;
 			Draw.textBG(Mathz.clamp(mouse.x, tw, Stage.w - tw), Mathz.clamp(mouse.y - Cell.w + Math.cos(Time.time * 0.01) * 2, Font.l.size + 10, Stage.h), txt, { origin: new Vec2(0.5, 1) });
-			OBJ.create('Crumbs', Vec2.polar(mouse.angle, 14).add(mouse));
+			OBJ.create('Crumbs', Vec2.polar(mouse.angle, 10).add(mouse));
 			if (!gameOver) {
 				gameTimeText.push(getGameTimeText());
 				gameOver = true;
