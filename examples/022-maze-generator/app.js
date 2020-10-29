@@ -8,7 +8,7 @@ const createBounds = (x, y, w) => {
 };
 
 class Cell {
-	static w = 32;
+	static w = 24;
 	static TOP = 0;
 	static LEFT = 1;
 	static RIGHT = 2;
@@ -323,7 +323,7 @@ class Sprite {
 	draw() {
 		this.imageXScale = Mathz.range(this.imageXScale, 1, 0.1);
 		this.imageYScale = Mathz.range(this.imageYScale, 1, 0.1);
-		Draw.imageTransformed(this.imageName, this.xdraw, this.ydraw, this.imageXScale, this.imageYScale, this.imageAngle);
+		Draw.imageTransformed(this.imageName, this.xdraw, this.ydraw, this.imageXScale * 0.8, this.imageYScale * 0.8, this.imageAngle);
 	}
 }
 
@@ -456,15 +456,15 @@ Scene.current.renderUI = () => {
 			}
 		}
 		if (gameTimeText) {
-			const w = Cell.convertToWorld(-0.5, grid.h - 0.1);
-			Draw.setFont(Font.s);
+			const w = Cell.convertToWorld(0, grid.h);
+			Draw.setFont(Font.m);
 			Draw.setColor(C.darkOrange);
 			Draw.setHVAlign(Align.l, Align.m);
 			Utils.repeat(gameTimeText.length + !gameOver, (i) => {
-				const x = w.x + 67 * (i%12);
-				const y = w.y + 10 * ~~(i/12);
+				const x = w.x + 100 * (i%8);
+				const y = w.y + 16 * ~~(i/8);
 				Draw.text(x + 8, y, i < gameTimeText.length? gameTimeText[i] : getGameTimeText());
-				Draw.imageTransformed('clock', x, y, 0.5, 0.5, 0);
+				Draw.imageTransformed('clock', x - 4, y, 0.75, 0.75, 0);
 			});
 		}
 		if (!gameOver)
