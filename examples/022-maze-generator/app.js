@@ -321,8 +321,8 @@ class Sprite {
 		this.ydraw = this.y + Math.sin(Time.time * 0.01) * 2;
 	}
 	draw() {
-		this.imageXScale = Mathz.range(this.imageXScale, 1, 0.2);
-		this.imageYScale = Mathz.range(this.imageYScale, 1, 0.2);
+		this.imageXScale = Mathz.range(this.imageXScale, 1, 0.1);
+		this.imageYScale = Mathz.range(this.imageYScale, 1, 0.1);
 		Draw.imageTransformed(this.imageName, this.xdraw, this.ydraw, this.imageXScale, this.imageYScale, this.imageAngle);
 	}
 }
@@ -336,14 +336,27 @@ let grid;
 let mouse = new Sprite('mouse', 0, 0);
 let cheese = new Sprite('cheese', 0, 0);
 
+mouse.keys = [0, 0, 0, 0];
+mouse.keyTime = 0;
+mouse.keyCodes = [KeyCode.Up, KeyCode.Left, KeyCode.Down, KeyCode.Right];
+mouse.interval = 70;
 mouse.update = () => {
 	let i = mouse.i;
 	let j = mouse.j;
 	const cell = grid.getCell(i, j);
-	const keyUp = Input.keyRepeat(KeyCode.Up);
-	const keyLeft = Input.keyRepeat(KeyCode.Left);
-	const keyDown = Input.keyRepeat(KeyCode.Down);
-	const keyRight = Input.keyRepeat(KeyCode.Right);
+	for (const i in mouse.keys) {
+		mouse.keys[i] = false;
+		if (Time.time > mouse.keyTime) {
+			if (Input.keyHold(mouse.keyCodes[i])) {
+				mouse.keys[i] = true;
+				mouse.keyTime = Time.time + mouse.interval;
+			}
+		}
+	}
+	const keyUp = mouse.keys[0];
+	const keyLeft = mouse.keys[1];
+	const keyDown = mouse.keys[2];
+	const keyRight = mouse.keys[3];
 	const oncheese = mouse.equals(cheese);
 	if (keyUp) {
 		if (!oncheese && j > 0) {
@@ -386,8 +399,8 @@ mouse.update = () => {
 	mouse.i = i;
 	mouse.j = j;
 	mouse.updateWorldPosition();
-	mouse.xdraw = Mathz.range(mouse.xdraw, mouse.x, 0.5);
-	mouse.ydraw = Mathz.range(mouse.ydraw, mouse.y, 0.5);
+	mouse.xdraw = Mathz.range(mouse.xdraw, mouse.x, 0.4);
+	mouse.ydraw = Mathz.range(mouse.ydraw, mouse.y, 0.4);
 	mouse.imageAngle = Mathz.smoothRotate(mouse.angle, mouse.imageAngle, 20);
 };
 
