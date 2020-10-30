@@ -1,6 +1,10 @@
 (() => { for (const i of ['xxl', 'xl', 'l', 'm', 'sm', 's']) { Font[i].family = 'Montserrat, sans-serif'; } })();
 Font.mb = Font.generate(Font.m.size, Font.bold, Font.m.family);
 
+Loader.loadSound('Pop', 'pop.mp3');
+Loader.loadSound('BGS', 'snorkel.mp3');
+Loader.loadSound('Freezing', 'freezing.mp3');
+
 class Sub extends NZObject3D {
 	constructor() {
 		super(Mesh.makeSub());
@@ -47,9 +51,11 @@ class Ice extends NZObject3D {
 class Player extends NZObject {
 	constructor(position, name) {
 		super();
-		this.yto = 0;
 		this.move = 0;
 		this.moves = [1, 2, 3, 4, 5];
+		this.vel = Vec2.zero;
+		this.acc = Vec2.zero;
+		this.target = Vec2.zero;
 		this.position = 0;
 		this.setPosition(position);
 		this.sub = OBJ.create('Sub');
@@ -65,6 +71,7 @@ class Player extends NZObject {
 			this.sub.wave.baseAmp = 10 * (1 - (this.lives / this.maxlives));
 			if (this.lives <= 0) {
 				this.sub.wave.baseAmp = 0;
+				Sound.play('Freezing');
 				OBJ.create('Ice', this.sub.transform.position, this.sub.transform.rotation);
 				this.alive = false;
 				return true;
@@ -74,16 +81,29 @@ class Player extends NZObject {
 	}
 	setPosition(value) {
 		this.position = value;
-		this.yto = 130 + this.position * 70;
+		this.target.y = 130 + this.position * 70;
 	}
 	getMove(i) {
 		if (i === undefined) i = Mathz.irange(this.moves.length);
 		return this.moves.splice(i, 1)[0];
 	}
+	start() {
+		this.target.x = Stage.mid.w;
+	}
+	updatePhys() {
+		this.vel.add(this.acc);
+		this.vel.mult(0.8);
+		this.vel.limit(10);
+		this.acc.mult(0.1);
+		this.acc.add(Vec2.sub(this.target, this).mult(0.1));
+		this.x += this.vel.x;
+		this.y += this.vel.y;
+	}
 	update() {
-		this.x = Stage.mid.w;
-		this.y = Mathz.range(this.y, this.yto, 0.05);
-		this.sub.transform.position.y = (Stage.mid.h - this.y) / Stage.mid.h * 30;
+		this.updatePhys();
+		const ydif = (Stage.mid.h - this.y) / Stage.mid.h;
+		this.sub.transform.position.z = 30 + -2 * ydif;
+		this.sub.transform.position.y = 30 * ydif;
 	}
 	render() {
 		Draw.onTransform(0, Math.cos(Time.time * 0.01 + this.position) * 2, 1, 1, 0, () => {
@@ -142,6 +162,7 @@ class MoveCard extends NZObject {
 								Manager.addMove(com.id, com.getMove());
 							}
 						}
+						Sound.play('Pop');
 					}
 				}
 			}
@@ -288,6 +309,10 @@ const Manager = {
 Scene.current.start = () => {
 	Manager.start();
 	Utils.repeat(5, (i) => OBJ.create('MoveCard', i));
+	if (!Sound.isPlaying('BGS')) {
+		Sound.loop('BGS');
+	}
+	Sound.play('Pop');
 };
 
 Scene.current.update = () => {
