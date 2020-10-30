@@ -74,6 +74,9 @@ class Player extends NZObject {
 				Sound.play('Freezing');
 				OBJ.create('Ice', this.sub.transform.position, this.sub.transform.rotation);
 				this.alive = false;
+				if (this.id === Manager.player.id) {
+					Manager.transition();
+				}
 				return true;
 			}
 		}
@@ -191,7 +194,7 @@ class MoveCard extends NZObject {
 				: C.grey // darken base color (not active)
 			, this.isActive? C.black : this.darkC // outline color
 		);
-		Draw.onTransform(this.x, this.y, 1, 1, 4 * (this.i - 2), () => {
+		Draw.onTransform(this.x, this.y + Math.cos(Time.time * 0.01 + this.i) * 2, 1, 1, 4 * (this.i - 2), () => {
 			Draw.rect(-MoveCard.w * 0.5, 4, MoveCard.w, -MoveCard.h);
 			Draw.stroke();
 			Draw.setFont(Font.l);
@@ -301,12 +304,29 @@ const Manager = {
 		this.moveCheck();
 		if (Time.frameCount % 5 === 0 || this.gameOver) {
 			const n = OBJ.create('Particle', Mathz.range(0, Stage.w), Stage.h + 100);
-			n.a = 0.1;
+			n.a = 0.2;
+		}
+	},
+	transitionTime: 0,
+	transitionDelay: 2,
+	transitionDuration: 10,
+	transition() {
+		this.transitionTime = Time.frameCount + this.transitionDuration + this.transitionDelay;
+	},
+	renderTransition() {
+		if (Time.frameCount < this.transitionTime) {
+			const t = Mathz.clamp((this.transitionTime - Time.frameCount) / (this.transitionDuration - this.transitionDelay), 0, 1);
+			Draw.setColor(C.white);
+			Draw.setAlpha(t);
+			Draw.rect(0, 0, Stage.w, Stage.h);
+			Draw.resetAlpha();
 		}
 	}
 };
 
 Scene.current.start = () => {
+	Stage.setPixelRatio(Stage.HIGH);
+	Stage.applyPixelRatio();
 	Manager.start();
 	Utils.repeat(5, (i) => OBJ.create('MoveCard', i));
 	if (!Sound.isPlaying('BGS')) {
@@ -326,6 +346,8 @@ Scene.current.render = () => {
 		i.processTrisToRaster(mp, ts);
 	}
 	ts.sort((a, b) => a.depth - b.depth);
+	Draw.setLineCap(LineCap.round);
+	Draw.setLineJoin(LineJoin.round);
 	for (let i = ts.length - 1; i >= 0; --i) {
 		if (typeof ts[i].ref === 'number') Draw.setAlpha(ts[i].ref);
 		Draw.setColor(ts[i].bakedColor);
@@ -338,12 +360,14 @@ Scene.current.render = () => {
 };
 
 Scene.current.renderUI = () => {
+	Draw.ctx.save();
+	Draw.ctx.translate(0, Math.sin(Time.time * 0.005) * 2);
 	Draw.setFont(Font.m);
 	Draw.setColor(C.black);
 	Draw.setVAlign(Align.b);
 	if (!Manager.gameOver) {
 		Draw.setHAlign(Align.l);
-		Draw.text(10, Stage.h - MoveCard.h - 10, 'Pick your move:');
+		Draw.text(10, Stage.h - MoveCard.h - 10, 'Pick your move card:');
 	}
 	else {
 		Draw.setHAlign(Align.c);
@@ -356,7 +380,9 @@ Scene.current.renderUI = () => {
 	Draw.setColor(C.black);
 	Draw.setHVAlign(Align.c, Align.t);
 	Draw.text(Stage.mid.w, 20, Manager.titleText);
+	Draw.ctx.restore();
 	if (Input.keyDown(KeyCode.Space)) Scene.restart();
+	Manager.renderTransition();
 };
 
 NZ.start({
