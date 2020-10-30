@@ -5,4 +5,4 @@ NZ.start({
 	stylePreset: StylePreset.noGapCenter,
 	embedGoogleFonts: 'Grandstander'
 });
-Scene.start('Boot');
+Scene.start('Play');
