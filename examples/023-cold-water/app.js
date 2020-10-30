@@ -11,22 +11,36 @@ class Sub extends NZObject3D {
 				tri.baseColor = this.c;
 			}
 		});
+		this.wave = {
+			amp: 1,
+			freq: 0.01,
+			baseAmp: 1,
+			baseFreq: 0.01,
+			update() {
+				this.amp = Mathz.range(this.amp, this.baseAmp, 0.05);
+				this.freq = Mathz.range(this.freq, this.baseFreq, 0.05);
+			}
+		};
+	}
+	start() {
+		this.transform.rotation.y = 140 + (2 - this.id) * 2;
 	}
 	update() {
-		this.transform.rotation.y += 1;
+		this.transform.position.y += Math.cos(Time.time * 0.005 + this.id * 0.1) * 0.1;
+		this.transform.rotation.y -= Math.cos(Time.time * 0.0005) * 0.2;
+		this.transform.rotation.x = Math.cos(Time.time * this.wave.freq + this.id * this.id) * this.wave.amp;
+		this.transform.rotation.z = Math.sin(Time.time * this.wave.freq + this.id * this.id) * this.wave.amp;
+		this.wave.update();
 	}
-	static render() {
-		const mp = Mat4.makeProjection(Stage.h / Stage.w);
-		const ts = [];
-		for (const i of OBJ.take('Sub')) {
-			i.processTrisToRaster(mp, ts);
-		}
-		ts.sort((a, b) => a.depth - b.depth);
-		for (let i = ts.length - 1; i >= 0; --i) {
-			Draw.setColor(ts[i].bakedColor);
-			Draw.pointTriangle(ts[i].p[0], ts[i].p[1], ts[i].p[2]);
-			Draw.stroke();
-		}
+}
+
+class Ice extends NZObject3D {
+	constructor(pos, rot) {
+		super(Mesh.makeIce(), pos, rot);
+		this.mesh.onAllTris((tri) => {
+			tri.baseColor = C.skyBlue;
+			tri.ref = 0.2; // alpha value
+		});
 	}
 }
 
@@ -39,15 +53,22 @@ class Player extends NZObject {
 		this.position = 0;
 		this.setPosition(position);
 		this.sub = OBJ.create('Sub');
-		this.lives = 2;
+		this.maxlives = 2;
+		this.lives = this.maxlives;
 		this.name = name || '';
+		this.alive = true;
 	}
 	hit() {
-		this.lives--;
-		if (this.lives <= 0) {
-			OBJ.remove(this.sub.id);
-			OBJ.remove(this.id);
-			return true;
+		if (this.alive) {
+			this.lives--;
+			this.sub.wave.amp = 10;
+			this.sub.wave.baseAmp = 10 * (1 - (this.lives / this.maxlives));
+			if (this.lives <= 0) {
+				this.sub.wave.baseAmp = 0;
+				OBJ.create('Ice', this.sub.transform.position, this.sub.transform.rotation);
+				this.alive = false;
+				return true;
+			}
 		}
 		return false;
 	}
@@ -65,22 +86,25 @@ class Player extends NZObject {
 		this.sub.transform.position.y = (Stage.mid.h - this.y) / Stage.mid.h * 30;
 	}
 	render() {
-		Draw.setFont(Font.mb);
-		Draw.setColor(C.black);
-		Draw.setHVAlign(Align.l, Align.b);
-		Draw.text(this.x + 50, this.y - 4, this.name);
-		Utils.repeat(2, (i) => {
-			const w = 14 + 2 * (i === 0);
-			const gap = 20;
-			Draw.setColor(i > 0? C.red : C.black);
-			Utils.repeat(this.lives, (j) => {
-				Draw.heart(this.x + 58 + j * gap, this.y + 8, w, w);
+		Draw.onTransform(0, Math.cos(Time.time * 0.01 + this.position) * 2, 1, 1, 0, () => {
+			Draw.setFont(this === Manager.player? Font.mb : Font.m);
+			Draw.setColor(C.black);
+			Draw.setHVAlign(Align.l, Align.b);
+			Draw.text(this.x + 50, this.y - 4, this.name);
+			Utils.repeat(2, (i) => {
+				const w = 14 + 2 * (i === 0);
+				const gap = 20;
+				Draw.setColor(i > 0? C.red : C.black);
+				Utils.repeat(this.lives, (j) => {
+					Draw.heart(this.x + 58 + j * gap, this.y + 8, w, w);
+				});
 			});
+			if (this.move > 0) {
+				Draw.onTransform(this.x - 50, this.y - 4, 1, 1, -10, () => {
+					Draw.textBG(0, 0, `${this.move}`, { origin: new Vec2(1, 0.5), bgColor: MoveCard.colors[this.move - 1], textColor: C.black });
+				});
+			}
 		});
-		if (this.move > 0) {
-			Draw.textBG(this.x - 50, this.y - 4, `${this.move}`, { origin: new Vec2(1, 0.5), bgColor: MoveCard.colors[this.move - 1], textColor: C.black });
-		}
-		// Draw.text(this.x, this.y, this.id + ':' + this.moves.join() + '(' + this.move + ')' + ' lives: ' + this.lives);
 	}
 }
 
@@ -106,7 +130,7 @@ class MoveCard extends NZObject {
 		if (BoundRect.hover(this.bound)) {
 			const p = Manager.player;
 			const playerHasMove = Manager.moveIncludes(p.id);
-			if (Input.mouseDown(0)) {
+			if (Input.touchDown(0) || Input.mouseDown(0)) {
 				if (this.isActive) {
 					if (!playerHasMove) {
 						this.yOutAcc = -8;
@@ -159,9 +183,42 @@ class MoveCard extends NZObject {
 	}
 }
 
+class Particle extends NZObject {
+	constructor(x, y) {
+		super();
+		this.x = x;
+		this.y = y;
+		this.xvel = Mathz.range(-1, 1);
+		this.yvel = Mathz.range(-5, -1);
+		this.a = 1;
+		this.c = C.white;
+		this.r = Mathz.range(12, 24);
+		this.rvel = -0.1;
+		this.nzDepth = 999;
+	}
+	update() {
+		this.x += this.xvel;
+		this.y += this.yvel;
+		this.r += this.rvel;
+		if (this.r < 1) {
+			OBJ.remove(this.id);
+		}
+	}
+	render() {
+		Draw.setAlpha(this.a);
+		Draw.setColor(this.c);
+		Draw.circle(this.x, this.y, this.r);
+		Draw.resetAlpha();
+	}
+}
+
+OBJ.mark('3d');
 OBJ.addLink('Sub', Sub);
+OBJ.addLink('Ice', Ice);
+OBJ.endMark();
 OBJ.addLink('Player', Player);
 OBJ.addLink('MoveCard', MoveCard);
+OBJ.addLink('Particle', Particle);
 
 const Manager = {
 	player: null,
@@ -186,7 +243,7 @@ const Manager = {
 		this.gameOver = false;
 		this.titleText = 'Cold Water';
 	},
-	update() {
+	moveCheck() {
 		if (this.moveBuffer.length >= this.players.length) {
 			Utils.repeat(this.players.length, () => {
 				const n = this.moveBuffer.shift();
@@ -197,23 +254,33 @@ const Manager = {
 			this.moveBuffer.length = 0;
 			const lastPlayer = this.players[this.players.length - 1];
 			// game over check
-			if (lastPlayer.id === this.player.id // if we are the last
-				&& lastPlayer.moves.length > 0 // and we still have moves, means the game not end yet
-				&& lastPlayer.lives === 1) { // but we have one left and we about to get hit, so,
-				// we lost
-				lastPlayer.lives = 0;
-				this.titleText = 'You froze!';
-				this.gameOver = true;
-			}
-			if (this.gameOver) return;
 			if (lastPlayer.hit()) {
+				if (lastPlayer.id === this.player.id) {
+					this.titleText = 'You froze!';
+					this.gameOver = true;
+					OBJ.clear('MoveCard');
+				}
 				this.players.pop();
 			}
 			// game over check
-			if (this.player.moves.length < 1) {
-				this.titleText = this.player.position < 3? `#${this.player.position+1}` : 'Game over';
+			if (!this.gameOver && this.player.moves.length < 1) {
+				this.titleText = this.player.position < 1? 'You won!' : 'You froze!';
 				this.gameOver = true;
+				for (const p of this.players) {
+					if (p.position > 0) {
+						while (p.alive) {
+							p.hit();
+						}
+					}
+				}
 			}
+		}
+	},
+	update() {
+		this.moveCheck();
+		if (Time.frameCount % 5 === 0 || this.gameOver) {
+			const n = OBJ.create('Particle', Mathz.range(0, Stage.w), Stage.h + 100);
+			n.a = 0.1;
 		}
 	}
 };
@@ -228,7 +295,21 @@ Scene.current.update = () => {
 };
 
 Scene.current.render = () => {
-	Sub.render();
+	const mp = Mat4.makeProjection(Stage.h / Stage.w);
+	const ts = [];
+	for (const i of OBJ.takeMark('3d')) {
+		i.processTrisToRaster(mp, ts);
+	}
+	ts.sort((a, b) => a.depth - b.depth);
+	for (let i = ts.length - 1; i >= 0; --i) {
+		if (typeof ts[i].ref === 'number') Draw.setAlpha(ts[i].ref);
+		Draw.setColor(ts[i].bakedColor);
+		Draw.pointTriangle(ts[i].p[0], ts[i].p[1], ts[i].p[2]);
+		if (Draw.ctx.globalAlpha >= 1) {
+			Draw.stroke();
+		}
+		Draw.resetAlpha();
+	}
 };
 
 Scene.current.renderUI = () => {
@@ -244,6 +325,7 @@ Scene.current.renderUI = () => {
 		Draw.text(Stage.mid.w, Stage.h - 20, 'Press space to restart game.');
 		Draw.setFont(Font.mb);
 		Draw.text(Stage.mid.w, Stage.h - 20 - Font.m.size * 2, 'Thanks for playing!');
+		if (Input.touchDown(0)) Scene.restart();
 	}
 	Draw.setFont(Font.xxl);
 	Draw.setColor(C.black);
@@ -257,5 +339,6 @@ NZ.start({
 	h: 640,
 	bgColor: BGColor.sea,
 	stylePreset: StylePreset.noGapCenter,
-	embedGoogleFonts: 'Montserrat'
+	embedGoogleFonts: 'Montserrat',
+	favicon: 'favicon.png'
 });
