@@ -19,9 +19,8 @@ class Submarine extends NZObject3D {
 		this.alive = true;
 		this.lives = 4;
 		this.maxlives = 4;
-	}
-	move(m) {
-		console.log(m);
+		this.move = 0;
+		this.c = baseColor;
 	}
 	hit() {
 		if (this.alive) {
@@ -34,10 +33,10 @@ class Submarine extends NZObject3D {
 		this.wave.amp = 10;
 	}
 	start() {
-		this.transform.rotation.y = 250 + this.id * 10;
+		this.transform.rotation.y = 110 + this.id * 10;
 	}
 	update() {
-		this.transform.position.y += Math.cos(Time.time * 0.005) * 0.1;
+		this.transform.position.y += Math.cos(Time.time * 0.005 + this.id * 0.1) * 0.1;
 		this.transform.rotation.y -= Math.cos(Time.time * 0.0005) * 0.2;
 		this.transform.rotation.x = Math.cos(Time.time * this.wave.freq + this.id * this.id) * this.wave.amp;
 		this.transform.rotation.z = Math.sin(Time.time * this.wave.freq + this.id * this.id) * this.wave.amp;
@@ -47,11 +46,6 @@ class Submarine extends NZObject3D {
 			this.transform.position.y -= 0.5;
 			if (this.transform.position.y < -50) {
 				OBJ.remove(this.id);
-			}
-		}
-		else {
-			if (Input.keyDown(KeyCode.Enter)) {
-				this.move(+prompt('move'));
 			}
 		}
 	}
