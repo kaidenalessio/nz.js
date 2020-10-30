@@ -35,6 +35,7 @@ class Player extends NZObject {
 		this.moves = [1, 2, 3, 4, 5];
 		this.position = 0;
 		this.setPosition(position);
+		this.sub = OBJ.create('Sub');
 	}
 	setPosition(value) {
 		this.position = value;
@@ -47,6 +48,7 @@ class Player extends NZObject {
 	update() {
 		this.x = Stage.mid.w;
 		this.y = Mathz.range(this.y, this.yto, 0.05);
+		this.sub.transform.position.y = (Stage.mid.h - this.y) / Stage.mid.h * 25;
 	}
 	render() {
 		Draw.setFont(Font.l);
@@ -68,7 +70,6 @@ Scene.current.start = () => {
 	Manager.players.length = 0;
 	Utils.repeat(4, (i) => Manager.players.push(OBJ.create('Player', i)));
 	Manager.player = Utils.pick(Manager.players);
-	OBJ.create('Sub');
 };
 
 Scene.current.update = () => {
