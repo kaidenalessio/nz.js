@@ -36,6 +36,16 @@ class Player extends NZObject {
 		this.position = 0;
 		this.setPosition(position);
 		this.sub = OBJ.create('Sub');
+		this.lives = 3;
+	}
+	hit() {
+		this.lives--;
+		if (this.lives <= 0) {
+			OBJ.remove(this.sub.id);
+			OBJ.remove(this.id);
+			return true;
+		}
+		return false;
 	}
 	setPosition(value) {
 		this.position = value;
@@ -54,7 +64,7 @@ class Player extends NZObject {
 		Draw.setFont(Font.l);
 		Draw.setColor(C.black);
 		Draw.setHVAlign(Align.c, Align.m);
-		Draw.text(this.x, this.y, this.id + ':' + this.moves.join() + '(' + this.move + ')');
+		Draw.text(this.x, this.y, this.id + ':' + this.moves.join() + '(' + this.move + ')' + ' lives: ' + this.lives);
 	}
 }
 
@@ -79,6 +89,9 @@ Scene.current.update = () => {
 		}
 		Manager.players.sort((a, b) => b.move - a.move);
 		Utils.repeat(Manager.players.length, (i) => Manager.players[i].setPosition(i));
+		if (Manager.players[Manager.players.length - 1].hit()) {
+			Manager.players.pop();
+		}
 	}
 };
 
