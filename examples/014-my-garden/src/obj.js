@@ -4,7 +4,7 @@ class MyPot extends NZObject {
 		this.x = x;
 		this.y = y;
 		this.plant = plant;
-		this.plant.visible = false;
+		this.plant.nzVisible = false;
 		this.imageName = 'pot';
 		this.image = Draw.images[this.imageName];
 		this.imageScale = 0.5;
@@ -139,7 +139,7 @@ class MyPlant extends NZGameObject {
 class MyOxygen extends NZGameObject {
 	constructor(x, y) {
 		super();
-		this.depth = -999;
+		this.nzDepth = -999;
 		this.r = 25;
 		this.scale = this.r / 25;
 		this.pos = new Vec2(x, y);
