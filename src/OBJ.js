@@ -9,10 +9,10 @@ class NZObject {
 		this.x = 0;
 		this.y = 0;
 		this.id = 0;
-		this.depth = 0;
-		this.active = true;
-		this.visible = true;
-		this.persistent = false;
+		this.nzDepth = 0;
+		this.nzActive = true;
+		this.nzVisible = true;
+		this.nzPersistent = false;
 	}
 	start() {}
 	preUpdate() {}
@@ -58,7 +58,7 @@ NZ.OBJ = {
 		if (this._updateDisabled) return;
 		for (let i = this.list.length - 1; i >= 0; --i) {
 			for (let j = this.list[i].length - 1; j >= 0; --j) {
-				if (this.list[i][j].active) {
+				if (this.list[i][j].nzActive) {
 					this.list[i][j].preUpdate();
 					// Check if instance is not removed
 					if (this.list[i][j]) this.list[i][j].update();
@@ -72,12 +72,12 @@ NZ.OBJ = {
 		const h = [];
 		for (let i = this.list.length - 1; i >= 0; --i) {
 			for (let j = this.list[i].length - 1; j >= 0; --j) {
-				if (this.list[i][j].visible) {
+				if (this.list[i][j].nzVisible) {
 					h.push(this.list[i][j]);
 				}
 			}
 		}
-		h.sort((a, b) => a.depth < b.depth? -1 : 1);
+		h.sort((a, b) => a.nzDepth < b.nzDepth? -1 : 1);
 		for (let i = h.length - 1; i >= 0; --i) {
 			h[i].render();
 		}
@@ -85,7 +85,7 @@ NZ.OBJ = {
 	updateFrom(name) {
 		const i = this.getIndex(name);
 		for (let j = this.list[i].length - 1; j >= 0; --j) {
-			if (this.list[i][j].active) {
+			if (this.list[i][j].nzActive) {
 				this.list[i][j].preUpdate();
 				if (this.list[i][j]) this.list[i][j].update();
 				if (this.list[i][j]) this.list[i][j].postUpdate();
@@ -96,11 +96,11 @@ NZ.OBJ = {
 		const h = [];
 		const i = this.getIndex(name);
 		for (let j = this.list[i].length - 1; j >= 0; --j) {
-			if (this.list[i][j].visible) {
+			if (this.list[i][j].nzVisible) {
 				h.push(this.list[i][j]);
 			}
 		}
-		h.sort((a, b) => a.depth < b.depth? -1 : 1);
+		h.sort((a, b) => a.nzDepth < b.nzDepth? -1 : 1);
 		for (let j = h.length - 1; j >= 0; --j) {
 			h[j].render();
 		}
@@ -172,7 +172,7 @@ NZ.OBJ = {
 			NZ.OBJ.clearAll();
 		}
 		else {
-			NZ.OBJ.clearAllExcept((i) => i.persistent);
+			NZ.OBJ.clearAllExcept((i) => i.nzPersistent);
 		}
 	},
 	push(name, instance) {
