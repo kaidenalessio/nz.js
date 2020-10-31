@@ -8,6 +8,19 @@ class Cell {
 		cell.x = cell.i * Cell.w;
 		cell.y = cell.j * Cell.w;
 	}
+	static colors = [
+		C.aliceBlue, C.antiqueWhite, C.aqua, C.aquamarine, C.azure, C.beige, C.bisque, C.blanchedAlmond,
+		C.blue, C.blueViolet, C.burlyWood, C.cadetBlue, C.chartreuse, C.coral, C.cornsilk, C.crimson,
+		C.cyan, C.darkViolet, C.deepPink, C.deepSkyBlue, C.dodgerBlue, C.fireBrick, C.floralWhite,
+		C.forestGreen, C.fuchsia, C.gainsboro, C.ghostWhite, C.gold, C.goldenRod, C.green, C.greenYellow,
+		C.honeyDew, C.hotPink, C.indianRed, C.indigo, C.ivory, C.khaki, C.lavender, C.lavenderBlush,
+		C.lawnGreen, C.lemonChiffon, C.lightBlue, C.lightCoral, C.lightCyan, C.lightGoldenRodYellow,
+		C.lightGray, C.lightGreen, C.lightPink, C.lightSalmon, C.lightSeaGreen, C.lightSkyBlue, C.lightSlateGray,
+		C.lightSteelBlue, C.lightYellow, C.lime, C.limeGreen, C.linen, C.magenta, C.mediumAquaMarine, C.mediumBlue,
+		C.mediumOrchid, C.mediumPurple, C.mediumSeaGreen, C.mediumSlateBlue, C.mediumSpringGreen, C.mediumTurquoise,
+		C.mintCream, C.mistyRose, C.moccasin, C.navajoWhite, C.orange, C.orangeRed, C.orchid, C.paleGoldenRod,
+		C.paleGreen, C.paleTurquoise, C.paleVioletRed, C.papayaWhip, C.slateBlue
+	];
 	constructor(i, j) {
 		this.i = i;
 		this.j = j;
@@ -60,6 +73,26 @@ class Grid {
 			index: i
 		};
 	}
+	static blocked(aCell, bCell) {
+		if (!(aCell instanceof Cell) || !(bCell instanceof Cell)) return true;
+		if (aCell.i === bCell.i) {
+			if (aCell.j < bCell.j) {
+				return (aCell.walls[Cell.BOTTOM] === 1 || bCell.walls[Cell.TOP] === 1);
+			}
+			if (aCell.j > bCell.j) {
+				return (aCell.walls[Cell.TOP] === 1 || bCell.walls[Cell.BOTTOM] === 1);
+			}
+		}
+		if (aCell.j === bCell.j) {
+			if (aCell.i < bCell.i) {
+				return (aCell.walls[Cell.RIGHT] === 1 || bCell.walls[Cell.LEFT] === 1);
+			}
+			if (aCell.i > bCell.i) {
+				return (aCell.walls[Cell.LEFT] === 1 || bCell.walls[Cell.RIGHT] === 1);
+			}
+		}
+		return true;
+	}
 	constructor(w, h) {
 		this.w = w;
 		this.h = h;
@@ -80,7 +113,7 @@ class Grid {
 		const h = this.h * Cell.w;
 		this.canvas = Draw.createCanvasExt(w, h, () => {
 			for (let i = this.cells.length - 1; i >= 0; --i) {
-				Draw.setColor(C.random());
+				Draw.setColor(Utils.pick(Cell.colors));
 				this.cells[i].draw();
 			}
 			Draw.setLineWidth(4);
@@ -190,24 +223,27 @@ class Mouse {
 		return this.keyW || this.keyA || this.keyS || this.keyD;
 	}
 	update() {
+		this.keyW = this.keyA = this.keyS = this.keyD = false;
 		if (Time.frameCount > this.keyTime) {
 			this.keyW = Input.keyHold(KeyCode.Up);
 			this.keyA = Input.keyHold(KeyCode.Left);
 			this.keyS = Input.keyHold(KeyCode.Down);
 			this.keyD = Input.keyHold(KeyCode.Right);
-			this.keyTime = Time.frameCount + 5;
+			this.keyTime = Time.frameCount + 3;
 		}
 		if (this.keyAny()) {
-			let i = this.i;
-			let j = this.j;
-			i += this.keyD - this.keyA;
-			j += this.keyS - this.keyW;
-			this.i = Mathz.clamp(i, 0, this.grid.w - 1);
-			this.j = Mathz.clamp(j, 0, this.grid.h - 1);
+			const prev = Grid.get(this.grid, this.i, this.j).cell;
+			this.i += this.keyD - this.keyA;
+			this.j += this.keyS - this.keyW;
+			const curr = Grid.get(this.grid, this.i, this.j).cell;
+			if (!(curr instanceof Cell) || Grid.blocked(prev, curr)) {
+				this.i = prev.i;
+				this.j = prev.j;
+			}
 			Cell.calcPosition(this);
 		}
-		this.xdraw = Mathz.range(this.xdraw, this.x, 0.2);
-		this.ydraw = Mathz.range(this.ydraw, this.y, 0.2);
+		this.xdraw = Mathz.range(this.xdraw, this.x, 0.25);
+		this.ydraw = Mathz.range(this.ydraw, this.y, 0.25);
 	}
 	draw() {
 		Draw.setColor(C.white);
