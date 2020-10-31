@@ -10,6 +10,8 @@ class Cell {
 		this.x = 0;
 		this.y = 0;
 		this.walls = [1, 1, 1, 1];
+		this.visited = false;
+		this.neighbours = [];
 		this.calcPosition();
 	}
 	calcPosition() {
@@ -30,9 +32,34 @@ class Cell {
 			Draw.line(this.x, this.y + Cell.w, this.x + Cell.w, this.y + Cell.w);
 		}
 	}
+	addNeighbour(grid, iOffset, jOffset) {
+		this.neighbours.push(Grid.get(grid, this.i + iOffset, this.j + jOffset).cell);
+	}
+	findNeighbours(grid) {
+		this.neighbours.length = 0;
+		if (this.i > 0) {
+			this.addNeighbour(grid, -1, 0);
+		}
+		if (this.j > 0) {
+			this.addNeighbour(grid, 0, -1);
+		}
+		if (this.i < grid.w - 1) {
+			this.addNeighbour(grid, 1, 0);
+		}
+		if (this.j < grid.h - 1) {
+			this.addNeighbour(grid, 0, 1);
+		}
+	}
 }
 
 class Grid {
+	static get(grid, i, j) {
+		i = i + j * grid.w;
+		return {
+			cell: grid.cells[i],
+			index: i
+		};
+	}
 	constructor(w, h) {
 		this.w = w;
 		this.h = h;
@@ -42,8 +69,8 @@ class Grid {
 		this.drawCanvas();
 	}
 	makeCells() {
-		for (let i = 0; i < this.w; i++) {
-			for (let j = 0; j < this.h; j++) {
+		for (let j = 0; j < this.h; j++) {
+			for (let i = 0; i < this.w; i++) {
 				this.cells.push(new Cell(i, j));
 			}
 		}
@@ -66,20 +93,93 @@ class Grid {
 			Draw.imageEl(this.canvas, 0, 0);
 		}
 	}
-	getIndex(i, j) {
-		return i + j * this.w;
+}
+
+class MazeGen {
+	static generate(grid) {
+		const m = new MazeGen(grid);
+		m.run();
+		return grid;
 	}
-	removeWallsBetween(a, b) {
+	constructor(grid) {
+		this.grid = grid;
+		this.current = null;
+		this.openset = [];
+		this.complete = false;
+		this.init();
+	}
+	init() {
+		for (const n of this.grid.cells) {
+			n.findNeighbours(this.grid);
+			n.visited = false;
+		}
+		this.current = this.grid.cells[0];
+	}
+	removeWalls(aCell, bCell) {
+		if (aCell.i === bCell.i) {
+			if (aCell.j < bCell.j) {
+				aCell.walls[Cell.BOTTOM] = bCell.walls[Cell.TOP] = 0;
+			}
+			if (aCell.j > bCell.j) {
+				aCell.walls[Cell.TOP] = bCell.walls[Cell.BOTTOM] = 0;
+			}
+		}
+		if (aCell.j === bCell.j) {
+			if (aCell.i < bCell.i) {
+				aCell.walls[Cell.RIGHT] = bCell.walls[Cell.LEFT] = 0;
+			}
+			if (aCell.i > bCell.i) {
+				aCell.walls[Cell.LEFT] = bCell.walls[Cell.RIGHT] = 0;
+			}
+		}
+	}
+	moveTo(next) {
+		this.removeWalls(this.current, next);
+		this.current = next;
+	}
+	step() {
+		if (!this.current.visited) {
+			this.openset.push(this.current);
+			this.current.visited = true;
+		}
+		const neighbours = [];
+		for (const n of this.current.neighbours) {
+			if (!n.visited) {
+				neighbours.push(n);
+			}
+		}
+		if (neighbours.length) {
+			this.moveTo(Utils.pick(neighbours));
+		}
+		else {
+			if (this.openset.length > 0) {
+				this.current = this.openset.pop();
+			}
+			else {
+				this.complete = true;
+				return false;
+			}
+		}
+		return true;
+	}
+	run() {
+		while (!this.complete) {
+			this.step();
+		}
+		this.grid.drawCanvas();
 	}
 }
 
-const Play = Scene.create('Play');
 let grid;
+
+const Play = Scene.create('Play');
+
 Play.start = () => {
-	grid = new Grid(50, 30);
+	grid = MazeGen.generate(new Grid(50, 30));
 };
 
-Play.update = () => {};
+Play.update = () => {
+};
 
 Play.render = () => {
 	Draw.onTransform(Stage.mid.w, Stage.mid.h, 1, 1, 0, () => {
