@@ -301,8 +301,9 @@ const Manager = {
 	time: 0,
 	level: 0,
 	levelMax: 4,
+	totalTime: { time: 0, text: '' },
 	levelTime: [],
-	levelSize: [4, 8, 16, 32, 64],
+	levelSize: [2, 2, 2, 2, 2],//4, 8, 16, 32, 64],
 	levelName: ['Easy', 'Normal', 'Hard', 'Expert', 'Unachievable'],
 	mouseColor: C.red, // red means not set
 	myMiceId: Mathz.irange(0, 10),
@@ -315,6 +316,16 @@ const Manager = {
 			value.r = Cell.w * 0.1875;
 			Manager.mice.push(value);
 		});
+	},
+	hs: [],
+	hsNode: 'miceysscoreeh',
+	hsNodeEvent(snapshot) {
+		Manager.hs.length = 0;
+		snapshot.forEach((child) => {
+			const value = child.val();
+			Manager.hs.push(value);
+		});
+		Manager.hs.sort((a, b) => a.time.time - b.time.time);
 	},
 	nextLevel() {
 		this.level++;
@@ -332,6 +343,11 @@ const Manager = {
 				time: this.time,
 				text: Time.toStopwatch(this.time)
 			};
+			this.totalTime.time = 0;
+			for (const t of this.levelTime) {
+				this.totalTime.time += t.time;
+			}
+			this.totalTime.text = Time.toStopwatch(this.totalTime.time);
 			Scene.start('Result');
 		}
 	},
@@ -391,7 +407,7 @@ const Manager = {
 		let y = 0;
 		Draw.setFont(Font.m);
 		const draw = (text) => {
-			Draw.textBG(0, y, text);
+			Draw.textBG(0, y, text, { bgColor: 'rgba(0, 0, 0, 0.5)' });
 			y += Font.m.size + 10;
 		};
 		draw(`Grid size: (${this.grid.w}x${this.grid.h})`);
@@ -403,15 +419,23 @@ const Manager = {
 };
 
 Time.toStopwatch = (timeMs) => {
-	const hh = Math.abs(Math.floor(timeMs / 3600000)).toString().padStart(2).replace(/\s/, '0');
+	// const hh = Math.abs(Math.floor(timeMs / 3600000)).toString().padStart(2).replace(/\s/, '0');
 	const mm = Math.abs(Math.floor(timeMs / 60000) % 60).toString().padStart(2).replace(/\s/, '0');
 	const ssms = (timeMs * 0.001).toFixed(2).padStart(5).replace(/\s/, '0')
-	return `${hh}:${mm}:${ssms}`;
+	return `${mm}:${ssms}`;
 };
 
 const Menu = Scene.create('Menu');
 Menu.renderUI = () => {
-	Draw.textBG(Stage.mid.w, Stage.mid.h, 'Press space to start', { origin: Vec2.center });
+	Draw.setFont(Font.mb);
+	Draw.textBG(Stage.w * 0.1, 20, 'Leaderboard');
+	Draw.setFont(Font.m);
+	Draw.textBG(Stage.w * 0.7, Stage.mid.h - 50, 'Press space to start', { origin: Vec2.center });
+	for (let i = 0; i < 16; i++) {
+		if (i < Manager.hs.length) {
+			Draw.textBG(Stage.w * 0.1, 50 + i * 30, `#${i+1} ${Manager.hs[i].name} ${Manager.hs[i].time.text}`);
+		}
+	}
 	if (Input.keyDown(KeyCode.Space)) {
 		Manager.reset();
 		Scene.start('Play');
@@ -425,20 +449,33 @@ Play.render = () => Manager.render();
 Play.renderUI = () => Manager.renderUI();
 
 const Result = Scene.create('Result');
+Result.hsAdded = false;
+Result.start = () => {
+	Result.hsAdded = false;
+};
 Result.renderUI = () => {
 	// draw title
 	Draw.setFont(Font.xl);
 	Draw.textBG(Stage.mid.w, 20, 'YOU GOT ALL THE CHEESE!', { origin: new Vec2(0.5, 0) });
 	// draw time
-	Draw.setFont(Font.l);
-	for (let i = Manager.levelTime.length - 1; i >= 0; --i) {
-		Draw.textBG(Stage.w * 0.25, Stage.mid.h + (i - 2.5) * (Font.l.size + 14), `${Manager.levelName[i]}: ${Manager.levelTime[i].text}`, { origin: Vec2.center });
+	const n = Manager.levelTime.length;
+	for (let i = n; i >= 0; --i) {
+		const x = Stage.w * 0.25;
+		const y = Stage.mid.h + (i - 2.5) * (Font.l.size + 14);
+		if (i === n) {
+			Draw.setFont(Font.lb);
+			Draw.textBG(x, y, `Total: ${Manager.totalTime.text}`, { origin: Vec2.center });
+		}
+		else {
+			Draw.setFont(Font.l);
+			Draw.textBG(x, y, `${Manager.levelName[i]}: ${Manager.levelTime[i].text}`, { origin: Vec2.center });
+		}
 	}
 	// draw info
 	Draw.setFont(Font.mb);
 	Draw.textBG(Stage.mid.w, Stage.h - 50, 'Thanks for playing!', { origin: new Vec2(0.5, 1) });
 	Draw.setFont(Font.m);
-	Draw.textBG(Stage.mid.w, Stage.h - 20, 'Press space to back to menu', { origin: new Vec2(0.5, 1) });
+	Draw.textBG(Stage.mid.w, Stage.h - 20, Result.hsAdded? 'Press space to back to menu' : 'Press space to add your time to the leaderboard', { origin: new Vec2(0.5, 1) });
 	// draw big mouse
 	Draw.setColor(Manager.mouseColor);
 	Draw.circle(Stage.w * 0.7, Stage.mid.h + 30, 50);
@@ -452,15 +489,31 @@ Result.renderUI = () => {
 	});
 	// logic
 	if (Input.keyDown(KeyCode.Space)) {
-		Scene.start('Menu');
+		if (!Result.hsAdded) {
+			let name = prompt('Please provide a name for the leaderboard:');
+			if (name === undefined) {
+				name = '';
+			}
+			const n = {
+				name: name,
+				time: Manager.totalTime
+			};
+			Net.fbDatabase.ref(Manager.hsNode).push(n);
+			Result.hsAdded = true;
+		}
+		else {
+			Scene.start('Menu');
+		}
 	}
 };
 
 Net.init(Manager.fbConfig);
+Net.startListening(Manager.hsNode, Manager.hsNodeEvent);
 Net.startListening(Manager.miceNode, Manager.miceNodeEvent);
 
 (() => { for (const i of ['xxl', 'xl', 'l', 'm', 'sm', 's']) { Font[i].family = 'Montserrat Alternates, sans-serif'; } })();
 Font.mb = Font.generate(Font.m.size, Font.bold, Font.m.family);
+Font.lb = Font.generate(Font.l.size, Font.bold, Font.l.family);
 
 NZ.start({
 	w: 960,
@@ -470,4 +523,4 @@ NZ.start({
 	embedGoogleFonts: 'Montserrat Alternates'
 });
 
-Scene.start('Result');
+Scene.start('Menu');
