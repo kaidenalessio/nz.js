@@ -8,6 +8,9 @@ class Cell {
 		cell.x = cell.i * Cell.w;
 		cell.y = cell.j * Cell.w;
 	}
+	static equals(aCell, bCell) {
+		return (aCell.i === bCell.i && aCell.j === bCell.j);
+	}
 	static colors = [
 		C.aliceBlue, C.antiqueWhite, C.aqua, C.aquamarine, C.azure, C.beige, C.bisque, C.blanchedAlmond,
 		C.blue, C.blueViolet, C.burlyWood, C.cadetBlue, C.chartreuse, C.coral, C.cornsilk, C.crimson,
@@ -217,6 +220,7 @@ class Mouse {
 		this.keyA = false;
 		this.keyS = false;
 		this.keyD = false;
+		this.c = C.white;
 		Cell.calcPosition(this);
 	}
 	keyAny() {
@@ -233,46 +237,138 @@ class Mouse {
 		}
 		if (this.keyAny()) {
 			const prev = Grid.get(this.grid, this.i, this.j).cell;
-			this.i += this.keyD - this.keyA;
-			this.j += this.keyS - this.keyW;
-			const curr = Grid.get(this.grid, this.i, this.j).cell;
-			if (!(curr instanceof Cell) || Grid.blocked(prev, curr)) {
-				this.i = prev.i;
-				this.j = prev.j;
+			this.i = Mathz.clamp(this.i + this.keyD - this.keyA, 0, this.grid.w - 1);
+			this.j = Mathz.clamp(this.j + this.keyS - this.keyW, 0, this.grid.h - 1);
+			if (!Cell.equals(this, prev)) {
+				const curr = Grid.get(this.grid, this.i, this.j).cell;
+				if (Grid.blocked(prev, curr)) {
+					this.i = prev.i;
+					this.j = prev.j;
+				}
+				else {
+					Cell.calcPosition(this);
+				}
 			}
-			Cell.calcPosition(this);
 		}
 		this.xdraw = Mathz.range(this.xdraw, this.x, 0.25);
 		this.ydraw = Mathz.range(this.ydraw, this.y, 0.25);
 	}
 	draw() {
-		Draw.setColor(C.white);
+		Draw.setColor(this.c);
 		Draw.circle(Stage.mid.w, Stage.mid.h, Cell.w * 0.25);
 	}
 }
 
-let grid, mouse;
+class Cheese {
+	constructor(grid, i, j) {
+		this.grid = grid;
+		this.i = i;
+		this.j = j;
+		this.x = 0;
+		this.y = 0;
+		Cell.calcPosition(this);
+	}
+	draw() {
+		Draw.setColor(C.orange);
+		Draw.circle(this.x + Cell.w * 0.5, this.y + Cell.w * 0.5, (Cell.w * 0.25 * (1 + Time.cos(0.1))));
+	}
+}
+
+let gridSize = 4;
+const Manager = {
+	grid: null,
+	mouse: null,
+	cheese: null,
+	time: 0,
+	level: 0,
+	levelMax: 4,
+	levelTime: [],
+	levelSize: [4, 4, 4, 4, 4],//4, 8, 16, 32, 64],
+	levelName: ['Easy', 'Normal', 'Hard', 'Expert', 'Unachievable'],
+	nextLevel() {
+		this.level++;
+		if (this.level <= this.levelMax) {
+			this.levelTime[this.level - 1] = {
+				time: this.time,
+				text: Time.toStopwatch(this.time)
+			};
+			this.time = 0;
+			Scene.restart();
+		}
+		else {
+			this.level = this.levelMax;
+			Scene.start('Result');
+		}
+	},
+	reset() {
+		this.level = 0;
+		this.levelTime.length = 0;
+	},
+	start() {
+		const w = this.levelSize[this.level];
+		this.grid = MazeGen.generate(new Grid(w, w));
+		this.mouse = new Mouse(this.grid, 0, 0);
+		this.cheese = new Cheese(this.grid, this.grid.w - 1, this.grid.h - 1);
+	},
+	update() {
+		this.mouse.update();
+		if (Cell.equals(this.mouse, this.cheese)) {
+			this.nextLevel();
+		}
+		else {
+			this.time += Time.deltaTime;
+		}
+	},
+	render() {
+		Draw.onTransform(Stage.mid.w - this.mouse.xdraw - Cell.w * 0.5, Stage.mid.h - this.mouse.ydraw - Cell.w * 0.5, 1, 1, 0, () => {
+			this.grid.draw();
+			this.cheese.draw();
+		});
+		this.mouse.draw();
+	},
+	renderUI() {
+		let y = 0;
+		Draw.setFont(Font.m);
+		const draw = (text) => {
+			Draw.textBG(0, y, text);
+			y += Font.m.size + 10;
+		};
+		draw(`Grid size: (${this.grid.w}x${this.grid.h})`);
+		draw(`${this.levelName[this.level]}: ${Time.toStopwatch(this.time)}`);
+		for (let i = this.levelTime.length - 1; i >= 0; --i) {
+			draw(`${this.levelName[i]}: ${this.levelTime[i].text}`);
+		}
+	}
+};
+
+Time.toStopwatch = (timeMs) => {
+	const hh = Math.abs(Math.floor(timeMs / 3600000)).toString().padStart(2).replace(/\s/, '0');
+	const mm = Math.abs(Math.floor(timeMs / 60000) % 60).toString().padStart(2).replace(/\s/, '0');
+	const ssms = (timeMs * 0.001).toFixed(2).padStart(5).replace(/\s/, '0')
+	return `${hh}:${mm}:${ssms}`;
+};
+
+const Menu = Scene.create('Menu');
+Menu.renderUI = () => {
+	Draw.textBG(Stage.mid.w, Stage.mid.h, 'Press space to start', { origin: Vec2.center });
+	if (Input.keyDown(KeyCode.Space)) {
+		Manager.reset();
+		Scene.start('Play');
+	}
+};
 
 const Play = Scene.create('Play');
+Play.start = () => Manager.start();
+Play.update = () => Manager.update();
+Play.render = () => Manager.render();
+Play.renderUI = () => Manager.renderUI();
 
-Play.start = () => {
-	grid = MazeGen.generate(new Grid(100, 100));
-	mouse = new Mouse(grid, 0, 0);
-};
-
-Play.update = () => {
-	mouse.update();
-};
-
-Play.render = () => {
-	Draw.onTransform(Stage.mid.w - mouse.xdraw - Cell.w * 0.5, Stage.mid.h - mouse.ydraw - Cell.w * 0.5, 1, 1, 0, () => {
-		grid.draw();
-	});
-	mouse.draw();
-};
-
-Play.renderUI = () => {
-	Draw.textBG(0, 0, Time.FPS);
+const Result = Scene.create('Result');
+Result.renderUI = () => {
+	Draw.textBG(Stage.mid.w, Stage.mid.h, 'Press space to back to menu', { origin: Vec2.center });
+	if (Input.keyDown(KeyCode.Space)) {
+		Scene.start('Menu');
+	}
 };
 
 NZ.start({
@@ -282,4 +378,4 @@ NZ.start({
 	stylePreset: StylePreset.noGapCenter
 });
 
-Scene.start('Play');
+Scene.start('Menu');
