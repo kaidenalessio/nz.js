@@ -1,9 +1,13 @@
 class Cell {
-	static w = 16;
+	static w = 24;
 	static TOP = 0;
 	static LEFT = 1;
 	static RIGHT = 2;
 	static BOTTOM = 3;
+	static calcPosition(cell) {
+		cell.x = cell.i * Cell.w;
+		cell.y = cell.j * Cell.w;
+	}
 	constructor(i, j) {
 		this.i = i;
 		this.j = j;
@@ -12,11 +16,7 @@ class Cell {
 		this.walls = [1, 1, 1, 1];
 		this.visited = false;
 		this.neighbours = [];
-		this.calcPosition();
-	}
-	calcPosition() {
-		this.x = this.i * Cell.w;
-		this.y = this.j * Cell.w;
+		Cell.calcPosition(this);
 	}
 	draw() {
 		if (this.walls[Cell.TOP]) {
@@ -79,18 +79,18 @@ class Grid {
 		const w = this.w * Cell.w;
 		const h = this.h * Cell.w;
 		this.canvas = Draw.createCanvasExt(w, h, () => {
-			Draw.setColor(C.white);
 			for (let i = this.cells.length - 1; i >= 0; --i) {
+				Draw.setColor(C.random());
 				this.cells[i].draw();
 			}
-			Draw.setLineWidth(2);
+			Draw.setLineWidth(4);
 			Draw.rect(0, 0, w, h, true);
 			Draw.resetLineWidth();
 		});
 	}
 	draw() {
 		if (this.canvas instanceof HTMLCanvasElement) {
-			Draw.imageEl(this.canvas, 0, 0);
+			Draw.imageEl(this.canvas, 0, 0, Vec2.zero);
 		}
 	}
 }
@@ -170,21 +170,69 @@ class MazeGen {
 	}
 }
 
-let grid;
+class Mouse {
+	constructor(grid, i, j) {
+		this.grid = grid;
+		this.i = i;
+		this.j = j;
+		this.x = 0;
+		this.y = 0;
+		this.xdraw = 0;
+		this.ydraw = 0;
+		this.keyTime = 0;
+		this.keyW = false;
+		this.keyA = false;
+		this.keyS = false;
+		this.keyD = false;
+		Cell.calcPosition(this);
+	}
+	keyAny() {
+		return this.keyW || this.keyA || this.keyS || this.keyD;
+	}
+	update() {
+		if (Time.frameCount > this.keyTime) {
+			this.keyW = Input.keyHold(KeyCode.Up);
+			this.keyA = Input.keyHold(KeyCode.Left);
+			this.keyS = Input.keyHold(KeyCode.Down);
+			this.keyD = Input.keyHold(KeyCode.Right);
+			this.keyTime = Time.frameCount + 5;
+		}
+		if (this.keyAny()) {
+			let i = this.i;
+			let j = this.j;
+			i += this.keyD - this.keyA;
+			j += this.keyS - this.keyW;
+			this.i = Mathz.clamp(i, 0, this.grid.w - 1);
+			this.j = Mathz.clamp(j, 0, this.grid.h - 1);
+			Cell.calcPosition(this);
+		}
+		this.xdraw = Mathz.range(this.xdraw, this.x, 0.2);
+		this.ydraw = Mathz.range(this.ydraw, this.y, 0.2);
+	}
+	draw() {
+		Draw.setColor(C.white);
+		Draw.circle(Stage.mid.w, Stage.mid.h, Cell.w * 0.25);
+	}
+}
+
+let grid, mouse;
 
 const Play = Scene.create('Play');
 
 Play.start = () => {
-	grid = MazeGen.generate(new Grid(50, 30));
+	grid = MazeGen.generate(new Grid(100, 100));
+	mouse = new Mouse(grid, 0, 0);
 };
 
 Play.update = () => {
+	mouse.update();
 };
 
 Play.render = () => {
-	Draw.onTransform(Stage.mid.w, Stage.mid.h, 1, 1, 0, () => {
+	Draw.onTransform(Stage.mid.w - mouse.xdraw - Cell.w * 0.5, Stage.mid.h - mouse.ydraw - Cell.w * 0.5, 1, 1, 0, () => {
 		grid.draw();
 	});
+	mouse.draw();
 };
 
 Play.renderUI = () => {
