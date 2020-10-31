@@ -207,7 +207,12 @@ class MazeGen {
 }
 
 class Mouse {
-	constructor(grid, i, j) {
+	static colors = [
+		C.lightSkyBlue, C.lightYellow, C.lightSalmon, C.lightGreen, C.lightCyan, C.ivory,
+		C.mediumSpringGreen, C.mistyRose, C.moccasin, C.oldLace, C.paleGoldenRod, C.paleGreen,
+		C.lavender, C.khaki, C.lavenderBlush, C.mediumSeaGreen, C.mediumPurple, C.mediumSlateBlue
+	];
+	constructor(grid, i, j, c, onMove) {
 		this.grid = grid;
 		this.i = i;
 		this.j = j;
@@ -220,7 +225,8 @@ class Mouse {
 		this.keyA = false;
 		this.keyS = false;
 		this.keyD = false;
-		this.c = C.white;
+		this.c = c;
+		this.onMove = () => onMove();
 		Cell.calcPosition(this);
 	}
 	keyAny() {
@@ -247,6 +253,7 @@ class Mouse {
 				}
 				else {
 					Cell.calcPosition(this);
+					this.onMove();
 				}
 			}
 		}
@@ -255,7 +262,8 @@ class Mouse {
 	}
 	draw() {
 		Draw.setColor(this.c);
-		Draw.circle(Stage.mid.w, Stage.mid.h, Cell.w * 0.25);
+		const r = (Cell.w * 0.25 * (1 + Time.cos(0.1)));
+		Draw.circle(Stage.mid.w, Stage.mid.h, r);
 	}
 }
 
@@ -269,13 +277,24 @@ class Cheese {
 		Cell.calcPosition(this);
 	}
 	draw() {
-		Draw.setColor(C.orange);
+		Draw.setColor(C.orange, C.orangeRed);
 		Draw.circle(this.x + Cell.w * 0.5, this.y + Cell.w * 0.5, (Cell.w * 0.25 * (1 + Time.cos(0.1))));
+		Draw.setLineWidth(Cell.w * 0.1);
+		Draw.stroke();
+		Draw.resetLineWidth();
 	}
 }
 
-let gridSize = 4;
 const Manager = {
+	fbConfig: {
+		apiKey: '',
+		authDomain: '',
+		databaseURL: '',
+		projectId: '',
+		storageBucket: '',
+		messagingSenderId: '',
+		appId: ''
+	},
 	grid: null,
 	mouse: null,
 	cheese: null,
@@ -283,8 +302,20 @@ const Manager = {
 	level: 0,
 	levelMax: 4,
 	levelTime: [],
-	levelSize: [4, 4, 4, 4, 4],//4, 8, 16, 32, 64],
+	levelSize: [4, 8, 16, 32, 64],
 	levelName: ['Easy', 'Normal', 'Hard', 'Expert', 'Unachievable'],
+	mouseColor: C.red, // red means not set
+	myMiceId: Mathz.irange(0, 10),
+	mice: [],
+	miceNode: 'myboymiceys',
+	miceNodeEvent(snapshot) {
+		Manager.mice.length = 0;
+		snapshot.forEach((child) => {
+			const value = child.val();
+			value.r = Cell.w * 0.1875;
+			Manager.mice.push(value);
+		});
+	},
 	nextLevel() {
 		this.level++;
 		if (this.level <= this.levelMax) {
@@ -297,17 +328,33 @@ const Manager = {
 		}
 		else {
 			this.level = this.levelMax;
+			this.levelTime[this.level] = {
+				time: this.time,
+				text: Time.toStopwatch(this.time)
+			};
 			Scene.start('Result');
 		}
 	},
 	reset() {
 		this.level = 0;
 		this.levelTime.length = 0;
+		this.mouseColor = Utils.pick(Mouse.colors);
 	},
 	start() {
+		if (this.mouseColor === C.red) {
+			this.mouseColor = Utils.pick(Mouse.colors);
+		}
 		const w = this.levelSize[this.level];
 		this.grid = MazeGen.generate(new Grid(w, w));
-		this.mouse = new Mouse(this.grid, 0, 0);
+		this.mouse = new Mouse(this.grid, 0, 0, this.mouseColor, () => {
+			Net.fbDatabase.ref(`${Manager.miceNode}/${Manager.myMiceId}`).set({
+				id: Manager.myMiceId,
+				x: Manager.mouse.x,
+				y: Manager.mouse.y,
+				c: Manager.mouse.c
+			});
+		});
+		this.mouse.onMove();
 		this.cheese = new Cheese(this.grid, this.grid.w - 1, this.grid.h - 1);
 	},
 	update() {
@@ -318,11 +365,25 @@ const Manager = {
 		else {
 			this.time += Time.deltaTime;
 		}
+		for (const m of this.mice) {
+			if (m.id !== this.myMiceId) {
+				m.r -= Cell.w * 0.01;
+				if (m.r <= 1) {
+					m.r = 1;
+				}
+			}
+		}
 	},
 	render() {
 		Draw.onTransform(Stage.mid.w - this.mouse.xdraw - Cell.w * 0.5, Stage.mid.h - this.mouse.ydraw - Cell.w * 0.5, 1, 1, 0, () => {
 			this.grid.draw();
 			this.cheese.draw();
+			for (const m of this.mice) {
+				if (m.id !== this.myMiceId) {
+					Draw.setColor(m.c);
+					Draw.circle(m.x + Cell.w * 0.5, m.y + Cell.w * 0.5, m.r);
+				}
+			}
 		});
 		this.mouse.draw();
 	},
@@ -365,17 +426,48 @@ Play.renderUI = () => Manager.renderUI();
 
 const Result = Scene.create('Result');
 Result.renderUI = () => {
-	Draw.textBG(Stage.mid.w, Stage.mid.h, 'Press space to back to menu', { origin: Vec2.center });
+	// draw title
+	Draw.setFont(Font.xl);
+	Draw.textBG(Stage.mid.w, 20, 'YOU GOT ALL THE CHEESE!', { origin: new Vec2(0.5, 0) });
+	// draw time
+	Draw.setFont(Font.l);
+	for (let i = Manager.levelTime.length - 1; i >= 0; --i) {
+		Draw.textBG(Stage.w * 0.25, Stage.mid.h + (i - 2.5) * (Font.l.size + 14), `${Manager.levelName[i]}: ${Manager.levelTime[i].text}`, { origin: Vec2.center });
+	}
+	// draw info
+	Draw.setFont(Font.mb);
+	Draw.textBG(Stage.mid.w, Stage.h - 50, 'Thanks for playing!', { origin: new Vec2(0.5, 1) });
+	Draw.setFont(Font.m);
+	Draw.textBG(Stage.mid.w, Stage.h - 20, 'Press space to back to menu', { origin: new Vec2(0.5, 1) });
+	// draw big mouse
+	Draw.setColor(Manager.mouseColor);
+	Draw.circle(Stage.w * 0.7, Stage.mid.h + 30, 50);
+	// draw big cheese
+	Utils.repeat(5, (i) => {
+		Draw.setColor(C.orange, C.orangeRed);
+		Draw.circle(Stage.w * 0.7 + (i - 2) * 40, Stage.mid.h + 50 + (i % 2) * 20, ((30 + 2 * i) * (1 + Time.cos(0.1))));
+		Draw.setLineWidth(4);
+		Draw.stroke();
+		Draw.resetLineWidth();
+	});
+	// logic
 	if (Input.keyDown(KeyCode.Space)) {
 		Scene.start('Menu');
 	}
 };
 
+Net.init(Manager.fbConfig);
+Net.startListening(Manager.miceNode, Manager.miceNodeEvent);
+
+(() => { for (const i of ['xxl', 'xl', 'l', 'm', 'sm', 's']) { Font[i].family = 'Montserrat Alternates, sans-serif'; } })();
+Font.mb = Font.generate(Font.m.size, Font.bold, Font.m.family);
+
 NZ.start({
 	w: 960,
 	h: 540,
 	bgColor: BGColor.dark,
-	stylePreset: StylePreset.noGapCenter
+	stylePreset: StylePreset.noGapCenter,
+	embedGoogleFonts: 'Montserrat Alternates'
 });
 
-Scene.start('Menu');
+Scene.start('Result');
