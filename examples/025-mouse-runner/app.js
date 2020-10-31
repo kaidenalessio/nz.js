@@ -419,10 +419,10 @@ const Manager = {
 };
 
 Time.toStopwatch = (timeMs) => {
-	// const hh = Math.abs(Math.floor(timeMs / 3600000)).toString().padStart(2).replace(/\s/, '0');
 	const mm = Math.abs(Math.floor(timeMs / 60000) % 60).toString().padStart(2).replace(/\s/, '0');
-	const ssms = (timeMs * 0.001).toFixed(2).padStart(5).replace(/\s/, '0')
-	return `${mm}:${ssms}`;
+	const ss = Math.abs(Math.floor(timeMs * 0.001) % 60).toString().padStart(2).replace(/\s/, '0')
+	let ms = (timeMs * 0.001).toFixed(2).padStart(10).substr(8);
+	return `${mm}:${ss}.${ms}`;
 };
 
 const Menu = Scene.create('Menu');
