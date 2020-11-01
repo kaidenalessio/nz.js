@@ -1,4 +1,4 @@
-const NZ = {};
+var NZ = NZ || {};
 
 NZ.BGColor = {
 	cream: ['white', 'mintcream'],
@@ -20,7 +20,7 @@ NZ.BGColor = {
 NZ.BGColor.keys = Object.keys(NZ.BGColor);
 NZ.BGColor.keys.splice(NZ.BGColor.keys.length - 2);
 NZ.BGColor.list = Object.values(NZ.BGColor);
-NZ.BGColor.list.splice(NZ.BGColor.list.length - 2);
+NZ.BGColor.list.splice(NZ.BGColor.list.length - 2);var NZ = NZ || {};
 
 // MODULES REQUIRED: NZ.Input
 // the idea is to have mouse click only trigger single boundrect from the list
@@ -98,7 +98,7 @@ NZ.BoundRect.rect = function(x, y, w, h) {
 		if (y === undefined) y = x;
 		return (x >= this.left && x <= this.right && y >= this.top && y <= this.bottom);
 	};
-};
+};var NZ = NZ || {};
 
 // Collection of color variables and functions to make or convert color in CSS color style
 NZ.C = {
@@ -324,11 +324,11 @@ NZ.C = {
 NZ.C.keys = Object.keys(NZ.C);
 NZ.C.keys.splice(NZ.C.keys.length - 13);
 NZ.C.list = Object.values(NZ.C);
-NZ.C.list.splice(NZ.C.list.length - 13);
+NZ.C.list.splice(NZ.C.list.length - 13);var NZ = NZ || {};
 
 NZ.Canvas = document.createElement('canvas');
 NZ.Canvas.id = 'NZCanvas';
-NZ.Canvas.ctx = NZ.Canvas.getContext('2d');
+NZ.Canvas.ctx = NZ.Canvas.getContext('2d');var NZ = NZ || {};
 
 NZ.Cursor = {
 	alias: 'alias',
@@ -383,7 +383,7 @@ NZ.Cursor = {
 };
 
 NZ.Cursor.list = Object.values(NZ.Cursor);
-NZ.Cursor.list.splice(NZ.Cursor.list.length - 3);
+NZ.Cursor.list.splice(NZ.Cursor.list.length - 3);var NZ = NZ || {};
 
 NZ.Debug = {
 	mode: 0,
@@ -392,7 +392,7 @@ NZ.Debug = {
 	modeText() {
 		return `${this.mode}/${this.modeAmount-1}`;
 	}
-};
+};var NZ = NZ || {};
 
 // Collection of drawing functions and have image storage
 // Only supports canvas rendering at the moment no webgl
@@ -923,7 +923,7 @@ NZ.Draw = {
 		this.ctx.quadraticCurveTo(x-w, y-h, x, y-h*0.5);
 		this.draw(isStroke);
 	}
-};
+};var NZ = NZ || {};
 
 // List of constants to use in NZ.Draw
 NZ.Align = {
@@ -961,7 +961,7 @@ NZ.Primitive = {
 	PointList: { name: 'Point List', quantity: 1, closePath: false, isStroke: true },
 	TriangleList: { name: 'Triangle List', quantity: 3, closePath: true, isStroke: true },
 	TriangleListFill: { name: 'Triangle List Fill', quantity: 3, closePath: false, isStroke: false }
-};
+};var NZ = NZ || {};
 
 NZ.Font = {
 	h1: 48,
@@ -1003,7 +1003,7 @@ NZ.Font.xl 	= NZ.Font.generate(NZ.Font.h2);
 NZ.Font.l 	= NZ.Font.generate(NZ.Font.h3);
 NZ.Font.m 	= NZ.Font.generate(NZ.Font.h4);
 NZ.Font.sm 	= NZ.Font.generate(NZ.Font.h5);
-NZ.Font.s 	= NZ.Font.generate(NZ.Font.h6);
+NZ.Font.s 	= NZ.Font.generate(NZ.Font.h6);var NZ = NZ || {};
 
 NZ.Input = {
 	targetElement: null,
@@ -1301,7 +1301,7 @@ NZ.Input = {
 	}
 };
 
-NZ.Input.init();
+NZ.Input.init();var NZ = NZ || {};
 
 // List of HTML keycodes
 NZ.KeyCode = {
@@ -1404,7 +1404,7 @@ NZ.KeyCode = {
 	Backslash: 220,
 	RightBracket: 221,
 	Quote: 222
-};
+};var NZ = NZ || {};
 
 // Make it easier to load and add images and sounds
 // MODULES REQUIRED: NZ.Draw, NZ.Sound
@@ -1459,7 +1459,7 @@ NZ.Loader = {
 			NZ.Sound.add(name, audio);
 		}
 	}
-};
+};var NZ = NZ || {};
 
 // Quick start
 /* Modules required:
@@ -1605,7 +1605,7 @@ NZ.start = (options={}) => {
 
 	NZ.Scene.restart();
 	NZ.Runner.start();
-};
+};var NZ = NZ || {};
 
 NZ.Mat4 = function() {
 	this.m = [
@@ -1754,7 +1754,7 @@ NZ.Mat4.makeTransformation = function(transform) {
 				.mult(matRot[m[0]])
 				.mult(matTranslation);
 	return matTransform;
-};
+};var NZ = NZ || {};
 
 NZ.Mathz = {};
 
@@ -1807,7 +1807,7 @@ NZ.Mathz.normalizeAngle = (angleDeg) => {
 
 NZ.Mathz.fuzzyEqual = (a, b, epsilon=NZ.Mathz.EPSILON) => Math.abs(b-a) <= epsilon;
 
-NZ.Mathz.smoothRotate = (angleDegA, angleDegB, speed=5) => angleDegA + Math.sin(NZ.Mathz.degtorad(angleDegB - angleDegA)) * speed;
+NZ.Mathz.smoothRotate = (angleDegA, angleDegB, speed=5) => angleDegA + Math.sin(NZ.Mathz.degtorad(angleDegB - angleDegA)) * speed;var NZ = NZ || {};
 
 // Represents mesh in 3d
 // MODULES REQUIRED: NZ.Vec3, NZ.Tri
@@ -1895,7 +1895,7 @@ NZ.Mesh.LoadOBJ = function(options={}) {
 		}
 	}
 	return m;
-};
+};var NZ = NZ || {};
 
 class NZNetBuffers {
 	constructor(length=10) {
@@ -2077,7 +2077,7 @@ NZ.Net = {
 
 // TODO 1: allow send push not set [complete]
 // TODO 2: refactor names, inconsistent naming and functionality (see push, pushRoutine, sendUnsafe)
-// TODO 3: rethink clearance routine implementation (see sendBuffer, pushBuffer)
+// TODO 3: rethink clearance routine implementation (see sendBuffer, pushBuffer)var NZ = NZ || {};
 
 // Built-in object class and manager
 // Any custom class must inherit NZObject class
@@ -2133,8 +2133,7 @@ NZ.OBJ = {
 		this.add(name);
 		this.link(name, cls);
 	},
-	update() {
-		if (this._updateDisabled) return;
+	updateAll() {
 		for (let i = this.list.length - 1; i >= 0; --i) {
 			for (let j = this.list[i].length - 1; j >= 0; --j) {
 				if (this.list[i][j].nzActive) {
@@ -2146,8 +2145,7 @@ NZ.OBJ = {
 			}
 		}
 	},
-	render() {
-		if (this._renderDisabled) return;
+	renderAll() {
 		const h = [];
 		for (let i = this.list.length - 1; i >= 0; --i) {
 			for (let j = this.list[i].length - 1; j >= 0; --j) {
@@ -2160,6 +2158,14 @@ NZ.OBJ = {
 		for (let i = h.length - 1; i >= 0; --i) {
 			h[i].render();
 		}
+	},
+	update() {
+		if (this._updateDisabled) return;
+		this.updateAll();
+	},
+	render() {
+		if (this._renderDisabled) return;
+		this.renderAll();
 	},
 	updateFrom(name) {
 		const i = this.getIndex(name);
@@ -2333,7 +2339,7 @@ NZ.OBJ = {
 		}
 		return g;
 	}
-};
+};var NZ = NZ || {};
 
 // Built-in runner.
 // Modules required: NZ.Draw, NZ.UI, NZ.Time, NZ.Debug, NZ.Scene, NZ.OBJ, NZ.Input, NZ.Sound
@@ -2380,7 +2386,7 @@ NZ.Runner.run = (t) => {
 	NZ.Scene.renderUI();
 	NZ.Input.reset();
 	window.requestAnimationFrame(NZ.Runner.run);
-};
+};var NZ = NZ || {};
 
 // Built-in scene class and manager
 class NZScene {
@@ -2447,7 +2453,7 @@ NZ.Scene = {
 	renderUI() {
 		if (this.current.renderUI) this.current.renderUI();
 	}
-};
+};var NZ = NZ || {};
 
 NZ.Sound = {
 	list: [],
@@ -2553,7 +2559,7 @@ NZ.Sound = {
 			}
 		}
 	}
-};
+};var NZ = NZ || {};
 
 // Manages canvas display
 NZ.Stage = {
@@ -2657,7 +2663,7 @@ NZ.Stage = {
 	resetBGColor() {
 		this.setBGColor();
 	}
-};
+};var NZ = NZ || {};
 
 NZ.StylePreset = {
 	none: '',
@@ -2690,7 +2696,7 @@ NZ.StylePreset.fullViewport = (canvasID, parentSelector) => `
 		width: 100%;
 		height: 100%;
 	}
-`;
+`;var NZ = NZ || {};
 
 NZ.Time = {
 	FPS: 60,
@@ -2759,7 +2765,7 @@ NZ.Time = {
 	get mm() {
 		return this.toClockMinutesWithLeadingZero(this.time);
 	}
-};
+};var NZ = NZ || {};
 
 // MODULES REQUIRED: NZ.Vec3, NZ.Vec2 (optional, this class focus on NZ.Vec3 but NZ.Vec2 can use some of the essentials)
 NZ.Transform = function(position=Vec3.zero, rotation=Vec3.zero, scale=Vec3.one) {
@@ -2784,7 +2790,7 @@ NZ.Transform.prototype.reset = function() {
 
 NZ.Transform.prototype.clone = function() {
 	return new NZ.Transform(this.position.clone(), this.rotation.clone(), this.scale.clone()); // NZ.Vec3 clone
-};
+};var NZ = NZ || {};
 
 // Triangle class for use in 3d
 // MODULE REQUIRED: NZ.Vec3
@@ -2820,7 +2826,7 @@ NZ.Tri.prototype.onAllPoints = function(fn) {
 NZ.Tri.prototype.calculateDepth = function() {
 	// z mid method
 	this.depth = (this.p[0].z + this.p[1].z + this.p[2].z) / 3;
-};
+};var NZ = NZ || {};
 
 NZ.UI = {
 	autoReset: true, // use in NZ.Runner.run
@@ -2838,7 +2844,7 @@ NZ.UI = {
 	reset() {
 		this.resetCursor();
 	}
-};
+};var NZ = NZ || {};
 
 NZ.Utils = {
 	// Returns a random element from given array
@@ -2868,7 +2874,7 @@ NZ.Utils = {
 		document.execCommand('copy');
 		document.body.removeChild(t);
 	}
-};
+};var NZ = NZ || {};
 
 NZ.Vec2 = function(x, y) {
 	this.x = x || 0;
@@ -3222,7 +3228,7 @@ Object.defineProperty(NZ.Vec2, 'center', {
 	get: function() {
 		return new NZ.Vec2(0.5, 0.5);
 	}
-});
+});var NZ = NZ || {};
 
 NZ.Vec3 = function(x, y, z) {
 	this.x = x || 0;
@@ -3569,7 +3575,7 @@ class NZObject3D extends NZObject {
 			}
 		}
 	}
-}
+}var NZ = NZ || {};
 
 const {
 	C,

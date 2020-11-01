@@ -54,8 +54,7 @@ NZ.OBJ = {
 		this.add(name);
 		this.link(name, cls);
 	},
-	update() {
-		if (this._updateDisabled) return;
+	updateAll() {
 		for (let i = this.list.length - 1; i >= 0; --i) {
 			for (let j = this.list[i].length - 1; j >= 0; --j) {
 				if (this.list[i][j].nzActive) {
@@ -67,8 +66,7 @@ NZ.OBJ = {
 			}
 		}
 	},
-	render() {
-		if (this._renderDisabled) return;
+	renderAll() {
 		const h = [];
 		for (let i = this.list.length - 1; i >= 0; --i) {
 			for (let j = this.list[i].length - 1; j >= 0; --j) {
@@ -81,6 +79,14 @@ NZ.OBJ = {
 		for (let i = h.length - 1; i >= 0; --i) {
 			h[i].render();
 		}
+	},
+	update() {
+		if (this._updateDisabled) return;
+		this.updateAll();
+	},
+	render() {
+		if (this._renderDisabled) return;
+		this.renderAll();
 	},
 	updateFrom(name) {
 		const i = this.getIndex(name);

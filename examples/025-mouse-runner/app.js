@@ -106,9 +106,22 @@ class Grid {
 			}
 		}
 	}
-	drawCells() {
-		for (let i = this.cells.length - 1; i >= 0; --i) {
-			this.cells[i].draw();
+	drawCells(options={}) {
+		if (options.from && options.range) {
+			const cells = [];
+			for (let i = options.from.i - options.range; i < options.from.i + options.range; i++) {
+				for (let j = options.from.j - options.range; j < options.from.j + options.range; j++) {
+					const n = Grid.get(this, i, j).cell;
+					if (n) {
+						n.draw();
+					}
+				}
+			}
+		}
+		else {
+			for (let i = this.cells.length - 1; i >= 0; --i) {
+				this.cells[i].draw();
+			}
 		}
 	}
 	drawCanvas() {
@@ -166,6 +179,8 @@ class MazeGen {
 		this.current = null;
 		this.openset = [];
 		this.complete = false;
+		this.visitedCount = 0;
+		this.visitedTarget = this.grid.w * this.grid.h;
 		this.init();
 	}
 	init() {
@@ -183,6 +198,7 @@ class MazeGen {
 		if (!this.current.visited) {
 			this.openset.push(this.current);
 			this.current.visited = true;
+			this.visitedCount++;
 		}
 		const neighbours = [];
 		for (const n of this.current.neighbours) {
@@ -237,6 +253,11 @@ class CellObject {
 	}
 	calcPosition() {
 		Cell.calcPosition(this);
+	}
+	setPosition(i, j) {
+		this.i = i;
+		this.j = j;
+		this.calcPosition();
 	}
 }
 
@@ -320,17 +341,18 @@ class Mouse extends CellObject {
 						this.j = prev.j;
 					}
 					else {
+						OBJ.create('Footsteps', Vec2.fromObject(this).add(Cell.w * 0.5));
 						this.calcPosition(this);
 					}
 				}
+
+				this.xscale = 1.2 * this.scaleTo;
+				this.yscale = 0.8 * this.scaleTo;
 
 				if (this.keyW) this.angleTo = 270;
 				if (this.keyA) this.angleTo = 180;
 				if (this.keyS) this.angleTo = 90;
 				if (this.keyD) this.angleTo = 0;
-
-				this.xscale = 1.2 * this.scaleTo;
-				this.yscale = 0.8 * this.scaleTo;
 
 				if (Math.abs(this.angle - this.angleTo) > 170) {
 					this.angle += 10;
@@ -345,8 +367,8 @@ class Mouse extends CellObject {
 		this.drawAcc.add(Vec2.sub(this, this.drawPos).mult(0.1));
 		this.drawPos.add(this.drawVel);
 
-		this.xscale -= Math.sign(this.xscale-this.scaleTo) * Math.min(0.1, Math.abs(this.xscale-this.scaleTo));
-		this.yscale -= Math.sign(this.yscale-this.scaleTo) * Math.min(0.1, Math.abs(this.yscale-this.scaleTo));
+		this.xscale -= Math.sign(this.xscale-this.scaleTo) * Math.min(0.05, Math.abs(this.xscale-this.scaleTo));
+		this.yscale -= Math.sign(this.yscale-this.scaleTo) * Math.min(0.05, Math.abs(this.yscale-this.scaleTo));
 
 		this.angle = Mathz.smoothRotate(this.angle, this.angleTo, 20);
 	}
@@ -366,14 +388,62 @@ class Cheese extends CellObject {
 	}
 	constructor(grid, i, j) {
 		super(grid, i, j);
+		this.name = 'Cheese';
 		this.scale = (Cell.w / Draw.images['Cheese'].width) * 0.8;
+		this.xscale = this.scale;
+		this.yscale = this.scale;
 	}
 	draw() {
-		Draw.onTransform(this.x + Cell.w * 0.5, this.y + Cell.w * 0.5, this.xs * this.scale, this.ys * this.scale, this.angle, () => {
+		Draw.onTransform(this.x + Cell.w * 0.5, this.y + Cell.w * 0.5, this.xs * this.xscale, this.ys * this.yscale, this.angle, () => {
 			Draw.image('Cheese', 0, 0);
 		});
 	}
 }
+
+class Particle extends NZObject {
+	constructor(pos) {
+		super();
+		this.pos = pos;
+		this.w = Mathz.range(1, 2);
+		this.winc = 0.07;
+		this.c = C.black;
+	}
+	render() {
+		Draw.setColor(this.c);
+		Draw.pointCircle(this.pos, this.w);
+		this.w -= this.winc;
+		if (this.w < this.winc) {
+			OBJ.remove(this.id);
+		}
+	}
+}
+
+class Crumbs extends Particle {
+	constructor(pos) {
+		super(pos);
+		this.acc = new Vec2(0, 0.1);
+		this.vel = Vec2.polar(Mathz.range(200, 340), 3);
+		this.c = Mathz.choose(C.orange, C.darkOrange, C.darkOrange);
+	}
+	update() {
+		this.vel.add(this.acc);
+		this.pos.add(this.vel);
+	}
+	
+}
+
+class Footsteps extends Particle {
+	constructor(pos) {
+		super();
+		this.pos = pos;
+		this.w = Cell.w * 0.25;
+		this.winc = 0.2;
+		this.c = C.lightGrey;
+	}
+}
+
+OBJ.addLink('Crumbs', Crumbs);
+OBJ.addLink('Footsteps', Footsteps);
 
 const Manager = {
 	GENERATING: 0,
@@ -390,20 +460,35 @@ const Manager = {
 		switch (state) {
 			case Manager.PLAY:
 				if (this.state === Manager.GENERATING) {
-					const colorpool = Mouse.colors.slice();
+					// const colorpool = Mouse.colors.slice();
 					this.players.push(Mouse.createPlayer(this.grid));
-					this.players.push(Mouse.create(this.grid, this.grid.w - 1, 0, Utils.randpop(colorpool)));
-					this.players.push(Mouse.create(this.grid, this.grid.w - 1, this.grid.h - 1, Utils.randpop(colorpool)));
-					this.players.push(Mouse.create(this.grid, 0, this.grid.h - 1, Utils.randpop(colorpool)));
+					// this.players.push(Mouse.create(this.grid, this.grid.w - 1, 0, Utils.randpop(colorpool)));
+					// this.players.push(Mouse.create(this.grid, 0, this.grid.h - 1, Utils.randpop(colorpool)));
+					// this.players.push(Mouse.create(this.grid, this.grid.w - 1, this.grid.h - 1, C.dimGrey));
 					// Utils.repeat(100, () => { this.players.push(Mouse.create(this.grid, this.grid.irandom, this.grid.jrandom, C.random())) });
-					this.collectibles.push(Cheese.create(this.grid, this.grid.irandom, this.grid.jrandom));
+					Utils.repeat(500, () => {
+						const n = Cheese.create(this.grid, this.grid.irandom, this.grid.jrandom);
+						while (true) {
+							for (const m of this.collectibles) {
+								if (Cell.equals(n, m)) {
+									n.setPosition(this.grid.irandom, this.grid.jrandom);
+									continue;
+								}
+							}
+							break;
+						}
+						n.yscale *= Mathz.range(0.8, 1.1);
+						n.xscale = n.yscale * Mathz.randneg();
+						this.collectibles.push(n);
+					});
+					this.transition();
 				}
 				break;
 		}
 		this.state = state;
 	},
 	start() {
-		this.grid = new Grid(Math.floor(Stage.w / Cell.w), Math.floor(Stage.h / Cell.w));
+		this.grid = new Grid(100, 100);//Math.floor(Stage.w / Cell.w), Math.floor(Stage.h / Cell.w));
 		this.mazeGen = new MazeGen(this.grid);
 		this.wallsToRemove = this.grid.cells.length * 0.4;
 		this.removedWallsCount = 0;
@@ -414,7 +499,7 @@ const Manager = {
 		switch (this.state) {
 			case Manager.GENERATING: {
 
-				const step = 1 + Cell.w * Input.keyHold(KeyCode.Space);
+				const step = Math.ceil(0.5 + Time.scaledDeltaTime) + (Math.max(this.grid.w, this.grid.h) * 2) * Input.keyHold(KeyCode.Space);
 
 				Utils.repeat(step, () => {
 					if (!this.generated) {
@@ -435,21 +520,29 @@ const Manager = {
 					}
 				});
 
-				Draw.setColor(C.black);
-				this.grid.drawCells();
+				let target = this.mazeGen.current;
 
-				let infoText = 'Generating maze...';
+				if (this.removedWallsCount > 0) {
+					target = Grid.get(this.grid, Math.floor(this.grid.w * 0.5), Math.floor(this.grid.h * 0.5)).cell;
+				}
 
-				if (this.removedWallsCount === 0) {
+				Draw.onTransform(Stage.mid.w - target.x, Stage.mid.h - target.y, 1, 1, 0, () => {
+					Draw.setColor(C.black);
+					this.grid.drawCells({
+						from: target,
+						range: 15
+					});
 					Draw.setColor(C.red);
 					Draw.rectRotated(
 						this.mazeGen.current.x + Cell.w * 0.5,
 						this.mazeGen.current.y + Cell.w * 0.5,
-						Cell.w * 0.4, Cell.w * 0.4, 45
+						Cell.w * 0.4, Cell.w * 0.2, -Time.time * 0.5 * step
 					);
-				}
-				else {
-					infoText = `Removing walls (${this.removedWallsCount}/${this.wallsToRemove})`;
+				});
+
+				let infoText = `Generating maze ${((this.mazeGen.visitedCount / this.mazeGen.visitedTarget) * 100).toFixed(2)}%`;
+				if (this.removedWallsCount > 0) {
+					infoText = `Removing walls ${((this.removedWallsCount / this.wallsToRemove) * 100).toFixed(2)}%`;
 				}
 
 				let options = {
@@ -468,18 +561,48 @@ const Manager = {
 			}
 
 			case Manager.PLAY: {
-				this.grid.draw();
+				Draw.onTransform(Stage.mid.w - this.players[0].drawPos.x, Stage.mid.h - this.players[0].drawPos.y, 1, 1, 0, () => {
+					this.grid.draw();
+					OBJ.renderAll();
 
-				for (const n of this.collectibles) {
-					n.draw();
-				}
+					for (const n of this.collectibles) {
+						n.draw();
+					}
 
-				for (const p of this.players) {
-					p.update();
-					p.draw();
-				}
+					for (const p of this.players) {
+						p.update();
+
+						for (const n of this.collectibles) {
+							if (Cell.equals(p, n)) {
+								if (n.name === 'Cheese') {
+									OBJ.create('Crumbs', Vec2.polar(p.angle, Cell.w * 0.4).add(p).add(Cell.w * 0.5));
+								}
+							}
+						}
+
+						p.draw();
+					}
+				});
+
 				break;
 			}
+		}
+
+		this.renderTransition();
+	},
+	transitionTime: 0,
+	transitionDelay: 2,
+	transitionDuration: 10,
+	transition() {
+		this.transitionTime = Time.frameCount + this.transitionDuration + this.transitionDelay;
+	},
+	renderTransition() {
+		if (Time.frameCount < this.transitionTime) {
+			const t = Mathz.clamp((this.transitionTime - Time.frameCount) / (this.transitionDuration - this.transitionDelay), 0, 1);
+			Draw.setColor(C.white);
+			Draw.setAlpha(t);
+			Draw.rect(0, 0, Stage.w, Stage.h);
+			Draw.resetAlpha();
 		}
 	}
 };
@@ -490,6 +613,8 @@ Play.render = () => Manager.render();
 
 const Boot = Scene.create('Boot');
 Boot.start = () => {
+	OBJ.disableRender();
+
 	Stage.setPixelRatio(Stage.HIGH);
 	Stage.applyPixelRatio();
 
@@ -509,6 +634,7 @@ Boot.render = () => {
 NZ.start({
 	w: 960,
 	h: 544,
+	stylePreset: StylePreset.noGapCenter,
 	embedGoogleFonts: 'Montserrat Alternates'
 });
 
