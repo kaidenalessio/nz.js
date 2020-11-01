@@ -82,9 +82,9 @@ NZ.Draw = {
 		this.ctx.strokeStyle = cStroke;
 	},
 	resetColor() {
-		this.setColor('white');
+		this.setColor('#000000');
 	},
-	setShadow(xOffset, yOffset, blur=0, color='black') {
+	setShadow(xOffset, yOffset, blur=0, color='#000000') {
 		this.ctx.shadowBlur = blur;
 		this.ctx.shadowColor = color;
 		this.ctx.shadowOffsetX = xOffset;
@@ -502,9 +502,9 @@ NZ.Draw = {
 	textBackground(x, y, text, options={}) {
 		options.gap = options.gap || 5;
 		options.origin = options.origin || { x: 0, y: 0 };
-		options.bgColor = options.bgColor || C.black;
+		options.bgColor = options.bgColor || '#000000';
 		options.isStroke = options.isStroke || false;
-		options.textColor = options.textColor || C.white;
+		options.textColor = options.textColor || '#ffffff';
 		const tw = this.getTextWidth(text) + options.gap * 2;
 		const th = this.getTextHeight(text) + options.gap * 2;
 		x -= tw * options.origin.x;
@@ -512,7 +512,7 @@ NZ.Draw = {
 		this.setColor(options.bgColor);
 		this.rect(x, y, tw, th, options.isStroke);
 		this.setFill(options.textColor);
-		this.setHVAlign(NZ.Align.c, NZ.Align.m);
+		this.setHVAlign('center', 'middle');
 		this.text(x + tw * 0.5, y + th * 0.5, text);
 	},
 	textBG(x, y, text, options={}) {
