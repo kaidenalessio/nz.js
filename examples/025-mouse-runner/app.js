@@ -269,33 +269,52 @@ class Mouse extends CellObject {
 		super(grid, i, j);
 		this.c = c;
 		this.canvas = Mouse.drawMouse(this.c);
-		this.scale = Cell.w / this.canvas.width;
+		this.scaleTo = Cell.w / this.canvas.width;
+		this.xscale = this.scaleTo;
+		this.yscale = this.scaleTo;
 		this.isPlayer = false;
 		this.keyTime = 0;
 		this.keyW = false;
 		this.keyA = false;
 		this.keyS = false;
 		this.keyD = false;
+		this.drawPos = new Vec2(this.x, this.y);
+		this.drawVel = Vec2.zero;
+		this.drawAcc = Vec2.zero;
+		this.angleTo = 0;
 	}
 	keyAny() {
 		return this.keyW || this.keyA || this.keyS || this.keyD;
 	}
 	update() {
-		if (this.isPlayer) {
-			this.keyW = this.keyA = this.keyS = this.keyD = false;
-			if (Time.frameCount > this.keyTime) {
+		this.keyW = this.keyA = this.keyS = this.keyD = false;
+		if (Time.frameCount > this.keyTime) {
+			if (this.isPlayer) {
 				this.keyW = Input.keyHold(KeyCode.Up);
 				this.keyA = Input.keyHold(KeyCode.Left);
 				this.keyS = Input.keyHold(KeyCode.Down);
 				this.keyD = Input.keyHold(KeyCode.Right);
-				this.keyTime = Time.frameCount + 3;
 			}
+			else {
+				this.keyW = Mathz.randbool();
+				this.keyA = Mathz.randbool();
+				this.keyS = Mathz.randbool();
+				this.keyD = Mathz.randbool();
+			}
+			this.keyTime = Time.frameCount + 3;
+		}
+		if (true) {
 			if (this.keyAny()) {
+
 				const prev = Grid.get(this.grid, this.i, this.j).cell;
+
 				this.i = Mathz.clamp(this.i + this.keyD - this.keyA, 0, this.grid.w - 1);
 				this.j = Mathz.clamp(this.j + this.keyS - this.keyW, 0, this.grid.h - 1);
+
 				if (!Cell.equals(this, prev)) {
+
 					const curr = Grid.get(this.grid, this.i, this.j).cell;
+
 					if (Grid.blocked(prev, curr)) {
 						this.i = prev.i;
 						this.j = prev.j;
@@ -304,14 +323,38 @@ class Mouse extends CellObject {
 						this.calcPosition(this);
 					}
 				}
+
+				if (this.keyW) this.angleTo = 270;
+				if (this.keyA) this.angleTo = 180;
+				if (this.keyS) this.angleTo = 90;
+				if (this.keyD) this.angleTo = 0;
+
+				this.xscale = 1.2 * this.scaleTo;
+				this.yscale = 0.8 * this.scaleTo;
+
+				if (Math.abs(this.angle - this.angleTo) > 170) {
+					this.angle += 10;
+				}
 			}
 		}
+
+		this.drawVel.add(this.drawAcc);
+		this.drawVel.mult(0.7);
+		this.drawVel.limit(10);
+		this.drawAcc.mult(0.025);
+		this.drawAcc.add(Vec2.sub(this, this.drawPos).mult(0.1));
+		this.drawPos.add(this.drawVel);
+
+		this.xscale -= Math.sign(this.xscale-this.scaleTo) * Math.min(0.1, Math.abs(this.xscale-this.scaleTo));
+		this.yscale -= Math.sign(this.yscale-this.scaleTo) * Math.min(0.1, Math.abs(this.yscale-this.scaleTo));
+
+		this.angle = Mathz.smoothRotate(this.angle, this.angleTo, 20);
 	}
 	draw() {
 		if (Time.frameCount % 5 === 0) {
 			this.ys *= -1;
 		}
-		Draw.onTransform(this.x + Cell.w * 0.5, this.y + Cell.w * 0.5, this.xs * this.scale, this.ys * this.scale, this.angle, () => {
+		Draw.onTransform(this.drawPos.x + Cell.w * 0.5, this.drawPos.y + Cell.w * 0.5, this.xs * this.xscale, this.ys * this.yscale, this.angle, () => {
 			Draw.imageEl(this.canvas, 0, 0);
 		});
 	}
@@ -352,6 +395,7 @@ const Manager = {
 					this.players.push(Mouse.create(this.grid, this.grid.w - 1, 0, Utils.randpop(colorpool)));
 					this.players.push(Mouse.create(this.grid, this.grid.w - 1, this.grid.h - 1, Utils.randpop(colorpool)));
 					this.players.push(Mouse.create(this.grid, 0, this.grid.h - 1, Utils.randpop(colorpool)));
+					// Utils.repeat(100, () => { this.players.push(Mouse.create(this.grid, this.grid.irandom, this.grid.jrandom, C.random())) });
 					this.collectibles.push(Cheese.create(this.grid, this.grid.irandom, this.grid.jrandom));
 				}
 				break;
