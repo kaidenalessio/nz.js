@@ -4,9 +4,9 @@ Boot.start = () => {
 	Stage.setPixelRatio(Stage.HIGH);
 	Stage.applyPixelRatio();
 
-	Loader.loadImage(Vec2.zero, 'Arrow', 'arrow.png');
-	Loader.loadImage(Vec2.zero, 'Mouse', 'mouse.png');
-	Loader.loadImage(Vec2.center, 'Cheese', 'cheese.png');
+	Loader.loadImage(Vec2.zero, 'Arrow', 'src/img/arrow.png');
+	Loader.loadImage(Vec2.zero, 'Mouse', 'src/img/mouse.png');
+	Loader.loadImage(Vec2.center, 'Cheese', 'src/img/cheese.png');
 
 	Font.setFamily('Montserrat Alternates, sans-serif');
 };

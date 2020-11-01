@@ -1,0 +1,3 @@
+const Manager = {
+	start() {}
+};

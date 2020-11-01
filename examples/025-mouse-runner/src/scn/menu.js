@@ -19,7 +19,7 @@ Menu.items = [
 		}
 	},
 	{
-		c: C.green,
+		c: C.limeGreen,
 		name: 'Level 2',
 		desc: 'Learn how to guide others.',
 		act() {
@@ -116,4 +116,8 @@ Menu.render = () => {
 
 	Draw.setFont(Font.s);
 	Draw.textBG(0, Stage.h, 'Press enter to start level.', { origin: Vec2.down });
+
+	if (Input.keyDown(KeyCode.Enter) || Input.keyDown(KeyCode.Space)) {
+		selected.act();
+	}
 };
