@@ -370,7 +370,7 @@ class Mouse extends CellObject {
 		this.xscale -= Math.sign(this.xscale-this.scaleTo) * Math.min(0.05, Math.abs(this.xscale-this.scaleTo));
 		this.yscale -= Math.sign(this.yscale-this.scaleTo) * Math.min(0.05, Math.abs(this.yscale-this.scaleTo));
 
-		this.angle = Mathz.smoothRotate(this.angle, this.angleTo, 20);
+		this.angle = Mathz.smoothRotate(this.angle, this.angleTo, 50);
 	}
 	draw() {
 		if (Time.frameCount % 5 === 0) {
@@ -445,6 +445,64 @@ class Footsteps extends Particle {
 OBJ.addLink('Crumbs', Crumbs);
 OBJ.addLink('Footsteps', Footsteps);
 
+class Snake extends CellObject {
+	static create(grid, i, j) {
+		return new Snake(grid, i, j);
+	}
+	static part(i, j) {
+		return new CellObject(null, i, j);
+	}
+	constructor(grid, i, j) {
+		super(grid, i, j);
+		this.head = Snake.part(this.i, this.j);
+		this.tails = [];
+		this.tailCount = 0;
+		this.c = C.mediumSeaGreen;
+		this.w = Cell.w * 0.8;
+		this.moveTime = 0;
+	}
+	addTail() {
+		this.tailCount++;
+	}
+	drawHead(part) {
+		Draw.setColor(this.c);
+		Draw.rectRotated(part.x + Cell.w * 0.5, part.y + Cell.w * 0.5, this.w, this.w);
+		Draw.setColor(C.black);
+		Draw.circle(part.x + Cell.w * 0.5, part.y + Cell.w * 0.5 - this.w * 0.2, this.w * 0.1);
+		Draw.circle(part.x + Cell.w * 0.5, part.y + Cell.w * 0.5 + this.w * 0.2, this.w * 0.1);
+	}
+	drawBody(part) {
+		Draw.setColor(this.c);
+		Draw.rectRotated(part.x + Cell.w * 0.5, part.y + Cell.w * 0.5, this.w, this.w);
+	}
+	update() {
+		if (Time.frameCount > this.moveTime) {
+
+			let i = 0,
+				j = 0;
+
+			switch (Mathz.irange(4)) {
+				case 0: i++; break;
+				case 1: i--; break;
+				case 2: j++; break;
+				case 3: j--; break;
+			}
+
+			this.tails.shift();
+			this.tails.push(this.head);
+			this.head = Snake.part(this.head.i + i, this.head.j + j);
+
+			this.moveTime = Time.frameCount + 60;
+		}
+	}
+	draw() {
+		for (let i = this.tails.length - 1; i >= 0; --i) {
+			this.drawBody(this.tails[i]);
+		}
+		this.drawHead(this.head);
+	}
+}
+
 const Manager = {
 	GENERATING: 0,
 	PLAY: 1,
@@ -455,31 +513,35 @@ const Manager = {
 	removedWallsCount: 0,
 	state: 0,
 	players: [],
+	enemies: [],
 	collectibles: [],
+	spawnCheese() {
+		const n = Cheese.create(this.grid, this.grid.irandom, this.grid.jrandom);
+		let intersects = true;
+		while (intersects) {
+			intersects = false;
+			for (const m of this.collectibles.concat(this.players)) {
+				if (Cell.equals(n, m)) {
+					n.setPosition(this.grid.irandom, this.grid.jrandom);
+					intersects = true;
+					break;
+				}
+			}
+		}
+		n.yscale *= Mathz.range(0.8, 1.1);
+		n.xscale = n.yscale * Mathz.randneg();
+		this.collectibles.push(n);
+	},
 	changeState(state) {
 		switch (state) {
 			case Manager.PLAY:
 				if (this.state === Manager.GENERATING) {
-					// const colorpool = Mouse.colors.slice();
+
 					this.players.push(Mouse.createPlayer(this.grid));
-					// this.players.push(Mouse.create(this.grid, this.grid.w - 1, 0, Utils.randpop(colorpool)));
-					// this.players.push(Mouse.create(this.grid, 0, this.grid.h - 1, Utils.randpop(colorpool)));
-					// this.players.push(Mouse.create(this.grid, this.grid.w - 1, this.grid.h - 1, C.dimGrey));
-					// Utils.repeat(100, () => { this.players.push(Mouse.create(this.grid, this.grid.irandom, this.grid.jrandom, C.random())) });
-					Utils.repeat(500, () => {
-						const n = Cheese.create(this.grid, this.grid.irandom, this.grid.jrandom);
-						while (true) {
-							for (const m of this.collectibles) {
-								if (Cell.equals(n, m)) {
-									n.setPosition(this.grid.irandom, this.grid.jrandom);
-									continue;
-								}
-							}
-							break;
-						}
-						n.yscale *= Mathz.range(0.8, 1.1);
-						n.xscale = n.yscale * Mathz.randneg();
-						this.collectibles.push(n);
+					this.enemies.push(Snake.create(this.grid, this.grid.w - 5, this.grid.h - 5));
+
+					Utils.repeat(10, () => {
+						this.spawnCheese();
 					});
 					this.transition();
 				}
@@ -488,7 +550,7 @@ const Manager = {
 		this.state = state;
 	},
 	start() {
-		this.grid = new Grid(100, 100);//Math.floor(Stage.w / Cell.w), Math.floor(Stage.h / Cell.w));
+		this.grid = new Grid(Math.floor(Stage.w / Cell.w), Math.floor(Stage.h / Cell.w));
 		this.mazeGen = new MazeGen(this.grid);
 		this.wallsToRemove = this.grid.cells.length * 0.4;
 		this.removedWallsCount = 0;
@@ -499,7 +561,7 @@ const Manager = {
 		switch (this.state) {
 			case Manager.GENERATING: {
 
-				const step = Math.ceil(0.5 + Time.scaledDeltaTime) + (Math.max(this.grid.w, this.grid.h) * 2) * Input.keyHold(KeyCode.Space);
+				const step = Time.scaledDeltaTime + this.grid.w * Input.keyHold(KeyCode.Space);
 
 				Utils.repeat(step, () => {
 					if (!this.generated) {
@@ -520,25 +582,17 @@ const Manager = {
 					}
 				});
 
-				let target = this.mazeGen.current;
+				Draw.setColor(C.black);
+				this.grid.drawCells();
 
-				if (this.removedWallsCount > 0) {
-					target = Grid.get(this.grid, Math.floor(this.grid.w * 0.5), Math.floor(this.grid.h * 0.5)).cell;
-				}
-
-				Draw.onTransform(Stage.mid.w - target.x, Stage.mid.h - target.y, 1, 1, 0, () => {
-					Draw.setColor(C.black);
-					this.grid.drawCells({
-						from: target,
-						range: 15
-					});
+				if (this.removedWallsCount === 0) {
 					Draw.setColor(C.red);
 					Draw.rectRotated(
 						this.mazeGen.current.x + Cell.w * 0.5,
 						this.mazeGen.current.y + Cell.w * 0.5,
 						Cell.w * 0.4, Cell.w * 0.2, -Time.time * 0.5 * step
 					);
-				});
+				}
 
 				let infoText = `Generating maze ${((this.mazeGen.visitedCount / this.mazeGen.visitedTarget) * 100).toFixed(2)}%`;
 				if (this.removedWallsCount > 0) {
@@ -561,7 +615,7 @@ const Manager = {
 			}
 
 			case Manager.PLAY: {
-				Draw.onTransform(Stage.mid.w - this.players[0].drawPos.x, Stage.mid.h - this.players[0].drawPos.y, 1, 1, 0, () => {
+				// Draw.onTransform(Stage.mid.w - this.players[0].drawPos.x, Stage.mid.h - this.players[0].drawPos.y, 1, 1, 0, () => {
 					this.grid.draw();
 					OBJ.renderAll();
 
@@ -572,17 +626,27 @@ const Manager = {
 					for (const p of this.players) {
 						p.update();
 
-						for (const n of this.collectibles) {
+						for (let i = this.collectibles.length - 1; i >= 0; --i) {
+							const n = this.collectibles[i];
 							if (Cell.equals(p, n)) {
 								if (n.name === 'Cheese') {
-									OBJ.create('Crumbs', Vec2.polar(p.angle, Cell.w * 0.4).add(p).add(Cell.w * 0.5));
+									this.collectibles.splice(i, 1);
+									Utils.repeat(Mathz.irange(10, 12), () => {
+										OBJ.create('Crumbs', Vec2.polar(p.angle, Cell.w * 0.4).add(p).add(Cell.w * 0.5));
+									});
+									this.spawnCheese();
 								}
 							}
 						}
 
 						p.draw();
 					}
-				});
+
+					for (const e of this.enemies) {
+						e.update();
+						e.draw();
+					}
+				// });
 
 				break;
 			}
