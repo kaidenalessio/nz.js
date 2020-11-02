@@ -31,6 +31,12 @@ class Grid {
 		const wi = Grid.getWalls(a, b);
 		return a.walls[wi[0]] && b.walls[wi[1]];
 	}
+	static buildWalls(a, b) {
+		const wi = Grid.getWalls(a, b);
+		if (wi[0] !== -1 && wi[1] !== -1) {
+			a.walls[wi[0]] = b.walls[wi[1]] = 1;
+		}
+	}
 	static removeWalls(a, b) {
 		const wi = Grid.getWalls(a, b);
 		if (wi[0] !== -1 && wi[1] !== -1) {

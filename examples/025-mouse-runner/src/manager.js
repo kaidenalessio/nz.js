@@ -161,7 +161,6 @@ class Manager {
 			for (let j = this.pads.length - 1; j >= 0; --j) {
 				if (Cell.equals(this.mice[i], this.pads[j])) {
 					this.mice[i].direction = this.pads[j].direction;
-					// this.mice.
 				}
 			}
 

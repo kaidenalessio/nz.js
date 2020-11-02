@@ -45,7 +45,7 @@ Menu.items = [
 	{
 		c: C.orchid,
 		name: 'Level 5',
-		desc: 'The walls are poisoned!\nRunner and a little mouse must avoid hitting walls.',
+		desc: 'The walls are poisoned! Runner and\na little mouse must avoid hitting walls.',
 		act() {
 			Scene.start('Level5');
 		}

@@ -104,6 +104,12 @@ class Grid {
 		const wi = Grid.getWalls(a, b);
 		return a.walls[wi[0]] && b.walls[wi[1]];
 	}
+	static buildWalls(a, b) {
+		const wi = Grid.getWalls(a, b);
+		if (wi[0] !== -1 && wi[1] !== -1) {
+			a.walls[wi[0]] = b.walls[wi[1]] = 1;
+		}
+	}
 	static removeWalls(a, b) {
 		const wi = Grid.getWalls(a, b);
 		if (wi[0] !== -1 && wi[1] !== -1) {
@@ -335,7 +341,7 @@ OBJ.addLink('Crumbs', Crumbs);class Mouse extends CellObject {
 	keyAny() {
 		return this.keyW || this.keyA || this.keyS || this.keyD;
 	}
-	move(iAmount, jAmount) {
+	move(iAmount, jAmount, blockedCallback=()=>{}) {
 		const prev = this.grid.getCell(this.i, this.j);
 
 		this.i = Mathz.clamp(this.i + iAmount, 0, this.grid.w - 1);
@@ -352,6 +358,10 @@ OBJ.addLink('Crumbs', Crumbs);class Mouse extends CellObject {
 			else {
 				this.calcPosition();
 			}
+		}
+
+		if (Cell.equals(this, prev)) {
+			blockedCallback();
 		}
 
 		this.xs = 1.2;
@@ -421,12 +431,34 @@ OBJ.addLink('Crumbs', Crumbs);class Mouse extends CellObject {
 	randomizeDirection() {
 		this.direction = Mathz.choose(Mouse.DIR_UP, Mouse.DIR_LEFT, Mouse.DIR_DOWN, Mouse.DIR_RIGHT);
 	}
-	miceMove() {
+	miceMove(count=0) {
+		// to prevent maximum callstack
+		if (count > 0) return;
 		switch (this.direction) {
-			case Mouse.DIR_UP: this.move(0, -1); break;
-			case Mouse.DIR_LEFT: this.move(-1, 0); break;
-			case Mouse.DIR_DOWN: this.move(0, 1); break;
-			case Mouse.DIR_RIGHT: this.move(1, 0); break;
+			case Mouse.DIR_UP:
+				this.move(0, -1, () => {
+					this.direction = Mouse.DIR_DOWN;
+					this.miceMove(++count);
+				});
+				break;
+			case Mouse.DIR_LEFT:
+				this.move(-1, 0, () => {
+					this.direction = Mouse.DIR_RIGHT;
+					this.miceMove(++count);
+				});
+				break;
+			case Mouse.DIR_DOWN:
+				this.move(0, 1, () => {
+					this.direction = Mouse.DIR_UP;
+					this.miceMove(++count);
+				});
+				break;
+			case Mouse.DIR_RIGHT:
+				this.move(1, 0, () => {
+					this.direction = Mouse.DIR_LEFT;
+					this.miceMove(++count);
+				});
+				break;
 			default: this.idle(); break;
 		}
 	}
