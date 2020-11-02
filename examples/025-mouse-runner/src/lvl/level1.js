@@ -8,6 +8,9 @@ Level1.start = () => {
 		open: 10,
 		objective: Manager.OBJ_CHEESE
 	});
+	Level1.manager.onGameOver(() => {
+		Menu.items[1].unlocked = true;
+	});
 };
 
 Level1.render = () => {

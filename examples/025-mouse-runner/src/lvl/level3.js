@@ -10,6 +10,9 @@ Level3.start = () => {
 		miceToSpawn: 5,
 		objective: Manager.OBJ_GUIDE_CHEESE
 	});
+	Level3.manager.onGameOver(() => {
+		Menu.items[3].unlocked = true;
+	});
 };
 
 Level3.render = () => {

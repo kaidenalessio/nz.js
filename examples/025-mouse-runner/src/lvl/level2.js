@@ -10,6 +10,9 @@ Level2.start = () => {
 		miceToSpawn: 1,
 		objective: Manager.OBJ_GUIDE_CHEESE
 	});
+	Level2.manager.onGameOver(() => {
+		Menu.items[2].unlocked = true;
+	});
 };
 
 Level2.render = () => {

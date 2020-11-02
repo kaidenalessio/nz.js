@@ -11,6 +11,9 @@ Level4.start = () => {
 		miceToSpawn: 7,
 		objective: Manager.OBJ_GUIDE_CHEESE_TIME
 	});
+	Level4.manager.onGameOver(() => {
+		Menu.items[4].unlocked = true;
+	});
 };
 
 Level4.render = () => {

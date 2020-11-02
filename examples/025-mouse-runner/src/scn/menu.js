@@ -14,6 +14,7 @@ Menu.items = [
 		c: C.skyBlue,
 		name: 'Level 1',
 		desc: 'Learn how Runner move.',
+		unlocked: true,
 		act() {
 			Scene.start('Level1');
 		}
@@ -22,6 +23,8 @@ Menu.items = [
 		c: C.limeGreen,
 		name: 'Level 2',
 		desc: 'Learn how to guide others.',
+		unlocked: false,
+		lockedDesc: 'Complete Level 1 to unlock this item.',
 		act() {
 			Scene.start('Level2');
 		}
@@ -30,6 +33,8 @@ Menu.items = [
 		c: C.gold,
 		name: 'Level 3',
 		desc: 'Lead at least 3 mice to the cheese to complete!',
+		unlocked: false,
+		lockedDesc: 'Complete Level 2 to unlock this item.',
 		act() {
 			Scene.start('Level3');
 		}
@@ -38,6 +43,8 @@ Menu.items = [
 		c: C.red,
 		name: 'Level 4',
 		desc: 'Lead at least 5 mice under 1 minute to complete!',
+		unlocked: false,
+		lockedDesc: 'Complete Level 3 to unlock this item.',
 		act() {
 			Scene.start('Level4');
 		}
@@ -46,6 +53,8 @@ Menu.items = [
 		c: C.orchid,
 		name: 'Level 5',
 		desc: 'The walls are poisoned! Runner and\na little mouse must avoid hitting walls.',
+		unlocked: false,
+		lockedDesc: 'Complete Level 4 to unlock this item.',
 		act() {
 			Scene.start('Level5');
 		}
@@ -54,6 +63,8 @@ Menu.items = [
 		c: C.black,
 		name: 'Level 6',
 		desc: 'So you can guide them throughout obstacles.\nBut can you guide them in the open?',
+		unlocked: false,
+		lockedDesc: 'Complete Level 5 to unlock this item.',
 		act() {
 			Scene.start('Level6');
 		}
@@ -96,7 +107,8 @@ Menu.render = () => {
 		const y = Math.cos(a) * h;
 		const s = Mathz.map(y, -h, h, 0.2, 1);
 		const c = Menu.items[i].c;
-		sorted.push({ x, y, s, c });
+		const u = Menu.items[i].unlocked;
+		sorted.push({ x, y, s, c, u });
 	}
 
 	sorted.sort((a, b) => b.y - a.y);
@@ -105,6 +117,11 @@ Menu.render = () => {
 		const item = sorted[i];
 		Draw.setColor(item.c);
 		Draw.roundRectTransformed(Menu.x + item.x, Menu.y + item.y, Menu.itemSize, Menu.itemSize, Menu.itemSize * 0.1, false, item.s, item.s);
+		// if item is still locked
+		if (!item.u) {
+			Draw.setColor(C.grey);
+			Draw.fill();
+		}
 		Draw.setColor(C.white);
 		Draw.setAlpha(1 - item.s);
 		Draw.fill();
@@ -118,10 +135,10 @@ Menu.render = () => {
 	Draw.setHVAlign(Align.c, Align.m);
 
 	Draw.setFont(Font.m);
-	Draw.text(Stage.mid.w, Stage.h - 48, selected.desc);
+	Draw.text(Stage.mid.w, Stage.h - 48, selected.unlocked? selected.desc : selected.lockedDesc);
 
 	Draw.setFont(Font.lb);
-	Draw.text(Stage.mid.w, Stage.h - 48 - Font.m.size - 24, selected.name);
+	Draw.text(Stage.mid.w, Stage.h - 48 - Font.m.size - 24, selected.unlocked? selected.name : '???');
 
 	Draw.setVAlign(Align.t);
 	Draw.setFont(Font.xxlb);
@@ -131,7 +148,12 @@ Menu.render = () => {
 	Draw.textBG(0, Stage.h, 'Press enter to start level.', { origin: Vec2.down, bgColor: C.makeRGBA(0, 0.5) });
 
 	if (Input.keyDown(KeyCode.Enter)) {
-		selected.act();
-		Sound.play('Select');
+		if (selected.unlocked) {
+			selected.act();
+			Sound.play('Select');
+		}
+		else {
+			Sound.play('Cancel');
+		}
 	}
 };

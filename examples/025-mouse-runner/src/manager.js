@@ -7,6 +7,7 @@ class Manager {
 	static OBJ_GUIDE_CHEESE_TIME = 5;
 	static OBJ_GUIDE_CHEESE_POISON = 6;
 	static OBJ_GUIDE_CHEESE_TIME_POISON = 7;
+	static SUCCESS_TEXT = 'Level Complete!';
 	static createGame(options={}) {
 		// size of the grid
 		options.w = options.w || 9;
@@ -97,12 +98,24 @@ class Manager {
 
 		this.showUI = true;
 		this.uiInfoY = 0;
+
+		this.gameOverListeners = [];
+	}
+	onGameOver(callback) {
+		this.gameOverListeners.push(callback);
 	}
 	setGameOver(msg) {
 		if (!this.gameOver) {
 			this.gameOverMessage = msg;
 			this.gameOver = true;
 			this.paused = true;
+
+			if (this.gameOverMessage === Manager.SUCCESS_TEXT) {
+				for (let i = this.gameOverListeners.length - 1; i >= 0; --i) {
+					this.gameOverListeners[i]();
+				}
+			}
+
 		}
 	}
 	spawnMice() {
@@ -128,7 +141,7 @@ class Manager {
 		this.runner.update();
 		// game over check
 		if (Cell.equals(this.runner, this.cheese)) {
-			this.setGameOver('Level Complete!');
+			this.setGameOver(Manager.SUCCESS_TEXT);
 			Sound.play('Eat');
 		}
 	}
@@ -184,7 +197,7 @@ class Manager {
 
 		let miceAvailable = this.mice.length + (this.miceToSpawn - this.miceSpawned);
 		// game over check
-		if (miceAvailable < this.miceTarget) {
+		if (miceAvailable < (this.miceTarget - this.miceCount)) {
 			this.setGameOver('Out of mouse!');
 		}
 
@@ -215,7 +228,7 @@ class Manager {
 
 				// game over check
 				if (this.miceCount >= this.miceTarget) {
-					this.setGameOver('Level Complete!');
+					this.setGameOver(Manager.SUCCESS_TEXT);
 				}
 			}
 		}
