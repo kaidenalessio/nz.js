@@ -6,13 +6,7 @@ Level1.start = () => {
 		w: 10,
 		h: 10,
 		open: 25,
-		timer: 60,
-		miceTarget: 5,
-		miceToSpawn: 10,
-		spawnPos: {
-			i: 0,
-			j: 0
-		}
+		objective: Manager.OBJ_CHEESE
 	});
 };
 

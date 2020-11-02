@@ -19,4 +19,11 @@ class CellObject {
 		this.j = j;
 		this.calcPosition();
 	}
+	drawSelf() {}
+	update() {}
+	render() {
+		Draw.onTransform(this.x + Cell.W * 0.5, this.y + Cell.W * 0.5, this.xs * this.imageScale, this.ys * this.imageScale, this.imageAngle, () => {
+			this.drawSelf();
+		});
+	}
 }

@@ -1,4 +1,12 @@
 class Manager {
+	static OBJ_CHEESE = 0;
+	static OBJ_CHEESE_TIME = 1;
+	static OBJ_CHEESE_POISON = 2;
+	static OBJ_CHEESE_TIME_POISON = 3;
+	static OBJ_GUIDE_CHEESE = 4;
+	static OBJ_GUIDE_CHEESE_TIME = 5;
+	static OBJ_GUIDE_CHEESE_POISON = 6;
+	static OBJ_GUIDE_CHEESE_TIME_POISON = 7;
 	static createGame(options={}) {
 		// size of the grid
 		options.w = options.w || 9;
@@ -22,8 +30,12 @@ class Manager {
 		// in frames, 60 means 1 seconds since this game runs in 60 fps
 		options.miceSpawnInterval = options.miceSpawnInterval || 60;
 
-		// out runner starting position
+		// our runner starting position
 		options.runnerPos = options.runnerPos || { i: 0, j: 0 };
+
+		options.cheesePos = options.cheesePos || { i: options.w - 1, j: options.h - 1 };
+
+		options.objective = options.objective || Manager.OBJ_CHEESE;
 
 		/* OBJECTIVES (WIN CONDITION)
 		 * Runner to Cheese
@@ -47,6 +59,9 @@ class Manager {
 	}
 	constructor(options) {
 		// options have to be provided fully, check above for guide
+
+		this.objective = options.objective;
+
 		this.grid = new Grid(options.w, options.h, options.open, options.pixelRatio);
 		this.grid.generate();
 
@@ -57,7 +72,7 @@ class Manager {
 
 		this.gameOver = false;
 
-		this.runner = new Mouse(this.grid, options.runnerPos.i, options.runnerPos.j);
+		this.runner = new Mouse(this.grid, options.runnerPos.i, options.runnerPos.j, C.white);
 		this.runner.isRunner = true;
 
 		this.mice = [];
@@ -68,7 +83,7 @@ class Manager {
 		this.miceSpawnInterval = options.miceSpawnInterval;
 		this.miceSpawned = 0;
 
-		this.cheese = [];
+		this.cheese = new Cheese(this.grid, options.cheesePos.i, options.cheesePos.j);
 
 		this.paused = false;
 	}
@@ -81,6 +96,38 @@ class Manager {
 	spawn() {
 		this.mice.push(new Mouse(this.grid, this.spawnPos.i, this.spawnPos.j));
 	}
+	objCheese() {
+		this.cheese.update();
+		for (let i = this.mice.length - 1; i >= 0; --i) {
+			this.mice[i].update();
+		}
+		this.runner.update();
+	}
+	objCheeseTime() {
+		this.time += Time.deltaTime;
+		// game over check
+		if (this.time >= this.timer) {
+			this.setGameOver('Out of time!');
+		}
+	}
+	objCheesePoison() {
+		// game over check
+		if (this.lives <= 0) {
+			this.lives = 0;
+			this.setGameOver('Out of lives!');
+		}
+	}
+	objCheeseTimePoison() {}
+	objGuideCheese() {
+		if (Time.frameCount > this.miceSpawnTime) {
+			// spawn a mice
+			this.spawn();
+			this.miceSpawnTime = Time.frameCount + this.miceSpawnInterval;
+		}
+	}
+	objGuideCheeseTime() {}
+	objGuideCheesePoison() {}
+	objGuideCheeseTimePoison() {}
 	update() {
 		if (Input.keyDown(KeyCode.Backspace) || Input.keyDown(KeyCode.Escape)) {
 			this.paused = !this.paused;
@@ -91,39 +138,32 @@ class Manager {
 			}
 		}
 		else {
-			// if timer -1, time is not our objective
-			if (this.timer > 0) {
-				this.time += Time.deltaTime;
-				// game over check
-				if (this.time >= this.timer) {
-					this.setGameOver('Out of time!');
-				}
-			}
-
-			// if wall is poisoned, check our lives
-			if (this.poison) {
-				// game over check
-				if (this.lives <= 0) {
-					this.lives = 0;
-					this.setGameOver('Out of lives!');
-				}
-			}
-
-			// if mice target > 0 and mice to spawn is not 0, guide is our objetive
-			if (this.miceTarget > 0 && this.miceToSpawn !== 0) {
-				if (Time.frameCount > this.miceSpawnTime) {
-					// spawn a mice
-					this.spawn();
-					this.miceSpawnTime = Time.frameCount + this.miceSpawnInterval;
-				}
+			switch (this.objective) {
+				case Manager.OBJ_CHEESE: this.objCheese(); break;
+				case Manager.OBJ_CHEESE_TIME: this.objCheeseTime(); break;
+				case Manager.OBJ_CHEESE_POISON: this.objCheesePoison(); break;
+				case Manager.OBJ_CHEESE_TIME_POISON: this.objCheeseTimePoison(); break;
+				case Manager.OBJ_GUIDE_CHEESE: this.objGuideCheese(); break;
+				case Manager.OBJ_GUIDE_CHEESE_TIME: this.objGuideCheeseTime(); break;
+				case Manager.OBJ_GUIDE_CHEESE_POISON: this.objGuideCheesePoison(); break;
+				case Manager.OBJ_GUIDE_CHEESE_TIME_POISON: this.objGuideCheeseTimePoison(); break;
 			}
 		}
 	}
 	render() {
-		const s = 1 / this.grid.pixelRatio;
+
+		// draw grid
+		let s = 1 / this.grid.pixelRatio;
 		Draw.onTransform(0, 0, s, s, 0, () => {
 			Draw.imageEl(this.grid.canvas, 0, 0, Vec2.zero);
 		});
+
+		// draw objects
+		this.cheese.render();
+		for (let i = this.mice.length - 1; i >= 0; --i) {
+			this.mice[i].render();
+		}
+		this.runner.render();
 
 		// render ui
 		if (this.paused) {
@@ -137,7 +177,7 @@ class Manager {
 			Draw.setColor(C.white);
 			Draw.setHVAlign(Align.c, Align.b);
 
-			const gap = 10;
+			const gap = 40;
 
 			// title text
 			Draw.setFont(Font.xlb);
@@ -146,7 +186,7 @@ class Manager {
 			// info text
 			Draw.setFont(Font.mb);
 			Draw.setVAlign(Align.t);
-			Draw.text(Stage.mid.w, Stage.mid.h + gap * 0.5, 'Press backspace to resume.\nPress enter to back to menu.');
+			Draw.text(Stage.mid.w, Stage.mid.h + gap * 0.5, 'Press backspace to resume.\n\nPress enter to back to menu.');
 		}
 		else {
 			Draw.setFont(Font.sm);
