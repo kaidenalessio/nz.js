@@ -160,18 +160,30 @@ class Manager {
 		for (let i = this.mice.length - 1; i >= 0; --i) {
 			this.mice[i].update();
 
+			// check if we on a pad
 			for (let j = this.pads.length - 1; j >= 0; --j) {
 				if (Cell.equals(this.mice[i], this.pads[j])) {
-					this.mice[i].direction = this.pads[j].direction;
+					// if we dont have the same direction
+					if (this.mice[i].direction !== this.pads[j].direction) {
+						// change our direction to follow pad
+						this.mice[i].direction = this.pads[j].direction;
+						this.mice[i].moveTime = Time.frameCount + Mathz.range(20, 60);
+					}
 				}
 			}
 
 			if (Cell.equals(this.mice[i], this.cheese)) {
+
 				this.miceCount++;
+
+				// remove mice so that it wont increase miceCount again
+				this.mice.splice(i, 1);
+				Sound.play('Eat');
+				// bye bye mice!
+
 				// game over check
 				if (this.miceCount >= this.miceTarget) {
 					this.setGameOver('Level Complete!');
-					Sound.play('Eat');
 				}
 			}
 		}
