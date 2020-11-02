@@ -95,6 +95,7 @@ class Manager {
 
 		this.paused = false;
 
+		this.showUI = true;
 		this.uiInfoY = 0;
 	}
 	setGameOver(msg) {
@@ -397,24 +398,27 @@ class Manager {
 		}
 		else {
 
-			this.uiInfoY = 0;
+			if (this.showUI) {
 
-			Draw.setFont(Font.sm);
+				this.uiInfoY = 0;
 
-			switch (this.objective) {
-				case Manager.OBJ_CHEESE: this.objCheeseUI(); break;
-				case Manager.OBJ_CHEESE_TIME: this.objCheeseTimeUI(); break;
-				case Manager.OBJ_CHEESE_POISON: this.objCheesePoisonUI(); break;
-				case Manager.OBJ_CHEESE_TIME_POISON: this.objCheeseTimePoisonUI(); break;
-				case Manager.OBJ_GUIDE_CHEESE: this.objGuideCheeseUI(); break;
-				case Manager.OBJ_GUIDE_CHEESE_TIME: this.objGuideCheeseTimeUI(); break;
-				case Manager.OBJ_GUIDE_CHEESE_POISON: this.objGuideCheesePoisonUI(); break;
-				case Manager.OBJ_GUIDE_CHEESE_TIME_POISON: this.objGuideCheeseTimePoisonUI(); break;
-				default: break;
+				Draw.setFont(Font.sm);
+
+				switch (this.objective) {
+					case Manager.OBJ_CHEESE: this.objCheeseUI(); break;
+					case Manager.OBJ_CHEESE_TIME: this.objCheeseTimeUI(); break;
+					case Manager.OBJ_CHEESE_POISON: this.objCheesePoisonUI(); break;
+					case Manager.OBJ_CHEESE_TIME_POISON: this.objCheeseTimePoisonUI(); break;
+					case Manager.OBJ_GUIDE_CHEESE: this.objGuideCheeseUI(); break;
+					case Manager.OBJ_GUIDE_CHEESE_TIME: this.objGuideCheeseTimeUI(); break;
+					case Manager.OBJ_GUIDE_CHEESE_POISON: this.objGuideCheesePoisonUI(); break;
+					case Manager.OBJ_GUIDE_CHEESE_TIME_POISON: this.objGuideCheeseTimePoisonUI(); break;
+					default: break;
+				}
+
+				Draw.setFont(Font.sm);
+				Draw.textBG(0, Stage.h, 'Press backspace to pause.', { origin: Vec2.down, bgColor: C.makeRGBA(0, 0.5) });
 			}
-
-			Draw.setFont(Font.sm);
-			Draw.textBG(0, Stage.h, 'Press backspace to pause.', { origin: Vec2.down, bgColor: C.makeRGBA(0, 0.5) });
 		}
 	}
 }

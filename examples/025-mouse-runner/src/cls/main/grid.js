@@ -149,7 +149,7 @@ class Grid {
 		while (i > 0 && maxIter-- > 0) {
 			const a = Utils.pick(this.cells);
 			// prevent walls on edges to be removed
-			if (a.i > 1 && a.i < this.w - 1 && a.j > 1 && a.j < this.h - 1) {
+			if (a.i > 0 && a.i < this.w - 1 && a.j > 0 && a.j < this.h - 1) {
 				const b = Utils.pick(a.neighbours);
 				if (a instanceof Cell && b instanceof Cell) {
 					if (Grid.wallExists(a, b)) {

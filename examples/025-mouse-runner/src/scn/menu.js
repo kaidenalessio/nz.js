@@ -49,6 +49,14 @@ Menu.items = [
 		act() {
 			Scene.start('Level5');
 		}
+	},
+	{
+		c: C.black,
+		name: 'Level 6',
+		desc: 'Just for fun.',
+		act() {
+			Scene.start('Level6');
+		}
 	}
 ];
 
