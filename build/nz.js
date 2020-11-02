@@ -2770,6 +2770,12 @@ NZ.Time = {
 	toClockWithLeadingZero(timeMs) {
 		return `${this.toClockMinutesWithLeadingZero(timeMs)}:${this.toClockSecondsWithLeadingZero(timeMs)}`;
 	},
+	toStopwatch(timeMs) {
+		const mm = Math.abs(Math.floor(timeMs / 60000) % 60).toString().padStart(2).replace(/\s/, '0');
+		const ss = Math.abs(Math.floor(timeMs * 0.001) % 60).toString().padStart(2).replace(/\s/, '0')
+		let ms = (timeMs * 0.001).toFixed(2).padStart(10).substr(8);
+		return `${mm}:${ss}.${ms}`;
+	},
 	get s() {
 		return this.toSeconds(this.time);
 	},
