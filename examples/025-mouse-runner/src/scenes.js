@@ -1,16 +1,23 @@
 const Level1 = Scene.create('Level1');
 
 Level1.manager = null;
-
 Level1.start = () => {
 	Level1.manager = Manager.createGame({
 		w: 10,
 		h: 10,
-		open: 25
+		open: 25,
+		timer: 60,
+		miceTarget: 5,
+		miceToSpawn: 10,
+		spawnPos: {
+			i: 0,
+			j: 0
+		}
 	});
 };
 
 Level1.render = () => {
+	Level1.manager.update();
 	Level1.manager.render();
 };
 const Level2 = Scene.create('Level2');
@@ -181,10 +188,10 @@ Menu.render = () => {
 	Draw.setFont(Font.xxlb);
 	Draw.textTransformed(Stage.mid.w, 24 + Time.cos(4), 'Mouse Runner', 1, 1, Time.cos(1, 0.012));
 
-	Draw.setFont(Font.s);
-	Draw.textBG(0, Stage.h, 'Press enter to start level.', { origin: Vec2.down });
+	Draw.setFont(Font.sm);
+	Draw.textBG(0, Stage.h, 'Press enter to start level.', { origin: Vec2.down, bgColor: C.makeRGBA(0, 0.5) });
 
-	if (Input.keyDown(KeyCode.Enter) || Input.keyDown(KeyCode.Space)) {
+	if (Input.keyDown(KeyCode.Enter)) {
 		selected.act();
 	}
 };

@@ -114,10 +114,10 @@ Menu.render = () => {
 	Draw.setFont(Font.xxlb);
 	Draw.textTransformed(Stage.mid.w, 24 + Time.cos(4), 'Mouse Runner', 1, 1, Time.cos(1, 0.012));
 
-	Draw.setFont(Font.s);
-	Draw.textBG(0, Stage.h, 'Press enter to start level.', { origin: Vec2.down });
+	Draw.setFont(Font.sm);
+	Draw.textBG(0, Stage.h, 'Press enter to start level.', { origin: Vec2.down, bgColor: C.makeRGBA(0, 0.5) });
 
-	if (Input.keyDown(KeyCode.Enter) || Input.keyDown(KeyCode.Space)) {
+	if (Input.keyDown(KeyCode.Enter)) {
 		selected.act();
 	}
 };
