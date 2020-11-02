@@ -140,6 +140,8 @@ class Manager {
 			if (!padExists) {
 				this.pads.push(new Pad(this.grid, this.runner.i, this.runner.j));
 			}
+
+			Sound.play('Slap');
 		}
 
 		// mice spawn manager update

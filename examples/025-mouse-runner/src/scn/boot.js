@@ -8,7 +8,18 @@ Boot.start = () => {
 	Loader.loadImage(Vec2.zero, 'Mouse', 'src/img/mouse.png');
 	Loader.loadImage(Vec2.center, 'Cheese', 'src/img/cheese.png');
 
+	Loader.loadSound('BGM', 'src/snd/bgm.mp3');
+	Loader.loadSound('Slap', 'src/snd/slap.mp3');
+
+	Sound.setVolume('BGM', 0.1);
+
 	Font.setFamily('Montserrat Alternates, sans-serif');
+
+	Scene.on('restart', () => {
+		if (!Sound.isPlaying('BGM')) {
+			Sound.loop('BGM');
+		}
+	});
 };
 
 Boot.render = () => {
