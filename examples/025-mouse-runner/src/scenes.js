@@ -212,7 +212,7 @@ Menu.items = [
 	{
 		c: C.black,
 		name: 'Level 6',
-		desc: 'Just for fun.',
+		desc: 'So you can guide them throughout obstacles.\nBut can you guide them in the open?',
 		act() {
 			Scene.start('Level6');
 		}
@@ -263,8 +263,11 @@ Menu.render = () => {
 	for (let i = sorted.length - 1; i >= 0; --i) {
 		const item = sorted[i];
 		Draw.setColor(item.c);
-		Draw.setAlpha(item.s);
 		Draw.roundRectTransformed(Menu.x + item.x, Menu.y + item.y, Menu.itemSize, Menu.itemSize, Menu.itemSize * 0.1, false, item.s, item.s);
+		Draw.setColor(C.white);
+		Draw.setAlpha(1 - item.s);
+		Draw.fill();
+		Draw.stroke();
 		Draw.resetAlpha();
 	}
 

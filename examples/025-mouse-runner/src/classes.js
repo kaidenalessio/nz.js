@@ -531,6 +531,9 @@ class Pad extends CellObject {
 		this.imageAngle = this.direction;
 		this.canvas = Pad.drawPad(C.random());
 	}
+	setDirection(d) {
+		this.imageAngle = this.direction = d;
+	}
 	nextDirection() {
 		if (this.direction === Pad.DIR_RIGHT) {
 			this.direction = Pad.DIR_DOWN;

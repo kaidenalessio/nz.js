@@ -106,6 +106,11 @@ class Manager {
 		}
 	}
 	spawnMice() {
+		// little hacc for level 6
+		if (!this.showUI) {
+			this.spawnPos.i = Mathz.irange(this.grid.w);
+			this.spawnPos.j = Mathz.irange(this.grid.h);
+		}
 		const n = new Mouse(this.grid, this.spawnPos.i, this.spawnPos.j);
 		n.imageScale *= Mathz.range(0.8, 0.9);
 		// little hacc
@@ -146,7 +151,7 @@ class Manager {
 		this.cheese.update();
 		this.runner.update();
 
-		if (Input.keyDown(KeyCode.Space) || Input.keyDown(KeyCode.Enter)) {
+		if (Input.keyRepeat(KeyCode.Space) || Input.keyRepeat(KeyCode.Enter)) {
 
 			let padExists = false;
 
@@ -161,7 +166,9 @@ class Manager {
 			}
 
 			if (!padExists) {
-				this.pads.push(new Pad(this.grid, this.runner.i, this.runner.j));
+				const n = new Pad(this.grid, this.runner.i, this.runner.j);
+				n.setDirection(this.runner.direction);
+				this.pads.push(n);
 			}
 
 			Sound.play('Slap');
