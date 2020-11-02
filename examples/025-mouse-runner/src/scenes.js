@@ -1,6 +1,33 @@
 const Level1 = Scene.create('Level1');
 
+Level1.manager = null;
+
 Level1.start = () => {
+	Level1.manager = Manager.createGame({
+		w: 10,
+		h: 10,
+		open: 25
+	});
+};
+
+Level1.render = () => {
+	Level1.manager.render();
+};
+const Level2 = Scene.create('Level2');
+
+Level2.start = () => {
+};
+const Level3 = Scene.create('Level3');
+
+Level3.start = () => {
+};
+const Level4 = Scene.create('Level4');
+
+Level4.start = () => {
+};
+const Level5 = Scene.create('Level5');
+
+Level5.start = () => {
 };
 const Boot = Scene.create('Boot');
 
