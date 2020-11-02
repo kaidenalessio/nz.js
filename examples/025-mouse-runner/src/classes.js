@@ -202,7 +202,15 @@ class Grid {
 			}
 		}
 	}
-	generate() {
+	// freeCells are object { i, j } of cell position that you want to clear all of its walls
+	// it is placed here so that they can be removed before drawCanvas
+	// you can remove walls anytime you want, just make sure call
+	// drawCanvas after that to make sure it's updated
+	// example:
+	// grid.generate({ i: 0, j: 0 }, {i:2,j:2});
+	// this will remove walls around top left cell (0, 0)
+	// and cell at row 2 column 2 (2, 2)
+	generate(...freeCells) {
 		this.fastTrack = true;
 		this.init();
 		while (!this.finished) {
@@ -220,6 +228,14 @@ class Grid {
 						Grid.removeWalls(a, b);
 						i--;
 					}
+				}
+			}
+		}
+		for (const p of freeCells) {
+			const m = this.getCell(p.i, p.j);
+			if (m instanceof Cell) {
+				for (const n of m.neighbours) {
+					Grid.removeWalls(m, n);
 				}
 			}
 		}

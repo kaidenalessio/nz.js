@@ -63,7 +63,7 @@ class Manager {
 		this.objective = options.objective;
 
 		this.grid = new Grid(options.w, options.h, options.open, options.pixelRatio);
-		this.grid.generate();
+		this.grid.generate(options.spawnPos);
 
 		this.time = 0;
 		this.timer = options.timer * 1000;
