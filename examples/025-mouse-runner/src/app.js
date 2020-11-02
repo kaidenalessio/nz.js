@@ -1,3 +1,5 @@
+OBJ.disableRender();
+
 NZ.start({
 	w: 960,
 	h: 540,

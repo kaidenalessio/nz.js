@@ -5,7 +5,7 @@ Level1.start = () => {
 	Level1.manager = Manager.createGame({
 		w: 10,
 		h: 10,
-		open: 25,
+		open: 10,
 		objective: Manager.OBJ_CHEESE
 	});
 };

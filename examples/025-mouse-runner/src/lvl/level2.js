@@ -5,7 +5,9 @@ Level2.start = () => {
 	Level2.manager = Manager.createGame({
 		w: 10,
 		h: 10,
-		open: 25,
+		open: 10,
+		miceTarget: 1,
+		miceToSpawn: 1,
 		objective: Manager.OBJ_GUIDE_CHEESE
 	});
 };

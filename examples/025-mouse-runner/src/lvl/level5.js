@@ -3,9 +3,11 @@ const Level5 = Scene.create('Level5');
 Level5.manager = null;
 Level5.start = () => {
 	Level5.manager = Manager.createGame({
-		w: 12,
-		h: 12,
-		open: 80,
+		w: 10,
+		h: 10,
+		open: 20,
+		miceTarget: 1,
+		miceToSpawn: 1,
 		objective: Manager.OBJ_GUIDE_CHEESE_POISON
 	});
 };

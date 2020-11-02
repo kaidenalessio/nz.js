@@ -75,8 +75,11 @@ class Manager {
 		this.runner = new Mouse(this.grid, options.runnerPos.i, options.runnerPos.j, C.white);
 		this.runner.isRunner = true;
 
+		this.pads = [];
+
 		this.mice = [];
 		this.spawnPos = options.spawnPos;
+		this.miceCount = 0;
 		this.miceTarget = options.miceTarget;
 		this.miceToSpawn = options.miceToSpawn;
 		this.miceSpawnTime = 0;
@@ -96,11 +99,7 @@ class Manager {
 	}
 	objCheese() {
 		this.cheese.update();
-		for (let i = this.mice.length - 1; i >= 0; --i) {
-			this.mice[i].update();
-		}
 		this.runner.update();
-
 		if (Cell.equals(this.runner, this.cheese)) {
 			this.setGameOver('Level Complete!');
 		}
@@ -120,17 +119,61 @@ class Manager {
 		}
 	}
 	objCheeseTimePoison() {}
-	spawn() {
-		this.mice.push(new Mouse(this.grid, this.spawnPos.i, this.spawnPos.j));
-	}
 	objGuideCheese() {
+		this.cheese.update();
+		this.runner.update();
+
+		if (Input.keyDown(KeyCode.Space)) {
+
+			let padExists = false;
+
+			for (let i = this.pads.length - 1; i >= 0; --i) {
+				if (Cell.equals(this.pads[i], this.runner)) {
+
+					this.pads[i].nextDirection();
+
+					padExists = true;
+					break;
+				}
+			}
+
+			if (!padExists) {
+				this.pads.push(new Pad(this.grid, this.runner.i, this.runner.j));
+			}
+		}
+
+		// mice spawn manager update
 		if (Time.frameCount > this.miceSpawnTime) {
-			// spawn a mice
-			this.spawn();
+			if (this.mice.length < this.miceToSpawn) {
+				const n = new Mouse(this.grid, this.spawnPos.i, this.spawnPos.j);
+				n.randomizeDirection();
+				this.mice.push(n);
+			}
 			this.miceSpawnTime = Time.frameCount + this.miceSpawnInterval;
 		}
+
+		//mice update
+		for (let i = this.mice.length - 1; i >= 0; --i) {
+			this.mice[i].update();
+
+			for (let j = this.pads.length - 1; j >= 0; --j) {
+				if (Cell.equals(this.mice[i], this.pads[j])) {
+					this.mice[i].direction = this.pads[j].direction;
+					// this.mice.
+				}
+			}
+
+			if (Cell.equals(this.mice[i], this.cheese)) {
+				this.miceCount++;
+				// game over check
+				if (this.miceCount >= this.miceTarget) {
+					this.setGameOver('Level Complete!');
+				}
+			}
+		}
 	}
-	objGuideCheeseTime() {}
+	objGuideCheeseTime() {
+	}
 	objGuideCheesePoison() {}
 	objGuideCheeseTimePoison() {}
 	update() {
@@ -157,23 +200,40 @@ class Manager {
 		}
 
 		if (this.gameOver) {
+			for (let i = this.mice.length - 1; i >= 0; --i) {
+				this.mice[i].updateDisplay();
+			}
 			this.runner.updateDisplay();
+			OBJ.create('Crumbs', Vec2.fromObject(this.cheese).add(Cell.W * 0.5));
 		}
 	}
 	render() {
 
-		// draw grid
-		let s = 1 / this.grid.pixelRatio;
-		Draw.onTransform(0, 0, s, s, 0, () => {
-			Draw.imageEl(this.grid.canvas, 0, 0, Vec2.zero);
-		});
+		Draw.onTransform(Stage.mid.w - this.grid.w * 0.5 * Cell.W, Stage.mid.h - this.grid.h * 0.5 * Cell.W, 1, 1, 0, () => {
+			// draw grid
+			let s = 1 / this.grid.pixelRatio;
+			Draw.onTransform(0, 0, s, s, 0, () => {
+				Draw.imageEl(this.grid.canvas, 0, 0, Vec2.zero);
+			});
 
-		// draw objects
-		this.cheese.render();
-		for (let i = this.mice.length - 1; i >= 0; --i) {
-			this.mice[i].render();
-		}
-		this.runner.render();
+			// draw pads
+			for (let i = this.pads.length - 1; i >= 0; --i) {
+				this.pads[i].render();
+			}
+
+			// draw cheese
+			this.cheese.render();
+
+			OBJ.renderFrom('Crumbs');
+
+			// draw mice
+			for (let i = this.mice.length - 1; i >= 0; --i) {
+				this.mice[i].render();
+			}
+
+			// draw runner
+			this.runner.render();
+		});
 
 		// render ui
 		if (this.paused) {
@@ -191,12 +251,12 @@ class Manager {
 				// title text
 				Draw.setFont(Font.xxlb);
 				Draw.setHVAlign(Align.c, Align.t);
-				Draw.text(Stage.mid.w, 100, this.gameOverMessage);
+				Draw.text(Stage.mid.w, 32, this.gameOverMessage);
 
 				// info text
-				Draw.setFont(Font.m);
+				Draw.setFont(Font.mb);
 				Draw.setVAlign(Align.b);
-				Draw.text(Stage.mid.w, Stage.h - 100, 'Press enter to back to menu.');
+				Draw.text(Stage.mid.w, Stage.h - 32, 'Press enter to back to menu.');
 
 				return;
 			}
@@ -208,10 +268,10 @@ class Manager {
 
 			// title text
 			Draw.setFont(Font.xlb);
-			Draw.text(Stage.mid.w, Stage.mid.h - gap * 0.5, 'PAUSED');
+			Draw.text(Stage.mid.w, Stage.mid.h - gap, 'PAUSED');
 
 			// info text
-			Draw.setFont(Font.m);
+			Draw.setFont(Font.mb);
 			Draw.setVAlign(Align.t);
 			Draw.text(Stage.mid.w, Stage.mid.h + gap * 0.5, 'Press backspace to resume.\n\nPress enter to back to menu.');
 		}

@@ -29,7 +29,7 @@ Menu.items = [
 	{
 		c: C.gold,
 		name: 'Level 3',
-		desc: 'Lead at least 5 mice to the cheese to complete!',
+		desc: 'Lead at least 3 mice to the cheese to complete!',
 		act() {
 			Scene.start('Level3');
 		}
@@ -37,7 +37,7 @@ Menu.items = [
 	{
 		c: C.red,
 		name: 'Level 4',
-		desc: 'Lead at least 20 mice under 1 minute to complete!',
+		desc: 'Lead at least 5 mice under 2 minutes to complete!',
 		act() {
 			Scene.start('Level4');
 		}
@@ -45,7 +45,7 @@ Menu.items = [
 	{
 		c: C.orchid,
 		name: 'Level 5',
-		desc: 'The walls are poisoned! Runner and others must avoid hitting walls.',
+		desc: 'The walls are poisoned!\nRunner and a little mouse must avoid hitting walls.',
 		act() {
 			Scene.start('Level5');
 		}
@@ -102,13 +102,13 @@ Menu.render = () => {
 	const selected = Menu.items[Menu.i];
 
 	Draw.setColor(C.black);
-	Draw.setHVAlign(Align.c, Align.b);
+	Draw.setHVAlign(Align.c, Align.m);
 
 	Draw.setFont(Font.m);
-	Draw.text(Stage.mid.w, Stage.h - 32, selected.desc);
+	Draw.text(Stage.mid.w, Stage.h - 48, selected.desc);
 
 	Draw.setFont(Font.lb);
-	Draw.text(Stage.mid.w, Stage.h - 32 - Font.m.size - 24, selected.name);
+	Draw.text(Stage.mid.w, Stage.h - 48 - Font.m.size - 24, selected.name);
 
 	Draw.setVAlign(Align.t);
 	Draw.setFont(Font.xxlb);

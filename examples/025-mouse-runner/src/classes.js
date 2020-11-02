@@ -246,7 +246,23 @@ class Grid {
 		});
 	}
 }
-class Cheese extends CellObject {
+class Particle extends NZObject {
+	constructor(pos) {
+		super();
+		this.pos = pos;
+		this.w = Mathz.range(1, 2);
+		this.winc = 0.07;
+		this.c = C.black;
+	}
+	render() {
+		Draw.setColor(this.c);
+		Draw.pointCircle(this.pos, this.w);
+		this.w -= this.winc;
+		if (this.w < this.winc) {
+			OBJ.remove(this.id);
+		}
+	}
+}class Cheese extends CellObject {
 	constructor(grid, i, j) {
 		super(grid, i, j);
 		this.imageScale = 0.35;
@@ -259,7 +275,20 @@ class Cheese extends CellObject {
 		Draw.image('Cheese', 0, 0);
 	}
 }
-class Mouse extends CellObject {
+class Crumbs extends Particle {
+	constructor(pos) {
+		super(pos);
+		this.acc = new Vec2(0, 0.1);
+		this.vel = Vec2.polar(Mathz.range(200, 340), 3);
+		this.c = Mathz.choose(C.orange, C.darkOrange, C.darkOrange);
+	}
+	update() {
+		this.vel.add(this.acc);
+		this.pos.add(this.vel);
+	}	
+}
+
+OBJ.addLink('Crumbs', Crumbs);class Mouse extends CellObject {
 	static DIR_UP = 270;
 	static DIR_LEFT = 180;
 	static DIR_DOWN = 90;
@@ -285,7 +314,7 @@ class Mouse extends CellObject {
 
 		this.direction = 0;
 
-		this.keyTime = 0;
+		this.moveTime = 0;
 		this.keyW = false;
 		this.keyA = false;
 		this.keyS = false;
@@ -296,6 +325,9 @@ class Mouse extends CellObject {
 		this.drawAcc = Vec2.zero;
 
 		this.ysFlip = 1;
+	}
+	keyAnyRaw() {
+		return (Input.keyHold(KeyCode.Up) || Input.keyHold(KeyCode.Left) || Input.keyHold(KeyCode.Down) || Input.keyHold(KeyCode.Right));
 	}
 	keyAny() {
 		return this.keyW || this.keyA || this.keyS || this.keyD;
@@ -333,8 +365,8 @@ class Mouse extends CellObject {
 		}
 	}
 	idle() {
-		// if not in moving animation
-		if (Vec2.sub(this.drawPos, this).abs.xy < 0.1) {
+		// if not in moving animation and no move keys pressed
+		if (Vec2.sub(this.drawPos, this).abs.xy < 0.1 && !this.keyAnyRaw()) {
 			// squishy anim
 			this.xs = 1 + Time.cos(0.1, 0.01);
 			this.ys = 2 - this.xs;
@@ -346,7 +378,7 @@ class Mouse extends CellObject {
 		// movement input
 		this.keyW = this.keyA = this.keyS = this.keyD = false;
 
-		if (Time.frameCount > this.keyTime) {
+		if (Time.frameCount > this.moveTime) {
 			if (Input.keyHold(KeyCode.Up)) {
 				this.keyW = true;
 			}
@@ -359,7 +391,7 @@ class Mouse extends CellObject {
 			else if (Input.keyHold(KeyCode.Right)) {
 				this.keyD = true;
 			}
-			this.keyTime = Time.frameCount + 3;
+			this.moveTime = Time.frameCount + 3;
 		}
 
 		// movement update
@@ -383,21 +415,27 @@ class Mouse extends CellObject {
 
 		this.imageAngle = Mathz.smoothRotate(this.imageAngle, this.direction, 20);
 	}
+	randomizeDirection() {
+		this.direction = Mathz.choose(Mouse.DIR_UP, Mouse.DIR_LEFT, Mouse.DIR_DOWN, Mouse.DIR_RIGHT);
+	}
+	miceMove() {
+		switch (this.direction) {
+			case Mouse.DIR_UP: this.move(0, -1); break;
+			case Mouse.DIR_LEFT: this.move(-1, 0); break;
+			case Mouse.DIR_DOWN: this.move(0, 1); break;
+			case Mouse.DIR_RIGHT: this.move(1, 0); break;
+			default: this.idle(); break;
+		}
+	}
 	update() {
 		if (this.isRunner) {
 			this.runnerUpdate();
 		}
 		else {
 			// move forward by imageangle
-			if (Time.frameCount > this.keyTime) {
-				switch (this.direction) {
-					case Mouse.DIR_UP: this.move(0, -1); break;
-					case Mouse.DIR_LEFT: this.move(-1, 0); break;
-					case Mouse.DIR_DOWN: this.move(0, 1); break;
-					case Mouse.DIR_RIGHT: this.move(1, 0); break;
-					default: this.idle(); break;
-				}
-				this.keyTime = Time.frameCount + 20;
+			if (Time.frameCount > this.moveTime) {
+				this.miceMove();
+				this.moveTime = Time.frameCount + 20;
 			}
 		}
 
@@ -407,5 +445,51 @@ class Mouse extends CellObject {
 		Draw.onTransform(this.drawPos.x + Cell.W * 0.5, this.drawPos.y + Cell.W * 0.5, this.xs * this.imageScale, this.ys * this.ysFlip * this.imageScale, this.imageAngle, () => {
 			Draw.imageEl(this.canvas, 0, 0);
 		});
+	}
+}
+class Pad extends CellObject {
+	static DIR_UP = 270;
+	static DIR_LEFT = 180;
+	static DIR_DOWN = 90;
+	static DIR_RIGHT = 0;
+	static drawPad(c) {
+		const img = Draw.images['Arrow'];
+		return Draw.createCanvasExt(img.width, img.height, () => {
+			Draw.image('Arrow', 0, 0);
+			Draw.setColor(c);
+			Draw.ctx.globalCompositeOperation = 'multiply';
+			Draw.rect(0, 0, img.width, img.height);
+			Draw.ctx.globalCompositeOperation = 'destination-in';
+			Draw.image('Arrow', 0, 0);
+			Draw.ctx.globalCompositeOperation = 'source-over';
+		});
+	}
+	constructor(grid, i, j) {
+		super(grid, i, j);
+		this.imageScale = 0.4;
+		this.direction = Pad.DIR_RIGHT;
+		this.imageAngle = this.direction;
+		this.canvas = Pad.drawPad(C.random());
+	}
+	nextDirection() {
+		if (this.direction === Pad.DIR_RIGHT) {
+			this.direction = Pad.DIR_DOWN;
+		}
+		else if (this.direction === Pad.DIR_DOWN) {
+			this.direction = Pad.DIR_LEFT;
+		}
+		else if (this.direction === Pad.DIR_LEFT) {
+			this.direction = Pad.DIR_UP;
+		}
+		else if (this.direction === Pad.DIR_UP) {
+			this.direction = Pad.DIR_RIGHT;
+		}
+		else {
+			this.direction = Pad.DIR_RIGHT;
+		}
+		this.imageAngle = this.direction;
+	}
+	drawSelf() {
+		Draw.imageEl(this.canvas, 0, 0);
 	}
 }

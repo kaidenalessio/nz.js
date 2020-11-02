@@ -24,7 +24,7 @@ class Mouse extends CellObject {
 
 		this.direction = 0;
 
-		this.keyTime = 0;
+		this.moveTime = 0;
 		this.keyW = false;
 		this.keyA = false;
 		this.keyS = false;
@@ -35,6 +35,9 @@ class Mouse extends CellObject {
 		this.drawAcc = Vec2.zero;
 
 		this.ysFlip = 1;
+	}
+	keyAnyRaw() {
+		return (Input.keyHold(KeyCode.Up) || Input.keyHold(KeyCode.Left) || Input.keyHold(KeyCode.Down) || Input.keyHold(KeyCode.Right));
 	}
 	keyAny() {
 		return this.keyW || this.keyA || this.keyS || this.keyD;
@@ -72,8 +75,8 @@ class Mouse extends CellObject {
 		}
 	}
 	idle() {
-		// if not in moving animation
-		if (Vec2.sub(this.drawPos, this).abs.xy < 0.1) {
+		// if not in moving animation and no move keys pressed
+		if (Vec2.sub(this.drawPos, this).abs.xy < 0.1 && !this.keyAnyRaw()) {
 			// squishy anim
 			this.xs = 1 + Time.cos(0.1, 0.01);
 			this.ys = 2 - this.xs;
@@ -85,7 +88,7 @@ class Mouse extends CellObject {
 		// movement input
 		this.keyW = this.keyA = this.keyS = this.keyD = false;
 
-		if (Time.frameCount > this.keyTime) {
+		if (Time.frameCount > this.moveTime) {
 			if (Input.keyHold(KeyCode.Up)) {
 				this.keyW = true;
 			}
@@ -98,7 +101,7 @@ class Mouse extends CellObject {
 			else if (Input.keyHold(KeyCode.Right)) {
 				this.keyD = true;
 			}
-			this.keyTime = Time.frameCount + 3;
+			this.moveTime = Time.frameCount + 3;
 		}
 
 		// movement update
@@ -122,21 +125,27 @@ class Mouse extends CellObject {
 
 		this.imageAngle = Mathz.smoothRotate(this.imageAngle, this.direction, 20);
 	}
+	randomizeDirection() {
+		this.direction = Mathz.choose(Mouse.DIR_UP, Mouse.DIR_LEFT, Mouse.DIR_DOWN, Mouse.DIR_RIGHT);
+	}
+	miceMove() {
+		switch (this.direction) {
+			case Mouse.DIR_UP: this.move(0, -1); break;
+			case Mouse.DIR_LEFT: this.move(-1, 0); break;
+			case Mouse.DIR_DOWN: this.move(0, 1); break;
+			case Mouse.DIR_RIGHT: this.move(1, 0); break;
+			default: this.idle(); break;
+		}
+	}
 	update() {
 		if (this.isRunner) {
 			this.runnerUpdate();
 		}
 		else {
 			// move forward by imageangle
-			if (Time.frameCount > this.keyTime) {
-				switch (this.direction) {
-					case Mouse.DIR_UP: this.move(0, -1); break;
-					case Mouse.DIR_LEFT: this.move(-1, 0); break;
-					case Mouse.DIR_DOWN: this.move(0, 1); break;
-					case Mouse.DIR_RIGHT: this.move(1, 0); break;
-					default: this.idle(); break;
-				}
-				this.keyTime = Time.frameCount + 20;
+			if (Time.frameCount > this.moveTime) {
+				this.miceMove();
+				this.moveTime = Time.frameCount + 20;
 			}
 		}
 

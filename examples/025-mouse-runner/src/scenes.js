@@ -5,7 +5,7 @@ Level1.start = () => {
 	Level1.manager = Manager.createGame({
 		w: 10,
 		h: 10,
-		open: 25,
+		open: 10,
 		objective: Manager.OBJ_CHEESE
 	});
 };
@@ -21,7 +21,9 @@ Level2.start = () => {
 	Level2.manager = Manager.createGame({
 		w: 10,
 		h: 10,
-		open: 25,
+		open: 10,
+		miceTarget: 1,
+		miceToSpawn: 1,
 		objective: Manager.OBJ_GUIDE_CHEESE
 	});
 };
@@ -35,10 +37,11 @@ const Level3 = Scene.create('Level3');
 Level3.manager = null;
 Level3.start = () => {
 	Level3.manager = Manager.createGame({
-		w: 14,
-		h: 14,
-		open: 70,
-		miceTarget: 5,
+		w: 10,
+		h: 10,
+		open: 15,
+		miceTarget: 3,
+		miceToSpawn: 5,
 		objective: Manager.OBJ_GUIDE_CHEESE
 	});
 };
@@ -52,10 +55,12 @@ const Level4 = Scene.create('Level4');
 Level4.manager = null;
 Level4.start = () => {
 	Level4.manager = Manager.createGame({
-		w: 8,
-		h: 8,
-		timer: 60,
-		miceTarget: 20,
+		w: 10,
+		h: 10,
+		open: 15,
+		timer: 120,
+		miceTarget: 5,
+		miceToSpawn: 7,
 		objective: Manager.OBJ_GUIDE_CHEESE_TIME
 	});
 };
@@ -69,9 +74,11 @@ const Level5 = Scene.create('Level5');
 Level5.manager = null;
 Level5.start = () => {
 	Level5.manager = Manager.createGame({
-		w: 12,
-		h: 12,
-		open: 80,
+		w: 10,
+		h: 10,
+		open: 20,
+		miceTarget: 1,
+		miceToSpawn: 1,
 		objective: Manager.OBJ_GUIDE_CHEESE_POISON
 	});
 };
@@ -147,7 +154,7 @@ Menu.items = [
 	{
 		c: C.gold,
 		name: 'Level 3',
-		desc: 'Lead at least 5 mice to the cheese to complete!',
+		desc: 'Lead at least 3 mice to the cheese to complete!',
 		act() {
 			Scene.start('Level3');
 		}
@@ -155,7 +162,7 @@ Menu.items = [
 	{
 		c: C.red,
 		name: 'Level 4',
-		desc: 'Lead at least 20 mice under 1 minute to complete!',
+		desc: 'Lead at least 5 mice under 2 minutes to complete!',
 		act() {
 			Scene.start('Level4');
 		}
@@ -163,9 +170,9 @@ Menu.items = [
 	{
 		c: C.orchid,
 		name: 'Level 5',
-		desc: 'The walls are poisoned! Runner and others must avoid hitting walls.',
+		desc: 'The walls are poisoned!\nRunner and a little mouse must avoid hitting walls.',
 		act() {
-			Scene.start('Level4');
+			Scene.start('Level5');
 		}
 	}
 ];
@@ -220,13 +227,13 @@ Menu.render = () => {
 	const selected = Menu.items[Menu.i];
 
 	Draw.setColor(C.black);
-	Draw.setHVAlign(Align.c, Align.b);
+	Draw.setHVAlign(Align.c, Align.m);
 
 	Draw.setFont(Font.m);
-	Draw.text(Stage.mid.w, Stage.h - 32, selected.desc);
+	Draw.text(Stage.mid.w, Stage.h - 48, selected.desc);
 
 	Draw.setFont(Font.lb);
-	Draw.text(Stage.mid.w, Stage.h - 32 - Font.m.size - 24, selected.name);
+	Draw.text(Stage.mid.w, Stage.h - 48 - Font.m.size - 24, selected.name);
 
 	Draw.setVAlign(Align.t);
 	Draw.setFont(Font.xxlb);
