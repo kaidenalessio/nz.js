@@ -9,9 +9,12 @@ Boot.start = () => {
 	Loader.loadImage(Vec2.center, 'Cheese', 'src/img/cheese.png');
 
 	Loader.loadSound('BGM', 'src/snd/bgm.mp3');
+	Loader.loadSound('Eat', 'src/snd/eat.mp3');
+	Loader.loadSound('Item', 'src/snd/item.mp3');
 	Loader.loadSound('Slap', 'src/snd/slap.mp3');
-
-	Sound.setVolume('BGM', 0.1);
+	Loader.loadSound('Select', 'src/snd/eat.mp3');
+	Loader.loadSound('Cancel', 'src/snd/cancel.mp3');
+	Loader.loadSound('Poison', 'src/snd/poison.mp3');
 
 	Font.setFamily('Montserrat Alternates, sans-serif');
 

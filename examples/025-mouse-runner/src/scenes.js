@@ -98,9 +98,12 @@ Boot.start = () => {
 	Loader.loadImage(Vec2.center, 'Cheese', 'src/img/cheese.png');
 
 	Loader.loadSound('BGM', 'src/snd/bgm.mp3');
+	Loader.loadSound('Eat', 'src/snd/eat.mp3');
+	Loader.loadSound('Item', 'src/snd/item.mp3');
 	Loader.loadSound('Slap', 'src/snd/slap.mp3');
-
-	Sound.setVolume('BGM', 0.1);
+	Loader.loadSound('Select', 'src/snd/eat.mp3');
+	Loader.loadSound('Cancel', 'src/snd/cancel.mp3');
+	Loader.loadSound('Poison', 'src/snd/poison.mp3');
 
 	Font.setFamily('Montserrat Alternates, sans-serif');
 
@@ -202,6 +205,7 @@ Menu.render = () => {
 		if (Menu.i < 0) {
 			Menu.i += Menu.itemsLength;
 		}
+		Sound.play('Item');
 	}
 
 	if (Input.keyRepeat(KeyCode.Right)) {
@@ -209,6 +213,7 @@ Menu.render = () => {
 		if (Menu.i > Menu.itemsLength - 1) {
 			Menu.i -= Menu.itemsLength;
 		}
+		Sound.play('Item');
 	}
 
 	Menu.rot = Mathz.smoothRotate(Menu.rot, Menu.rotLength * Menu.i, 20);
@@ -255,5 +260,6 @@ Menu.render = () => {
 
 	if (Input.keyDown(KeyCode.Enter)) {
 		selected.act();
+		Sound.play('Select');
 	}
 };

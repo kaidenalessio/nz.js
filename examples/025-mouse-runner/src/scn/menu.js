@@ -66,6 +66,7 @@ Menu.render = () => {
 		if (Menu.i < 0) {
 			Menu.i += Menu.itemsLength;
 		}
+		Sound.play('Item');
 	}
 
 	if (Input.keyRepeat(KeyCode.Right)) {
@@ -73,6 +74,7 @@ Menu.render = () => {
 		if (Menu.i > Menu.itemsLength - 1) {
 			Menu.i -= Menu.itemsLength;
 		}
+		Sound.play('Item');
 	}
 
 	Menu.rot = Mathz.smoothRotate(Menu.rot, Menu.rotLength * Menu.i, 20);
@@ -119,5 +121,6 @@ Menu.render = () => {
 
 	if (Input.keyDown(KeyCode.Enter)) {
 		selected.act();
+		Sound.play('Select');
 	}
 };

@@ -28,7 +28,7 @@ class Manager {
 		// -1 means infinite, 0 means runner alone, no mice in game
 		options.miceToSpawn = (options.miceToSpawn === 0? 0 : (options.miceToSpawn || -1));
 		// in frames, 60 means 1 seconds since this game runs in 60 fps
-		options.miceSpawnInterval = options.miceSpawnInterval || 60;
+		options.miceSpawnInterval = options.miceSpawnInterval || 120;
 
 		// our runner starting position
 		options.runnerPos = options.runnerPos || { i: 0, j: 0 };
@@ -100,8 +100,10 @@ class Manager {
 	objCheese() {
 		this.cheese.update();
 		this.runner.update();
+		// game over check
 		if (Cell.equals(this.runner, this.cheese)) {
 			this.setGameOver('Level Complete!');
+			Sound.play('Eat');
 		}
 	}
 	objCheeseTime() {
@@ -169,6 +171,7 @@ class Manager {
 				// game over check
 				if (this.miceCount >= this.miceTarget) {
 					this.setGameOver('Level Complete!');
+					Sound.play('Eat');
 				}
 			}
 		}
@@ -178,12 +181,14 @@ class Manager {
 	objGuideCheesePoison() {}
 	objGuideCheeseTimePoison() {}
 	update() {
-		if (Input.keyDown(KeyCode.Backspace) || Input.keyDown(KeyCode.Escape)) {
+		if ((Input.keyDown(KeyCode.Backspace) || Input.keyDown(KeyCode.Escape)) && !this.gameOver) {
 			this.paused = !this.paused;
+			Sound.play('Cancel');
 		}
 		if (this.paused) {
 			if (Input.keyDown(KeyCode.Enter)) {
 				Scene.start('Menu');
+				Sound.play('Select');
 			}
 		}
 		else {
@@ -234,6 +239,13 @@ class Manager {
 
 			// draw runner
 			this.runner.render();
+
+			// draw pads hover (half transparent)
+			Draw.setAlpha(0.5);
+			for (let i = this.pads.length - 1; i >= 0; --i) {
+				this.pads[i].render();
+			}
+			Draw.resetAlpha();
 		});
 
 		// render ui
