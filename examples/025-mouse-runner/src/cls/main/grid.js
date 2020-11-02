@@ -49,6 +49,7 @@ class Grid {
 		this.open = open;
 		this.curr = null;
 		this.cells = [];
+		this.color = C.black;
 		this.openset = [];
 		this.finished = false;
 		this.fastTrack = false;
@@ -175,7 +176,7 @@ class Grid {
 		this.canvas = Draw.createCanvasExt(w, h, () => {
 			Draw.onTransform(0, 0, this.pixelRatio, this.pixelRatio, 0, () => {
 				// set color
-				Draw.setStroke(C.black);
+				Draw.setStroke(this.color);
 
 				// line properties
 				Draw.setLineCap(LineCap.round);

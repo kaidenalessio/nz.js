@@ -63,6 +63,11 @@ class Manager {
 		this.objective = options.objective;
 
 		this.grid = new Grid(options.w, options.h, options.open, options.pixelRatio);
+
+		// little hacc
+		if (this.objective === Manager.OBJ_GUIDE_CHEESE_POISON) {
+			this.grid.color = C.orchid;
+		}
 		this.grid.generate(options.spawnPos);
 
 		this.timer = options.timer; // in seconds
@@ -82,13 +87,15 @@ class Manager {
 		this.miceCount = 0;
 		this.miceTarget = options.miceTarget;
 		this.miceToSpawn = options.miceToSpawn;
-		this.miceSpawnTime = 0;
 		this.miceSpawnInterval = options.miceSpawnInterval;
+		this.miceSpawnTime = Time.frameCount + this.miceSpawnInterval;
 		this.miceSpawned = 0;
 
 		this.cheese = new Cheese(this.grid, options.cheesePos.i, options.cheesePos.j);
 
 		this.paused = false;
+
+		this.uiInfoY = 0;
 	}
 	setGameOver(msg) {
 		if (!this.gameOver) {
@@ -96,6 +103,19 @@ class Manager {
 			this.gameOver = true;
 			this.paused = true;
 		}
+	}
+	spawnMice() {
+		const n = new Mouse(this.grid, this.spawnPos.i, this.spawnPos.j);
+		n.imageScale *= Mathz.range(0.8, 0.9);
+		// little hacc
+		if (this.objective === Manager.OBJ_GUIDE_CHEESE_POISON) {
+			n.direction = Mathz.choose(Mouse.DIR_DOWN, Mouse.DIR_RIGHT);
+		}
+		else {
+			n.randomizeDirection();
+		}
+		this.mice.push(n);
+		this.miceSpawned++;
 	}
 	objCheese() {
 		this.cheese.update();
@@ -149,16 +169,18 @@ class Manager {
 		// mice spawn manager update
 		if (Time.frameCount > this.miceSpawnTime) {
 			if (this.miceSpawned < this.miceToSpawn) {
-				const n = new Mouse(this.grid, this.spawnPos.i, this.spawnPos.j);
-				n.imageScale *= Mathz.range(0.8, 0.9);
-				n.randomizeDirection();
-				this.mice.push(n);
-				this.miceSpawned++;
+				this.spawnMice();
 			}
 			this.miceSpawnTime = Time.frameCount + this.miceSpawnInterval;
 		}
 
-		//mice update
+		let miceAvailable = this.mice.length + (this.miceToSpawn - this.miceSpawned);
+		// game over check
+		if (miceAvailable < this.miceTarget) {
+			this.setGameOver('Out of mouse!');
+		}
+
+		// mice update
 		for (let i = this.mice.length - 1; i >= 0; --i) {
 			this.mice[i].update();
 
@@ -169,7 +191,7 @@ class Manager {
 					if (this.mice[i].direction !== this.pads[j].direction) {
 						// change our direction to follow pad
 						this.mice[i].direction = this.pads[j].direction;
-						this.mice[i].moveTime = Time.frameCount + Mathz.range(20, 60);
+						this.mice[i].moveTime = Time.frameCount + Mathz.irange(20, 60);
 					}
 				}
 			}
@@ -198,22 +220,72 @@ class Manager {
 			this.setGameOver('Out of time!');
 		}
 	}
-	objGuideCheesePoison() {}
+	mousePoisonCheck(mouse) {
+		// game over check
+		// 'next' is an cell position object {i, j} we try to move to on the last step
+		// we try to move outside?
+		if (mouse.next.i < 0
+		 || mouse.next.i > this.grid.w - 1
+		 || mouse.next.j < 0
+		 || mouse.next.j > this.grid.h - 1) {
+
+			return true;
+		}
+		else {
+			// so 'next' is in the grid, check if there is a wall between
+			if (!Cell.equals(mouse, mouse.next)) {
+				if (Grid.wallExists(
+						this.grid.getCell(mouse.i, mouse.j),
+						this.grid.getCell(mouse.next.i, mouse.next.j))) {
+
+					return true;
+				}
+			}
+		}
+
+		return;
+	}
+	objGuideCheesePoison() {
+		this.objGuideCheese();
+		if (this.mousePoisonCheck(this.runner)) {
+			this.setGameOver('You got poisoned!');
+			Sound.play('Poison');
+		}
+		else {
+			for (let i = this.mice.length - 1; i >= 0; --i) {
+				if (this.mousePoisonCheck(this.mice[i])) {
+					this.mice.splice(i, 1);
+					Sound.play('Poison');
+				}
+			}
+		}
+	}
 	objGuideCheeseTimePoison() {}
+	drawInfo(txt) {
+		Draw.textBG(0, this.uiInfoY, txt, { bgColor: C.makeRGBA(0, 0.5) });
+		this.uiInfoY += Draw.getTextHeight(txt) + 10;
+	}
 	objCheeseUI() {
-		Draw.textBG(0, 0, 'Get to the cheese!');
+		this.drawInfo('Use arrow keys to move Runner around.');
+		this.drawInfo('Get to the Cheese to complete the level!');
 	}
 	objCheeseTimeUI() {}
 	objCheesePoisonUI() {}
 	objCheeseTimePoisonUI() {}
 	objGuideCheeseUI() {
-		Draw.textBG(0, 0, `Mice to guide: ${this.miceCount}/${this.miceTarget}`);
+		this.drawInfo('Press space or enter to place a Direction Pad.');
+		this.drawInfo('Press that key again to change the direction of the pad.');
+		this.drawInfo('Place the pad under a mouse, it will follow the direction.');
+		this.drawInfo(`Guide ${this.miceCount}/${this.miceTarget} mouse to the Cheese to complete the level.`);
 	}
 	objGuideCheeseTimeUI() {
-		Draw.textBG(0, 0, `Mice to guide: ${this.miceCount}/${this.miceTarget}`);
-		Draw.textBG(0, Font.sm.size + 10, Time.toStopwatch(this.time));
+		this.drawInfo(`Mouse to guide: ${this.miceCount}/${this.miceTarget}`);
+		this.drawInfo(Time.toStopwatch(this.time));
 	}
-	objGuideCheesePoisonUI() {}
+	objGuideCheesePoisonUI() {
+		this.drawInfo(`Make sure all mouse including Runner didn't touch the walls!`);
+		this.drawInfo(`Mouse to guide: ${this.miceCount}/${this.miceTarget}`);
+	}
 	objGuideCheeseTimePoisonUI() {}
 	update() {
 		if ((Input.keyDown(KeyCode.Backspace) || Input.keyDown(KeyCode.Escape)) && !this.gameOver) {
@@ -324,6 +396,10 @@ class Manager {
 			Draw.text(Stage.mid.w, Stage.mid.h + gap * 0.5, 'Press backspace to resume.\n\nPress enter to back to menu.');
 		}
 		else {
+
+			this.uiInfoY = 0;
+
+			Draw.setFont(Font.sm);
 
 			switch (this.objective) {
 				case Manager.OBJ_CHEESE: this.objCheeseUI(); break;

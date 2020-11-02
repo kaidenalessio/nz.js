@@ -122,6 +122,7 @@ class Grid {
 		this.open = open;
 		this.curr = null;
 		this.cells = [];
+		this.color = C.black;
 		this.openset = [];
 		this.finished = false;
 		this.fastTrack = false;
@@ -248,7 +249,7 @@ class Grid {
 		this.canvas = Draw.createCanvasExt(w, h, () => {
 			Draw.onTransform(0, 0, this.pixelRatio, this.pixelRatio, 0, () => {
 				// set color
-				Draw.setStroke(C.black);
+				Draw.setStroke(this.color);
 
 				// line properties
 				Draw.setLineCap(LineCap.round);
@@ -337,6 +338,9 @@ OBJ.addLink('Crumbs', Crumbs);class Mouse extends CellObject {
 		this.isRunner = false;
 		this.canvas = Mouse.drawMouse(this.c);
 
+		this.prev = { i: 0, j: 0 };
+		this.next = { i: 0, j: 0 };
+
 		this.direction = 0;
 
 		this.moveTime = 0;
@@ -358,25 +362,30 @@ OBJ.addLink('Crumbs', Crumbs);class Mouse extends CellObject {
 		return this.keyW || this.keyA || this.keyS || this.keyD;
 	}
 	move(iAmount, jAmount, blockedCallback=()=>{}) {
-		const prev = this.grid.getCell(this.i, this.j);
 
-		this.i = Mathz.clamp(this.i + iAmount, 0, this.grid.w - 1);
-		this.j = Mathz.clamp(this.j + jAmount, 0, this.grid.h - 1);
+		this.prev.i = this.i;
+		this.prev.j = this.j;
 
-		if (!Cell.equals(this, prev)) {
+		this.next.i = this.i + iAmount;
+		this.next.j = this.j + jAmount;
+
+		this.i = Mathz.clamp(this.next.i, 0, this.grid.w - 1);
+		this.j = Mathz.clamp(this.next.j, 0, this.grid.h - 1);
+
+		if (!Cell.equals(this, this.prev)) {
 
 			const curr = this.grid.getCell(this.i, this.j);
 
-			if (Grid.wallExists(prev, curr)) {
-				this.i = prev.i;
-				this.j = prev.j;
+			if (Grid.wallExists(this.grid.getCell(this.prev.i, this.prev.j), curr)) {
+				this.i = this.prev.i;
+				this.j = this.prev.j;
 			}
 			else {
 				this.calcPosition();
 			}
 		}
 
-		if (Cell.equals(this, prev)) {
+		if (Cell.equals(this, this.prev)) {
 			blockedCallback();
 		}
 
