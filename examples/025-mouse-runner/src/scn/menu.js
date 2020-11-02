@@ -37,7 +37,7 @@ Menu.items = [
 	{
 		c: C.red,
 		name: 'Level 4',
-		desc: 'Lead at least 5 mice under 2 minutes to complete!',
+		desc: 'Lead at least 5 mice under 1 minute to complete!',
 		act() {
 			Scene.start('Level4');
 		}

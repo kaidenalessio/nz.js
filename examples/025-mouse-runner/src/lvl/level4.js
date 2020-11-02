@@ -6,7 +6,7 @@ Level4.start = () => {
 		w: 10,
 		h: 10,
 		open: 15,
-		timer: 120,
+		timer: 60,
 		miceTarget: 5,
 		miceToSpawn: 7,
 		objective: Manager.OBJ_GUIDE_CHEESE_TIME
