@@ -4,6 +4,9 @@ class Cell {
 	static RIGHT = 2;
 	static BOTTOM = 3;
 	static W = 32;
+	static equals(a, b) {
+		return a.i === b.i && a.j === b.j;
+	}
 	static calcPosition(cell) {
 		cell.x = cell.i * Cell.W;
 		cell.y = cell.j * Cell.W;

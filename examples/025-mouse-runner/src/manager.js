@@ -147,6 +147,7 @@ class Manager {
 				case Manager.OBJ_GUIDE_CHEESE_TIME: this.objGuideCheeseTime(); break;
 				case Manager.OBJ_GUIDE_CHEESE_POISON: this.objGuideCheesePoison(); break;
 				case Manager.OBJ_GUIDE_CHEESE_TIME_POISON: this.objGuideCheeseTimePoison(); break;
+				default: break;
 			}
 		}
 	}
