@@ -370,6 +370,19 @@ class Mouse extends CellObject {
 			this.idle();
 		}
 	}
+	updateDisplay() {
+		this.drawVel.add(this.drawAcc);
+		this.drawVel.mult(0.7);
+		this.drawVel.limit(10);
+		this.drawAcc.mult(0.025);
+		this.drawAcc.add(Vec2.sub(this, this.drawPos).mult(0.1));
+		this.drawPos.add(this.drawVel);
+
+		this.xs -= Math.sign(this.xs-1) * Math.min(0.05, Math.abs(this.xs-1));
+		this.ys -= Math.sign(this.ys-1) * Math.min(0.05, Math.abs(this.ys-1));
+
+		this.imageAngle = Mathz.smoothRotate(this.imageAngle, this.direction, 20);
+	}
 	update() {
 		if (this.isRunner) {
 			this.runnerUpdate();
@@ -388,18 +401,7 @@ class Mouse extends CellObject {
 			}
 		}
 
-		// display update
-		this.drawVel.add(this.drawAcc);
-		this.drawVel.mult(0.7);
-		this.drawVel.limit(10);
-		this.drawAcc.mult(0.025);
-		this.drawAcc.add(Vec2.sub(this, this.drawPos).mult(0.1));
-		this.drawPos.add(this.drawVel);
-
-		this.xs -= Math.sign(this.xs-1) * Math.min(0.05, Math.abs(this.xs-1));
-		this.ys -= Math.sign(this.ys-1) * Math.min(0.05, Math.abs(this.ys-1));
-
-		this.imageAngle = Mathz.smoothRotate(this.imageAngle, this.direction, 20);
+		this.updateDisplay();
 	}
 	render() {
 		Draw.onTransform(this.drawPos.x + Cell.W * 0.5, this.drawPos.y + Cell.W * 0.5, this.xs * this.imageScale, this.ys * this.ysFlip * this.imageScale, this.imageAngle, () => {

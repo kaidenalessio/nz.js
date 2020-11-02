@@ -16,19 +16,69 @@ Level1.render = () => {
 };
 const Level2 = Scene.create('Level2');
 
+Level2.manager = null;
 Level2.start = () => {
+	Level2.manager = Manager.createGame({
+		w: 10,
+		h: 10,
+		open: 25,
+		objective: Manager.OBJ_GUIDE_CHEESE
+	});
+};
+
+Level2.render = () => {
+	Level2.manager.update();
+	Level2.manager.render();
 };
 const Level3 = Scene.create('Level3');
 
+Level3.manager = null;
 Level3.start = () => {
+	Level3.manager = Manager.createGame({
+		w: 14,
+		h: 14,
+		open: 70,
+		miceTarget: 5,
+		objective: Manager.OBJ_GUIDE_CHEESE
+	});
+};
+
+Level3.render = () => {
+	Level3.manager.update();
+	Level3.manager.render();
 };
 const Level4 = Scene.create('Level4');
 
+Level4.manager = null;
 Level4.start = () => {
+	Level4.manager = Manager.createGame({
+		w: 8,
+		h: 8,
+		timer: 60,
+		miceTarget: 20,
+		objective: Manager.OBJ_GUIDE_CHEESE_TIME
+	});
+};
+
+Level4.render = () => {
+	Level4.manager.update();
+	Level4.manager.render();
 };
 const Level5 = Scene.create('Level5');
 
+Level5.manager = null;
 Level5.start = () => {
+	Level5.manager = Manager.createGame({
+		w: 12,
+		h: 12,
+		open: 80,
+		objective: Manager.OBJ_GUIDE_CHEESE_POISON
+	});
+};
+
+Level5.render = () => {
+	Level5.manager.update();
+	Level5.manager.render();
 };
 const Boot = Scene.create('Boot');
 

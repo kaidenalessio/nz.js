@@ -91,10 +91,8 @@ class Manager {
 		if (!this.gameOver) {
 			this.gameOverMessage = msg;
 			this.gameOver = true;
+			this.paused = true;
 		}
-	}
-	spawn() {
-		this.mice.push(new Mouse(this.grid, this.spawnPos.i, this.spawnPos.j));
 	}
 	objCheese() {
 		this.cheese.update();
@@ -102,6 +100,10 @@ class Manager {
 			this.mice[i].update();
 		}
 		this.runner.update();
+
+		if (Cell.equals(this.runner, this.cheese)) {
+			this.setGameOver('Level Complete!');
+		}
 	}
 	objCheeseTime() {
 		this.time += Time.deltaTime;
@@ -118,6 +120,9 @@ class Manager {
 		}
 	}
 	objCheeseTimePoison() {}
+	spawn() {
+		this.mice.push(new Mouse(this.grid, this.spawnPos.i, this.spawnPos.j));
+	}
 	objGuideCheese() {
 		if (Time.frameCount > this.miceSpawnTime) {
 			// spawn a mice
@@ -150,6 +155,10 @@ class Manager {
 				default: break;
 			}
 		}
+
+		if (this.gameOver) {
+			this.runner.updateDisplay();
+		}
 	}
 	render() {
 
@@ -175,6 +184,23 @@ class Manager {
 			Draw.rect(0, 0, Stage.w, Stage.h);
 			Draw.resetAlpha();
 
+			if (this.gameOver) {
+
+				Draw.setColor(C.white);
+
+				// title text
+				Draw.setFont(Font.xxlb);
+				Draw.setHVAlign(Align.c, Align.t);
+				Draw.text(Stage.mid.w, 100, this.gameOverMessage);
+
+				// info text
+				Draw.setFont(Font.m);
+				Draw.setVAlign(Align.b);
+				Draw.text(Stage.mid.w, Stage.h - 100, 'Press enter to back to menu.');
+
+				return;
+			}
+
 			Draw.setColor(C.white);
 			Draw.setHVAlign(Align.c, Align.b);
 
@@ -185,7 +211,7 @@ class Manager {
 			Draw.text(Stage.mid.w, Stage.mid.h - gap * 0.5, 'PAUSED');
 
 			// info text
-			Draw.setFont(Font.mb);
+			Draw.setFont(Font.m);
 			Draw.setVAlign(Align.t);
 			Draw.text(Stage.mid.w, Stage.mid.h + gap * 0.5, 'Press backspace to resume.\n\nPress enter to back to menu.');
 		}

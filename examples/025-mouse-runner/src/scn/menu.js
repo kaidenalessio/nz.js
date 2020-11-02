@@ -47,7 +47,7 @@ Menu.items = [
 		name: 'Level 5',
 		desc: 'The walls are poisoned! Runner and others must avoid hitting walls.',
 		act() {
-			Scene.start('Level4');
+			Scene.start('Level5');
 		}
 	}
 ];
