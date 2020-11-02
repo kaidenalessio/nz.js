@@ -12,6 +12,9 @@ Level6.start = () => {
 	});
 	Level6.manager.miceSpawnInterval = 0;
 	Level6.manager.showUI = false;
+	Level6.manager.onGameOver(() => {
+		Menu.items[6].unlocked = true;
+	});
 };
 
 Level6.render = () => {

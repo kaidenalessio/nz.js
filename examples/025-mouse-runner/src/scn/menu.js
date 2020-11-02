@@ -68,6 +68,16 @@ Menu.items = [
 		act() {
 			Scene.start('Level6');
 		}
+	},
+	{
+		c: C.orangeRed,
+		name: 'Cheese Trophy',
+		desc: 'You have completed all levels! Thank you for playing!',
+		unlocked: false,
+		lockedDesc: 'Complete Level 6 to unlock this item.',
+		act() {
+			Scene.start('Level7');
+		}
 	}
 ];
 
@@ -76,6 +86,7 @@ Menu.start = () => {
 	Menu.y = Stage.mid.h;
 	Menu.itemsLength = Menu.items.length;
 	Menu.rotLength = 360 / Menu.itemsLength;
+	Menu.rot = Menu.rotLength * Menu.i;
 };
 
 Menu.render = () => {
