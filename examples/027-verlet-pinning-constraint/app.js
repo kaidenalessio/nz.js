@@ -2,6 +2,7 @@ let Engine = {
 	bounce: 0.9,
 	gravity: 0.5,
 	friction: 0.999,
+	stiffness: 0.4,
 	shapes: [],
 	clearShape() {
 		this.shapes.length = 0;
@@ -76,7 +77,7 @@ class Stick {
 			dy = this.p1.y - this.p0.y,
 			dist = Math.sqrt(dx * dx + dy * dy),
 			diff = this.length - dist,
-			percent = diff / dist * 0.5,
+			percent = diff / dist * 0.5 * Engine.stiffness,
 			offsetX = dx * percent,
 			offsetY = dy * percent;
 
