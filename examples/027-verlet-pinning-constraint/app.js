@@ -208,9 +208,15 @@ Scene.current.render = () => {
 
 	Engine.run();
 
+	let pinnedPoint = rope.points[rope.points.length - 1];
+
+	// move pinned point
+	pinnedPoint.px = pinnedPoint.x = pinnedPoint.x + Time.cos(2, 0.001);
+	pinnedPoint.py = pinnedPoint.y = pinnedPoint.y + Time.sin(1, 0.003);
+
 	// draw rope pinned point
 	Draw.setColor(C.red);
-	rope.points[rope.points.length - 1].draw();
+	pinnedPoint.draw();
 
 	// mouse constraint
 	if (Input.mouseDown(0)) {
@@ -227,11 +233,13 @@ Scene.current.render = () => {
 	}
 
 	if (dragPoint) {
-		if (Input.mouseHold(0)) {			
+		if (Input.mouseHold(0)) {
 
-			Draw.setColor(C.red);
-			dragPoint.draw();
-			Draw.pointLine(Input.mousePosition, dragPoint);
+			if (Debug.mode > 0) {
+				Draw.setColor(C.red);
+				dragPoint.draw();
+				Draw.pointLine(Input.mousePosition, dragPoint);
+			}
 
 			dragPoint.px = dragPoint.x = Mathz.clamp(Input.mouseX, 0, Stage.w);
 			dragPoint.py = dragPoint.y = Mathz.clamp(Input.mouseY, 0, Stage.h);
@@ -243,15 +251,19 @@ Scene.current.render = () => {
 		}
 	}
 
-	Draw.textBG(0, 0, Time.FPS);
+	if (Debug.mode > 0) {
+		Draw.textBG(0, 0, Time.FPS);
+	}
 
 	if (Input.keyDown(KeyCode.Space)) Scene.restart();
 };
 
+Debug.mode = 1;
 OBJ.disableUpdate();
 NZ.start({
 	w: 960,
 	h: 540,
 	bgColor: BGColor.lemon,
-	stylePreset: StylePreset.noGapCenter
+	stylePreset: StylePreset.noGapCenter,
+	debugModeAmount: 2
 });
