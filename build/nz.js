@@ -204,7 +204,6 @@ NZ.C = {
 	moccasin: '#ffe4b5',
 	navajoWhite: '#ffdead',
 	navy: '#000080',
-	none: '#0000',
 	oldLace: '#fdf5e6',
 	olive: '#808000',
 	oliveDrab: '#6b8e23',
@@ -251,6 +250,7 @@ NZ.C = {
 	whiteSmoke: '#f5f5f5',
 	yellow: '#ffff00',
 	yellowGreen: '#9acd32',
+	none: '#0000',
 	keys: [],
 	list: [],
 	random() {
@@ -322,9 +322,9 @@ NZ.C = {
 };
 
 NZ.C.keys = Object.keys(NZ.C);
-NZ.C.keys.splice(NZ.C.keys.length - 13);
+NZ.C.keys.splice(NZ.C.keys.length - 14);
 NZ.C.list = Object.values(NZ.C);
-NZ.C.list.splice(NZ.C.list.length - 13);var NZ = NZ || {};
+NZ.C.list.splice(NZ.C.list.length - 14);var NZ = NZ || {};
 
 NZ.Canvas = document.createElement('canvas');
 NZ.Canvas.id = 'NZCanvas';
