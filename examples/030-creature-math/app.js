@@ -9,17 +9,20 @@ const Manager = {
 	PIXEL_PER_METER: 400,
 	TICK_INCREMENT: Time.fixedDeltaTime * 0.005,
 	UPDATE_ITERATION: 1, // can be fast forward by holding space
-	CONSRAINT_ITERATION: 2,
+	CONSRAINT_ITERATION: 10,
 	TIME_DURATION: 15000,
 	TIME_INCREMENT: Time.fixedDeltaTime,
 	COLOR_SKY: C.blanchedAlmond,
 	COLOR_GROUND: C.plum,
+	SIGN_AMOUNT: 500, // -500m to 500m
 	nodes: [],
 	muscles: [],
 	currentModel: {},
 	currentFitness: 0,
 	time: 0,
 	timesOut: false,
+	cameraXAcc: 0,
+	cameraXVel: 0,
 	cameraX: 0,
 	nodesMidX: 0,
 	/*  model: {}
@@ -73,6 +76,8 @@ const Manager = {
 		this.currentFitness = 0;
 		this.time = 0;
 		this.timesOut = false;
+		this.cameraXAcc = 0;
+		this.cameraXVel = 0;
 		this.cameraX = 0;
 		this.nodesMidX = 0;
 	},
@@ -117,8 +122,12 @@ const Manager = {
 		}
 	},
 	render() {
-		// lerp camera position
-		this.cameraX -= 0.1 * (this.cameraX - this.nodesMidX);
+		// elastic camera position
+		this.cameraXVel += this.cameraXAcc;
+		this.cameraXVel *= 0.7;
+		this.cameraXAcc *= 0.025;
+		this.cameraXAcc += 0.1 * (this.nodesMidX - this.cameraX);
+		this.cameraX += this.cameraXVel;
 
 		// translate to camera
 		Draw.ctx.save();
@@ -127,7 +136,7 @@ const Manager = {
 		// Draw sign
 		Draw.setFont(Font.xxlb);
 		Draw.setHVAlign(Align.c, Align.m);
-		for (let i = -100; i < 100; i++) {
+		for (let i = -this.SIGN_AMOUNT; i < this.SIGN_AMOUNT; i++) {
 			let x = i * this.PIXEL_PER_METER;
 
 			if (Math.abs(x - this.nodesMidX) < Stage.w) {
