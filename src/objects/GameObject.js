@@ -23,7 +23,7 @@ class NZGameObject extends NZObject {
 		this.radius = 16;
 		this.bounce = -0.9;
 		this.friction = 0.999;
-		this.gravity = gravity || 0.5;
+		this.gravity = gravity === 0? 0 : (gravity || 0.5);
 		this.constraint = true;
 	}
 	get speed() {
