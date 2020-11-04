@@ -1803,7 +1803,7 @@ NZ.Mathz.map = (value, min1, max1, min2, max2, boundMin, boundMax) => {
 NZ.Mathz.hypot = (a, b) => Math.sqrt(a*a + b*b);
 NZ.Mathz.hypotsq = (a, b) => a*a + b*b;
 
-NZ.Mathz.clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+NZ.Mathz.clamp = (value, min, max) => Math.min(Math.max(value, Math.min(min, max)), Math.max(min, max));
 
 NZ.Mathz.range = (min, max=0, t=Math.random()) => min + t * (max - min);
 
