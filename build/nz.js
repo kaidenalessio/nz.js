@@ -922,6 +922,26 @@ NZ.Draw = {
 		this.ctx.lineTo(x-w, y);
 		this.ctx.quadraticCurveTo(x-w, y-h, x, y-h*0.5);
 		this.draw(isStroke);
+	},
+	pointArrow(p1, p2, len, flip) {
+		len = Math.max(1, len || Math.hypot(p2.x - p1.x, p2.y - p1.y) * 0.2);
+		let angleBetween = Math.atan2(p2.y - p1.y, p2.x - p1.x),
+			d = flip? 45 : 135,
+			polar1 = {
+				x: Math.cos(angleBetween - this.degtorad(d)) * len,
+				y: Math.sin(angleBetween - this.degtorad(d)) * len
+			},
+			polar2 = {
+				x: Math.cos(angleBetween + this.degtorad(d)) * len,
+				y: Math.sin(angleBetween + this.degtorad(d)) * len
+			};
+		this.ctx.beginPath();
+		this.ctx.moveTo(p1.x, p1.y);
+		this.ctx.lineTo(p2.x, p2.y);
+		this.ctx.moveTo(p2.x + polar1.x, p2.y + polar1.y);
+		this.ctx.lineTo(p2.x, p2.y);
+		this.ctx.lineTo(p2.x + polar2.x, p2.y + polar2.y);
+		this.ctx.stroke();
 	}
 };var NZ = NZ || {};
 
