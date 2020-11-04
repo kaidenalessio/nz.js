@@ -8,6 +8,7 @@ const Manager = {
 	STRENGTH_MAX: 0.25,
 	PIXEL_PER_METER: 400,
 	TICK_INCREMENT: Time.fixedDeltaTime * 0.005,
+	UPDATE_ITERATION: 1, // can be fast forward by holding space
 	CONSRAINT_ITERATION: 2,
 	TIME_DURATION: 15000,
 	TIME_INCREMENT: Time.fixedDeltaTime,
@@ -16,7 +17,9 @@ const Manager = {
 	nodes: [],
 	muscles: [],
 	currentModel: {},
+	currentFitness: 0,
 	time: 0,
+	timesOut: false,
 	cameraX: 0,
 	nodesMidX: 0,
 	/*  model: {}
@@ -53,53 +56,78 @@ const Manager = {
 				{ x: Mathz.range(150), y: Mathz.range(-100), friction: Mathz.range(1)},
 				{ x: Mathz.range(150), y: Mathz.range(-100), friction: Mathz.range(1)},
 				{ x: Mathz.range(150), y: Mathz.range(-100), friction: Mathz.range(1)},
-				// { x: Mathz.range(150), y: Mathz.range(-100), friction: Mathz.range(1)}
+				{ x: Mathz.range(150), y: Mathz.range(-100), friction: Mathz.range(1)}
 			],
 			muscles: [
 				// length -1 means get the length from calculating distance between n0 and n1
 				{ nid0: 0, nid1: 1, length: -1, strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7) },
 				{ nid0: 1, nid1: 2, length: -1, strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7) },
 				{ nid0: 2, nid1: 0, length: -1, strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7) },
-				// { nid0: 3, nid1: 0, length: -1, strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7) },
-				// { nid0: 3, nid1: 1, length: -1, strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7) },
-				// { nid0: 3, nid1: 2, length: -1, strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7) }
+				{ nid0: 3, nid1: 0, length: -1, strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7) },
+				{ nid0: 3, nid1: 1, length: -1, strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7) },
+				{ nid0: 3, nid1: 2, length: -1, strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7) }
 			]
 		};
 		this.loadModel(this.currentModel, -50, this.GROUND_Y - 16);
 
+		this.currentFitness = 0;
 		this.time = 0;
+		this.timesOut = false;
+		this.cameraX = 0;
+		this.nodesMidX = 0;
+	},
+	calcFitness() {
+		this.currentFitness = this.nodesMidX;
 	},
 	update() {
-		for (let i = this.nodes.length - 1; i >= 0; --i) {
-			this.nodes[i].update();
-			this.nodes[i].constraint();
-		}
-		for (let i = this.muscles.length - 1; i >= 0; --i) {
-			this.muscles[i].update();
-		}
-		for (let j = this.CONSRAINT_ITERATION; j --> 0;) {
-			for (let i = this.muscles.length - 1; i >= 0; --i) {
-				this.muscles[i].constraint();
-			}
-			this.nodesMidX = 0;
+		let h = this.UPDATE_ITERATION * (1 + 9 * Input.keyHold(KeyCode.Space));
+		while (h-- > 0) {
 			for (let i = this.nodes.length - 1; i >= 0; --i) {
+				this.nodes[i].update();
 				this.nodes[i].constraint();
-				this.nodesMidX += this.nodes[i].x;
 			}
-			this.nodesMidX /= this.nodes.length;
+			for (let i = this.muscles.length - 1; i >= 0; --i) {
+				this.muscles[i].update();
+			}
+			for (let j = this.CONSRAINT_ITERATION; j --> 0;) {
+				for (let i = this.muscles.length - 1; i >= 0; --i) {
+					this.muscles[i].constraint();
+				}
+				this.nodesMidX = 0;
+				for (let i = this.nodes.length - 1; i >= 0; --i) {
+					this.nodes[i].constraint();
+					this.nodesMidX += this.nodes[i].x;
+				}
+				this.nodesMidX /= this.nodes.length;
+			}
+
+			if (!this.timesOut) {
+				this.time += this.TIME_INCREMENT;
+				if (this.time > this.TIME_DURATION) {
+					this.time = this.TIME_DURATION;
+					this.calcFitness();
+					this.timesOut = true;
+				}
+			}
+			else {
+				if (Input.keyDown(KeyCode.Enter)) {
+					Scene.restart();
+				}
+			}
 		}
-		this.time += this.TIME_INCREMENT;
 	},
 	render() {
+		// lerp camera position
 		this.cameraX -= 0.1 * (this.cameraX - this.nodesMidX);
 
+		// translate to camera
 		Draw.ctx.save();
 		Draw.ctx.translate(Stage.mid.w - this.cameraX, 0);
 
 		// Draw sign
 		Draw.setFont(Font.xxlb);
 		Draw.setHVAlign(Align.c, Align.m);
-		for (let i = 0; i < 100; i++) {
+		for (let i = -100; i < 100; i++) {
 			let x = i * this.PIXEL_PER_METER;
 
 			if (Math.abs(x - this.nodesMidX) < Stage.w) {
@@ -111,7 +139,7 @@ const Manager = {
 				Draw.setFill(C.burlyWood);
 				Draw.rect(x - w * 0.5, y - h * 0.5, w, h);
 				Draw.rect(x - 10, y, 20, Stage.h - y);
-				Draw.setFill(C.black);
+				Draw.setFill(C.sienna);
 				Draw.text(x, y, txt);
 			}
 		}
@@ -119,19 +147,32 @@ const Manager = {
 		if (true) {
 			let x = this.nodesMidX,
 				y = Stage.h * 0.25,
-				txt = `${(this.nodesMidX / this.PIXEL_PER_METER).toFixed(2)}m`,
+				txt = `${((this.timesOut? this.currentFitness : this.nodesMidX) / this.PIXEL_PER_METER).toFixed(2)}m`,
 				w = Draw.getTextWidth(txt) + 20,
 				h = Draw.getTextHeight(txt) + 20
 
 			Draw.setFill(C.brown);
 			Draw.rect(x - w * 0.5, y - h * 0.5, w, h);
-			Draw.triangle(
-				x - w * 0.1, y + h * 0.5,
-				x + w * 0.1, y + h * 0.5,
-				x, y + h * 0.5 + 20
-			);
 			Draw.setFill(C.white);
 			Draw.text(x, y, txt);
+
+			Draw.setFill(C.brown);
+			if (!this.timesOut) {
+				Draw.triangle(
+					x - w * 0.1, y + h * 0.5,
+					x + w * 0.1, y + h * 0.5,
+					x, y + h * 0.5 + 20
+				);
+			}
+			else {
+				Draw.setFont(Font.lb);
+				Draw.setHVAlign(Align.c, Align.b);
+				Draw.text(x, y - h * 0.5 - 8, `Fitness:`);
+
+				Draw.setFont(Font.mb);
+				Draw.setHVAlign(Align.c, Align.t);
+				Draw.text(x, y + h * 0.5 + 8, `Overtime\n${(this.nodesMidX / this.PIXEL_PER_METER).toFixed(2)}m`);
+			}
 		}
 
 		// Draw muscles
@@ -146,9 +187,29 @@ const Manager = {
 
 		Draw.ctx.restore();
 
+		// Draw ground on top of sign and creature
+		Draw.setFill(Manager.COLOR_GROUND);
+		Draw.rect(0, Manager.GROUND_Y, Stage.w, Manager.GROUND_HEIGHT);
+
+		// Draw time text
 		Draw.setFont(Font.lb);
+		Draw.setFill(C.black);
 		Draw.setHVAlign(Align.r, Align.t);
 		Draw.text(Stage.w - 16, 16, `${(this.time * 0.001).toFixed(2)}/${(this.TIME_DURATION * 0.001).toFixed(2)}`);
+
+		// info text
+		if (this.timesOut) {
+			Draw.setFont(Font.l);
+			Draw.setFill(C.white);
+			Draw.setHVAlign(Align.c, Align.m);
+			Draw.text(Stage.mid.w, Stage.h - 50, 'Press enter to restart.');
+		}
+		else {
+			Draw.setFill(C.black);
+			Draw.setFont(Font.m);
+			Draw.setHVAlign(Align.l, Align.b);
+			Draw.text(16, Stage.h - 16, `Hold space to fast-forward (${Input.keyHold(KeyCode.Space)? '10x FASTER' : 'NORMAL'})`);
+		}
 	}
 };
 
@@ -167,6 +228,7 @@ class Node {
 
 		this.color = '';
 		this.calcColor();
+		this.outlineColor = C.multiply(this.color, 0.95);
 	}
 	calcColor() {
 		// 1=white -> 0.5=red -> 0=black
@@ -209,11 +271,10 @@ class Node {
 		this.isOnGround = this.y + this.radius >= Manager.GROUND_Y;
 	}
 	render() {
-		this.friction += Math.sign(Input.mouseWheelDelta) * 0.05;
-		this.friction = Mathz.clamp(this.friction, 0, 1);
-		this.calcColor();
-		Draw.setFill(this.color);
-		Draw.circle(this.x, this.y, this.radius);
+		Draw.setLineWidth(4);
+		Draw.setColor(this.color, this.outlineColor);
+		Draw.circle(this.x, this.y, this.radius - 2);
+		Draw.stroke();
 	}
 }
 
@@ -283,17 +344,14 @@ Scene.current.start = () => {
 Scene.current.render = () => {
 	Manager.update();
 	Manager.render();
-
-	// Draw ground
-	Draw.setFill(Manager.COLOR_GROUND);
-	Draw.rect(0, Manager.GROUND_Y, Stage.w, Manager.GROUND_HEIGHT);
-
-	if (Input.keyDown(KeyCode.Space)) Scene.restart();
 };
+
+Font.setFamily('Patrick Hand, cursive');
 
 NZ.start({
 	w: 960,
 	h: 540,
 	bgColor: Manager.COLOR_SKY,
+	embedGoogleFonts: 'Patrick Hand',
 	stylePreset: StylePreset.noGapCenter
 });
