@@ -6,10 +6,15 @@ const Manager = {
 	GROUND_HEIGHT: 100,
 	STRENGTH_MIN: 0.05,
 	STRENGTH_MAX: 0.25,
+	NODE_RADIUS: 16,
+	NODE_BOUNCE: 1,
+	MUSCLE_SIZE_MIN: 5,
+	MUSCLE_SIZE_MAX: 10,
 	PIXEL_PER_METER: 400,
 	TICK_INCREMENT: Time.fixedDeltaTime * 0.005,
 	UPDATE_ITERATION: 1, // can be fast forward by holding space
-	CONSRAINT_ITERATION: 10,
+	CONSRAINT_ITERATION: 1,
+	CONSRAINT_WITH_FRICTION: true,
 	TIME_DURATION: 15000,
 	TIME_INCREMENT: Time.fixedDeltaTime,
 	COLOR_SKY: C.blanchedAlmond,
@@ -115,9 +120,13 @@ const Manager = {
 				}
 			}
 			else {
-				if (Input.keyDown(KeyCode.Enter)) {
-					Scene.restart();
-				}
+				// if (Input.keyDown(KeyCode.Enter)) {
+				// 	Scene.restart();
+				// }
+			}
+
+			if (Input.keyDown(KeyCode.Enter)) {
+				Scene.restart();
 			}
 		}
 	},
@@ -229,26 +238,28 @@ class Node {
 		this.xprev = this.x;
 		this.yprev = this.y;
 
-		this.radius = 16;
-		this.bounce = 0.99;
+		this.radius = Manager.NODE_RADIUS;
+		this.bounce = Manager.NODE_BOUNCE;
 		this.friction = friction === 0? 0 : friction || 0.9;
 
 		this.isOnGround = false;
 
 		this.color = '';
+		this.outlineColor = '';
 		this.calcColor();
-		this.outlineColor = C.multiply(this.color, 0.95);
 	}
 	calcColor() {
-		// 1=white -> 0.5=red -> 0=black
+		// 1=green -> 0.5=yellow -> 0=red
 		if (this.friction > 0.5) {
 			let t = (this.friction - 0.5) * 2;
-			this.color = C.makeRGB(255, 255 * t, 255 * t);
+			this.color = C.makeRGB(255 * (1-t), 225 + 30 * t, 0);
 		}
 		else {
 			let t = this.friction * 2;
-			this.color = C.makeRGB(255 * t, 0, 0);
+			this.color = C.makeRGB(255, 225 * t, 0);
 		}
+
+		this.outlineColor = C.multiply(this.color, 0.95);
 	}
 	getFriction() {
 		return this.isOnGround? this.friction : 1;
@@ -261,6 +272,9 @@ class Node {
 		return { x: vx, y: vy };
 	}
 	update() {
+		// this.friction = Mathz.clamp(this.friction + Math.sign(Input.mouseWheelDelta) * 0.1, 0, 1);
+		// this.calcColor();
+
 		let v = this.getVelocity();
 
 		this.xprev = this.x;
@@ -282,7 +296,7 @@ class Node {
 	render() {
 		Draw.setLineWidth(4);
 		Draw.setColor(this.color, this.outlineColor);
-		Draw.circle(this.x, this.y, this.radius - 2);
+		Draw.circle(this.x, this.y, this.radius - 1.5);
 		Draw.stroke();
 	}
 }
@@ -316,14 +330,25 @@ class Muscle {
 		let difference = this.length - this.distance,
 			percent = difference / this.distance * 0.5,
 			offsetX = dx * percent,
-			offsetY = dy * percent,
-			fric0 = this.n0.getFriction(),
-			fric1 = this.n1.getFriction();
+			offsetY = dy * percent;
 
-		this.n0.x -= offsetX * fric0;
-		this.n0.y -= offsetY * (offsetY > 0? 1 : fric0);
-		this.n1.x += offsetX * fric1;
-		this.n1.y += offsetY * (offsetY < 0? 1 : fric1);
+		// with friction
+		if (Manager.CONSRAINT_WITH_FRICTION) {
+			let fric0 = this.n0.getFriction(),
+				fric1 = this.n1.getFriction();
+
+			this.n0.x -= offsetX * fric0;
+			this.n0.y -= offsetY * (offsetY > 0? 1 : fric0);
+			this.n1.x += offsetX * fric1;
+			this.n1.y += offsetY * (offsetY < 0? 1 : fric1);
+		}
+		else {
+			// without friction
+			this.n0.x -= offsetX;
+			this.n0.y -= offsetY;
+			this.n1.x += offsetX;
+			this.n1.y += offsetY;
+		}
 	}
 	update() {
 		if (this.tick > this.switchTime) {
@@ -341,7 +366,7 @@ class Muscle {
 	}
 	render() {
 		Draw.setStroke(this.color);
-		Draw.setLineWidth(5 + 5 * Mathz.map(this.length, this.min, this.max, 1, 0));
+		Draw.setLineWidth(Manager.MUSCLE_SIZE_MIN + (Manager.MUSCLE_SIZE_MAX - Manager.MUSCLE_SIZE_MIN) * Mathz.map(this.length, this.min, this.max, 1, 0));
 		Draw.pointLine(this.n0, this.n1);
 	}
 }
