@@ -24,6 +24,25 @@ class Particle {
 		this.position.add(this.velocity);
 	}
 
+	constraint() {
+		if (this.position.x > Stage.w) {
+			this.position.x = Stage.w;
+			this.velocity.x *= this.bounce;
+		}
+		else if (this.position.x < 0) {
+			this.position.x = 0;
+			this.velocity.x *= this.bounce;
+		}
+		if (this.position.y > Stage.h) {
+			this.position.y = Stage.h;
+			this.velocity.y *= this.bounce;
+		}
+		else if (this.position.y < 0) {
+			this.position.y = 0;
+			this.velocity.y *= this.bounce;
+		}
+	}
+
 	angleTo(p2) {
 		return Vec2.direction(this.position, p2.position);
 	}
@@ -45,9 +64,9 @@ let springPoint, weight, springForce, k, distance;
 
 Scene.current.start = () => {
 	springPoint = new Vec2(Stage.mid.w, Stage.mid.h);
-	weight = new Particle(Stage.randomX, Stage.randomY, 0, 0);
-	weight.friction = 0.9;
-	k = 0.1;
+	weight = new Particle(Stage.randomX, Stage.randomY, 50, Mathz.range(360), 0.9);
+	weight.friction = Mathz.range(0.8, 0.95);
+	k = Mathz.range(0.01, 0.2);
 };
 
 Scene.current.render = () => {
@@ -57,9 +76,20 @@ Scene.current.render = () => {
 	weight.velocity.add(springForce);
 	weight.update();
 
+	weight.constraint();
+
 	Draw.pointLine(springPoint, weight.position);
 	Draw.pointCircle(springPoint, 4);
-	Draw.pointCircle(weight.position, 20);	
+	Draw.pointCircle(weight.position, 20);
+
+	Draw.textBG(0, Stage.h, `friction: ${weight.friction.toFixed(2)}`, { origin: Vec2.down });
+	Draw.textBG(0, Stage.h - Font.m.size - 10, `k: ${k.toFixed(2)}`, { origin: Vec2.down });
+
+	if (Input.mouseHold(0)) {
+		springPoint.set(Input.mousePosition);
+	}
+
+	if (Input.keyDown(KeyCode.Space)) Scene.restart();
 };
 
 NZ.start();
