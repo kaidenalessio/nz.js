@@ -6,30 +6,68 @@ const Manager = {
 	GROUND_HEIGHT: 100,
 	STRENGTH_MIN: 0.05,
 	STRENGTH_MAX: 0.25,
+	PIXEL_PER_METER: 400,
 	TICK_INCREMENT: Time.fixedDeltaTime * 0.005,
 	CONSRAINT_ITERATION: 2,
+	TIME_DURATION: 15000,
+	TIME_INCREMENT: Time.fixedDeltaTime,
+	COLOR_SKY: C.blanchedAlmond,
+	COLOR_GROUND: C.plum,
 	nodes: [],
 	muscles: [],
-	start() {
+	currentModel: {},
+	time: 0,
+	cameraX: 0,
+	nodesMidX: 0,
+	/*  model: {}
+	 *  	nodes: [{}]
+	 *  		{ x, y, friction }
+	 *  	muscles: [{}]
+	 *  		{ nid0, nid1, length }
+	*/
+	loadModel(model, offsetX, offsetY) {
+		// reset list
 		this.nodes.length = 0;
 		this.muscles.length = 0;
 
-		this.nodes.push(new Node(100, this.GROUND_Y - 50));
-		this.nodes.push(new Node(150, this.GROUND_Y - 150));
-		this.nodes.push(new Node(200, this.GROUND_Y - 50));
-		this.muscles.push(new Muscle(this.nodes[0], this.nodes[1], 120));
-		this.muscles.push(new Muscle(this.nodes[1], this.nodes[2], 80));
-		this.muscles.push(new Muscle(this.nodes[2], this.nodes[0], 100));
-
-		this.nodes.push(new Node(150, this.GROUND_Y - 100));
-		this.muscles.push(new Muscle(this.nodes[3], this.nodes[0], 50));
-		this.muscles.push(new Muscle(this.nodes[3], this.nodes[1], 50));
-		this.muscles.push(new Muscle(this.nodes[3], this.nodes[2], 50));
-
-		for (let i = this.nodes.length - 1; i >= 0; --i) {
-			this.nodes[i].x += Stage.mid.w - 150;
-			this.nodes[i].xprev = this.nodes[i].x;
+		// load nodes
+		for (let i = 0; i < model.nodes.length; i++) {
+			let n = model.nodes[i];
+			this.nodes.push(new Node(n.x + offsetX, n.y + offsetY, n.friction));
 		}
+
+		// load muscles
+		for (let i = 0; i < model.muscles.length; i++) {
+			let n = model.muscles[i],
+				n0 = this.nodes[n.nid0],
+				n1 = this.nodes[n.nid1],
+				length = n.length === -1? Math.sqrt((n1.x-n0.x)*(n1.x-n0.x) + (n1.y-n0.y)*(n1.y-n0.y)) : n.length,
+				strength = this.STRENGTH_MIN + n.strength * (this.STRENGTH_MAX - this.STRENGTH_MIN);
+
+			this.muscles.push(new Muscle(n0, n1, length, strength, n.switchTime));
+		}
+	},
+	start() {
+		this.currentModel = {
+			nodes: [
+				{ x: Mathz.range(150), y: Mathz.range(-100), friction: Mathz.range(1)},
+				{ x: Mathz.range(150), y: Mathz.range(-100), friction: Mathz.range(1)},
+				{ x: Mathz.range(150), y: Mathz.range(-100), friction: Mathz.range(1)},
+				// { x: Mathz.range(150), y: Mathz.range(-100), friction: Mathz.range(1)}
+			],
+			muscles: [
+				// length -1 means get the length from calculating distance between n0 and n1
+				{ nid0: 0, nid1: 1, length: -1, strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7) },
+				{ nid0: 1, nid1: 2, length: -1, strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7) },
+				{ nid0: 2, nid1: 0, length: -1, strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7) },
+				// { nid0: 3, nid1: 0, length: -1, strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7) },
+				// { nid0: 3, nid1: 1, length: -1, strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7) },
+				// { nid0: 3, nid1: 2, length: -1, strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7) }
+			]
+		};
+		this.loadModel(this.currentModel, -50, this.GROUND_Y - 16);
+
+		this.time = 0;
 	},
 	update() {
 		for (let i = this.nodes.length - 1; i >= 0; --i) {
@@ -43,33 +81,89 @@ const Manager = {
 			for (let i = this.muscles.length - 1; i >= 0; --i) {
 				this.muscles[i].constraint();
 			}
+			this.nodesMidX = 0;
 			for (let i = this.nodes.length - 1; i >= 0; --i) {
 				this.nodes[i].constraint();
+				this.nodesMidX += this.nodes[i].x;
 			}
+			this.nodesMidX /= this.nodes.length;
 		}
+		this.time += this.TIME_INCREMENT;
 	},
 	render() {
+		this.cameraX -= 0.1 * (this.cameraX - this.nodesMidX);
+
+		Draw.ctx.save();
+		Draw.ctx.translate(Stage.mid.w - this.cameraX, 0);
+
+		// Draw sign
+		Draw.setFont(Font.xxlb);
+		Draw.setHVAlign(Align.c, Align.m);
+		for (let i = 0; i < 100; i++) {
+			let x = i * this.PIXEL_PER_METER;
+
+			if (Math.abs(x - this.nodesMidX) < Stage.w) {
+				let y = Stage.mid.h,
+					txt = `${i}m`,
+					w = Draw.getTextWidth(txt) + 20,
+					h = Draw.getTextHeight(txt) + 20
+
+				Draw.setFill(C.burlyWood);
+				Draw.rect(x - w * 0.5, y - h * 0.5, w, h);
+				Draw.rect(x - 10, y, 20, Stage.h - y);
+				Draw.setFill(C.black);
+				Draw.text(x, y, txt);
+			}
+		}
+
+		if (true) {
+			let x = this.nodesMidX,
+				y = Stage.h * 0.25,
+				txt = `${(this.nodesMidX / this.PIXEL_PER_METER).toFixed(2)}m`,
+				w = Draw.getTextWidth(txt) + 20,
+				h = Draw.getTextHeight(txt) + 20
+
+			Draw.setFill(C.brown);
+			Draw.rect(x - w * 0.5, y - h * 0.5, w, h);
+			Draw.triangle(
+				x - w * 0.1, y + h * 0.5,
+				x + w * 0.1, y + h * 0.5,
+				x, y + h * 0.5 + 20
+			);
+			Draw.setFill(C.white);
+			Draw.text(x, y, txt);
+		}
+
+		// Draw muscles
 		for (let i = this.muscles.length - 1; i >= 0; --i) {
 			this.muscles[i].render();
 		}
+
+		// Draw nodes
 		for (let i = this.nodes.length - 1; i >= 0; --i) {
 			this.nodes[i].render();
 		}
+
+		Draw.ctx.restore();
+
+		Draw.setFont(Font.lb);
+		Draw.setHVAlign(Align.r, Align.t);
+		Draw.text(Stage.w - 16, 16, `${(this.time * 0.001).toFixed(2)}/${(this.TIME_DURATION * 0.001).toFixed(2)}`);
 	}
 };
 
 class Node {
-	constructor(x, y) {
+	constructor(x, y, friction) {
 		this.x = x || 0;
 		this.y = y || 0;
 		this.xprev = this.x;
 		this.yprev = this.y;
 
 		this.radius = 16;
-		this.bounce = 0.9;
-		this.friction = Mathz.range(1);
+		this.bounce = 0.99;
+		this.friction = friction === 0? 0 : friction || 0.9;
 
-		this.isOnGround = true;
+		this.isOnGround = false;
 
 		this.color = '';
 		this.calcColor();
@@ -124,16 +218,16 @@ class Node {
 }
 
 class Muscle {
-	constructor(n0, n1, length) {
+	constructor(n0, n1, length, strength, switchTime) {
 		this.n0 = n0 || null;
 		this.n1 = n1 || null;
 		this.distance = 0;
 
-		this.strength = Mathz.range(Manager.STRENGTH_MIN, Manager.STRENGTH_MAX);
+		this.strength = strength || Manager.STRENGTH_MIN;
 		this.length = length || 100;
 		this.min = this.length * 0.8;
 		this.max = this.length * 1.2;
-		this.switchTime = Mathz.range(0.3, 0.7);
+		this.switchTime = switchTime;
 
 		this.tick = 0;
 
@@ -157,9 +251,9 @@ class Muscle {
 			fric1 = this.n1.getFriction();
 
 		this.n0.x -= offsetX * fric0;
-		this.n0.y -= offsetY * fric0;
+		this.n0.y -= offsetY * (offsetY > 0? 1 : fric0);
 		this.n1.x += offsetX * fric1;
-		this.n1.y += offsetY * fric1;
+		this.n1.y += offsetY * (offsetY < 0? 1 : fric1);
 	}
 	update() {
 		if (this.tick > this.switchTime) {
@@ -191,7 +285,7 @@ Scene.current.render = () => {
 	Manager.render();
 
 	// Draw ground
-	Draw.setFill(C.green);
+	Draw.setFill(Manager.COLOR_GROUND);
 	Draw.rect(0, Manager.GROUND_Y, Stage.w, Manager.GROUND_HEIGHT);
 
 	if (Input.keyDown(KeyCode.Space)) Scene.restart();
@@ -200,6 +294,6 @@ Scene.current.render = () => {
 NZ.start({
 	w: 960,
 	h: 540,
-	bgColor: C.skyBlue,
+	bgColor: Manager.COLOR_SKY,
 	stylePreset: StylePreset.noGapCenter
 });
