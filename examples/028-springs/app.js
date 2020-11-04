@@ -7,6 +7,7 @@ class Particle {
 	bounce = -1;
 	friction = 1;
 	gravity = 0;
+	r = 20;
 
 	constructor(x, y, speed, direction, grav) {
 		this.position = new Vec2(x, y);
@@ -25,20 +26,20 @@ class Particle {
 	}
 
 	constraint() {
-		if (this.position.x > Stage.w) {
-			this.position.x = Stage.w;
+		if (this.position.x + this.r > Stage.w) {
+			this.position.x = Stage.w - this.r;
 			this.velocity.x *= this.bounce;
 		}
-		else if (this.position.x < 0) {
-			this.position.x = 0;
+		else if (this.position.x - this.r < 0) {
+			this.position.x = this.r;
 			this.velocity.x *= this.bounce;
 		}
-		if (this.position.y > Stage.h) {
-			this.position.y = Stage.h;
+		if (this.position.y + this.r > Stage.h) {
+			this.position.y = Stage.h - this.r;
 			this.velocity.y *= this.bounce;
 		}
-		else if (this.position.y < 0) {
-			this.position.y = 0;
+		else if (this.position.y - this.r < 0) {
+			this.position.y = this.r;
 			this.velocity.y *= this.bounce;
 		}
 	}
@@ -67,6 +68,7 @@ Scene.current.start = () => {
 	springPoint = new Vec2(Stage.mid.w, Stage.mid.h);
 	weight = new Particle(Stage.randomX, Stage.randomY, 50, Mathz.range(360), Mathz.range(0.5, 1));
 	weight.friction = Mathz.range(0.8, 0.95);
+	weight.bounce = -0.9;
 	k = Mathz.range(0.01, 0.2);
 	springLength = 100;
 	windPower = 1;
@@ -97,13 +99,13 @@ Scene.current.render = () => {
 
 	weight.update();
 
-	// weight.constraint();
+	weight.constraint();
 
 	Draw.pointLine(springPoint, weight.position);
 	Draw.pointCircle(springPoint, 4);
-	Draw.pointCircle(weight.position, 20);
+	Draw.pointCircle(weight.position, weight.r);
 
-	Draw.textBG(0, Stage.h, 'Press space to restart', { origin: Vec2.down });
+	Draw.textBG(0, Stage.h, 'Press space to restart, use mouse buttons to interact.', { origin: Vec2.down });
 	Draw.textBG(0, Stage.h - (Font.m.size + 10) * 1, `gravity: ${weight.gravity.toString(2)}`, { origin: Vec2.down });
 	Draw.textBG(0, Stage.h - (Font.m.size + 10) * 2, `friction: ${weight.friction.toFixed(2)}`, { origin: Vec2.down });
 	Draw.textBG(0, Stage.h - (Font.m.size + 10) * 3, `k: ${k.toFixed(2)}`, { origin: Vec2.down });
