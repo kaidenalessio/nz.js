@@ -90,9 +90,18 @@ class Ball {
 		this.vx = v.x;
 		this.vy = v.y;
 		this.r = 20;
-		this.bounce = -1;
+		this.speed = 0.5;
+		this.bounce = -0.9;
+		this.gravity = 0.98;
+		this.friction = 0.98;
+		this.jumpSpeed = -20;
 	}
 	update() {
+		if (Input.keyDown(KeyCode.Up)) this.vy = this.jumpSpeed;
+		this.vx += this.speed * (Input.keyHold(KeyCode.Right) - Input.keyHold(KeyCode.Left));
+		this.vy += this.gravity;
+		this.vx *= this.friction;
+		this.vy *= this.friction;
 		this.x += this.vx;
 		this.y += this.vy;
 		this.constraint();
@@ -143,6 +152,8 @@ Scene.current.render = () => {
 	iks2.render();
 
 	Draw.textBG(0, 0, Time.FPS);
+
+	if (Input.keyDown(KeyCode.Space)) Scene.restart();
 };
 
 NZ.start({
