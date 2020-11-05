@@ -37,11 +37,15 @@ NZ.BoundRect.rect = function(x, y, w, h) {
 	this.left = this.x;
 	this.right = this.x + this.w;
 	this.bottom = this.y + this.h;
+	this.center = this.x + this.w * 0.5;
+	this.middle = this.y + this.h * 0.5;
 	this.update = () => {
 		this.top = this.y;
 		this.left = this.x;
 		this.right = this.x + this.w;
 		this.bottom = this.y + this.h;
+		this.center = this.x + this.w * 0.5;
+		this.middle = this.y + this.h * 0.5;
 	};
 	this.set = (x, y, w, h) => {
 		this.x = x || 0;
