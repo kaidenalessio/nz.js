@@ -1,12 +1,18 @@
 // inspired by Coding Math Episode 43-46 Kinematics
 
 class Arm {
-	constructor(x, y, angle, length) {
-		this.x = x;
-		this.y = y;
-		this.angle = angle;
+	constructor(length, centerAngle, rotationRange, phaseOffset) {
+		this.x = 0;
+		this.y = 0;
 		this.length = length;
+		this.angle = 0;
+		this.centerAngle = centerAngle;
+		this.rotationRange = rotationRange;
 		this.parent = null;
+		this.phaseOffset = phaseOffset;
+	}
+	setPhase(phase) {
+		this.angle = this.centerAngle + Math.sin(phase + this.phaseOffset) * this.rotationRange;
 	}
 	getEndX() {
 		let angle = this.angle,
@@ -33,13 +39,15 @@ class Arm {
 
 class FKSystem {
 	constructor(x, y) {
-		this.x = x;
-		this.y = y;
 		this.arms = [];
 		this.lastArm = null;
+		this.x = x;
+		this.y = y;
+		this.phase = 0;
+		this.speed = 0.05;
 	}
-	addArm(length) {
-		const arm = new Arm(0, 0, 0, length);
+	addArm(length, centerAngle, rotationRange, phaseOffset) {
+		const arm = new Arm(length, centerAngle, rotationRange, phaseOffset);
 		this.arms.push(arm);
 		arm.parent = this.lastArm;
 		this.lastArm = arm;
@@ -48,6 +56,7 @@ class FKSystem {
 	update() {
 		for (let i = 0; i < this.arms.length; i++) {
 			const arm = this.arms[i];
+			arm.setPhase(this.phase);
 			if (arm.parent) {
 				arm.x = arm.parent.getEndX();
 				arm.y = arm.parent.getEndY();
@@ -57,6 +66,7 @@ class FKSystem {
 				arm.y = this.y;
 			}
 		}
+		this.phase += this.speed;
 	}
 	render() {
 		Draw.setStroke(C.black);
@@ -71,18 +81,24 @@ class FKSystem {
 	}
 }
 
-let fks;
+let leg0, leg1;
 
 Scene.current.start = () => {
-	fks = new FKSystem(Stage.mid.w, Stage.mid.h);
-	fks.addArm(100);
-	fks.addArm(120);
-	fks.addArm(80);
+	leg0 = new FKSystem(Stage.mid.w, Stage.mid.h);
+	leg1 = new FKSystem(Stage.mid.w, Stage.mid.h);
+	leg1.phase = Math.PI;
+
+	leg0.addArm(200, Math.PI / 2, Math.PI / 4, 0);
+	leg0.addArm(180, 0.87, 0.87, -1.5);
+	leg1.addArm(200, Math.PI / 2, Math.PI / 4, 0);
+	leg1.addArm(180, 0.87, 0.87, -1.5);
 };
 
 Scene.current.render = () => {
-	fks.update();
-	fks.render();
+	leg0.update();
+	leg1.update();
+	leg0.render();
+	leg1.render();
 };
 
 NZ.start();
