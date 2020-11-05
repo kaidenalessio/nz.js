@@ -56,7 +56,6 @@ class IKSystem {
 	render() {
 		Draw.setStroke(C.black);
 		Draw.setLineCap(LineCap.round);
-		Draw.setLineWidth(5);
 		for (let i = this.arms.length - 1; i >= 0; --i) {
 			this.arms[i].render();
 		}
@@ -64,20 +63,89 @@ class IKSystem {
 	drag(x, y) {
 		this.lastArm.drag(x, y);
 	}
+	reach(x, y) {
+		this.drag(x, y);
+		this.update();
+	}
+	update() {
+		for (let i = 0; i < this.arms.length; i++) {
+			const arm = this.arms[i];
+			if (arm.parent) {
+				arm.x = arm.parent.getEndX();
+				arm.y = arm.parent.getEndY();
+			}
+			else {
+				arm.x = this.x;
+				arm.y = this.y;
+			}
+		}
+	}
 }
 
-let iks;
+class Ball {
+	constructor(x, y) {
+		this.x = x;
+		this.y = y;
+		let v = Vec2.random2D().mult(10);
+		this.vx = v.x;
+		this.vy = v.y;
+		this.r = 20;
+		this.bounce = -1;
+	}
+	update() {
+		this.x += this.vx;
+		this.y += this.vy;
+		this.constraint();
+	}
+	constraint() {
+		if (this.x + this.r > Stage.w) {
+			this.x = Stage.w - this.r;
+			this.vx *= this.bounce;
+		}
+		else if (this.x - this.r < 0) {
+			this.x = this.r;
+			this.vx *= this.bounce;
+		}
+		if (this.y + this.r > Stage.h) {
+			this.y = Stage.h - this.r;
+			this.vy *= this.bounce;
+		}
+		else if (this.y - this.r < 0) {
+			this.y = this.r;
+			this.vy *= this.bounce;
+		}
+	}
+	render() {
+		Draw.setFill(C.black);
+		Draw.circle(this.x, this.y, this.r);
+	}
+}
+
+let iks1, iks2, ball;
 
 Scene.current.start = () => {
-	iks = new IKSystem(Stage.mid.w, Stage.mid.h);
+	iks1 = new IKSystem(Stage.w * 0.25, Stage.h);
+	iks2 = new IKSystem(Stage.w * 0.75, Stage.h);
 	for (let i = 50; i-- > 0;) {
-		iks.addArm(20);
+		iks1.addArm(4);
+		iks2.addArm(4);
 	}
+	ball = new Ball(Stage.mid.w, Stage.mid.h);
 };
 
 Scene.current.render = () => {
-	iks.drag(Input.mouseX, Input.mouseY);
-	iks.render();
+	ball.update();
+	iks1.reach(ball.x, ball.y);
+	iks2.reach(ball.x, ball.y);
+
+	ball.render();
+	iks1.render();
+	iks2.render();
+
+	Draw.textBG(0, 0, Time.FPS);
 };
 
-NZ.start();
+NZ.start({
+	w: 960,
+	h: 540
+});
