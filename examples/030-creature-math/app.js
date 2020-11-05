@@ -268,11 +268,13 @@ const Manager = {
 	restart() {
 		Scene.restart();
 	},
+	onResize() {
+		Manager.GROUND_Y = Stage.h * 0.82;
+		Manager.GROUND_HEIGHT = Stage.h - Manager.GROUND_Y;
+		Manager.DRAG_RANGE = 0.27 * Math.min(Stage.w, Stage.h);
+	},
 	start(model) {
-		this.GROUND_Y = Stage.h * 0.82;
-		this.GROUND_HEIGHT = Stage.h - this.GROUND_Y;
-
-		this.DRAG_RANGE = 0.27 * Math.min(Stage.w, Stage.h);
+		this.onResize();
 
 		this.currentModel = model || this.getRandomModel();
 		this.loadModel(this.currentModel, -50, this.GROUND_Y - 16);
@@ -666,6 +668,8 @@ Scene.current.render = () => {
 };
 
 Font.setFamily('Patrick Hand SC, cursive');
+
+Stage.on('resize', Manager.onResize);
 
 NZ.start({
 	// w: 960,
