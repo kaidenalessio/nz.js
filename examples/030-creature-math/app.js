@@ -11,10 +11,10 @@ const Manager = {
 	MUSCLE_SIZE_MIN: 5, // display, muscle minimum size when contract
 	MUSCLE_SIZE_MAX: 10, // display, muscle maximum size when expand
 	PIXEL_PER_METER: 400, // affect fitness
-	TICK_INCREMENT: 1 / 12, // (1 / 12) means 1 tick = 12 frames (value must < 1)
+	TICK_INCREMENT: 1 / 12, // (1 / 60) means 1 tick = 60 frames = 1 seconds (value must < 1)
 	UPDATE_ITERATION: 1, // how many updates per frame, can be fast forward by holding space
-	CONSRAINT_ITERATION: 20,
-	CONSRAINT_WITH_FRICTION: false,
+	CONSRAINT_ITERATION: 5,
+	CONSRAINT_WITH_FRICTION: true,
 	TIME_DURATION: 15000, // time before fitness returned (in milliseconds)
 	TIME_INCREMENT: Time.fixedDeltaTime, // in milliseconds
 	COLOR_SKY: C.blanchedAlmond, // display
@@ -25,7 +25,7 @@ const Manager = {
 	SHOW_INFO: true, // toggle draw info text (see on the bottom)
 	SHOW_FITNESS: true, // toggle draw fitness board
 	SHOW_BUTTONS: true, // toggle show buttons (see top left)
-	SKIP_KEYCODE: KeyCode.P,
+	SKIP_KEYCODE: KeyCode.E,
 	nodes: [], // nodes list
 	muscles: [], // muscles list
 	currentModel: {},
@@ -585,12 +585,12 @@ class Muscle {
 	}
 }
 
-let saveModelButton = 	BoundRect.create(8      , 8     , 100, 24),
+let saveModelButton = 	BoundRect.create(8      , 8     , 100, 24, () => { let name = prompt('You are about to save a model. Please provide a name:'); if (name) Manager.saveModel(name); }),
 	loadModelButton = 	BoundRect.create(8 + 108, 8     , 100, 24),
-	skipButton 		= 	BoundRect.create(8 + 216, 8     , 100, 24),
-	respawnButton 	= 	BoundRect.create(8      , 8 + 32, 100, 24),
-	restartButton 	= 	BoundRect.create(8 + 108, 8 + 32, 100, 24),
-	fastButton 		= 	BoundRect.create(8 + 216, 8 + 32, 100, 24);
+	skipButton 		= 	BoundRect.create(8 + 216, 8     , 100, 24, () => Manager.skip()),
+	respawnButton 	= 	BoundRect.create(8      , 8 + 32, 100, 24, () => Manager.respawn()),
+	restartButton 	= 	BoundRect.create(8 + 108, 8 + 32, 100, 24, () => Manager.restart()),
+	fastButton 		= 	BoundRect.create(8 + 216, 8 + 32, 100, 24, () => { Manager.fastForward = true; });
 
 Scene.current.start = () => {
 	Manager.start();
@@ -600,42 +600,28 @@ Scene.current.render = () => {
 	Manager.update();
 	Manager.render();
 
-	if (Input.keyDown(KeyCode.O)) Manager.toggleUI();
+	if (Input.keyDown(KeyCode.U)) Manager.toggleUI();
+	if (Input.keyDown(KeyCode.Q)) saveModelButton.click();
+	if (Input.keyDown(KeyCode.W)) loadModelButton.click();
+	if (Input.keyDown(KeyCode.E)) skipButton.click();
+	if (Input.keyDown(KeyCode.A)) respawnButton.click();
+	if (Input.keyDown(KeyCode.S)) restartButton.click();
+	if (Input.keyHold(KeyCode.D)) fastButton.click();
 
 	if (!Manager.SHOW_BUTTONS) return;
 
-	Draw.setFont(Font.m);
-	Draw.boundRectButton(saveModelButton, 'Save Model', C.sienna);
-	Draw.boundRectButton(loadModelButton, 'Load Model', C.sienna);
-	Draw.boundRectButton(skipButton, 'Skip', C.sienna);
-	Draw.boundRectButton(respawnButton, 'Respawn', C.sienna);
-	Draw.boundRectButton(restartButton, 'Restart', C.sienna);
-	Draw.boundRectButton(fastButton, 'Fast-forward', C.sienna);
-
-	if (BoundRect.click(saveModelButton)) {
-		let name = prompt('You are about to save a model. Please provide a name:');
-		if (name) {
-			Manager.saveModel(name);
-		}
-	}
-
-	if (BoundRect.click(skipButton)) {
-		Manager.skip();
-	}
-
-	if (BoundRect.click(respawnButton)) {
-		Manager.respawn();
-	}
-
-	if (BoundRect.click(restartButton)) {
-		Manager.restart();
-	}
-
-	if (BoundRect.hover(fastButton)) {
-		if (Input.mouseHold(0)) {
-			Manager.fastForward = true;
-		}
-	}
+	Draw.setFont(Font.sm);
+	Draw.boundRectButton(saveModelButton, 'Save Model (Q)', C.sienna);
+	Draw.boundRectButton(loadModelButton, 'Load Model (W)', C.sienna);
+	Draw.boundRectButton(skipButton, 'Skip (E)', C.sienna);
+	Draw.boundRectButton(respawnButton, 'Respawn (A)', C.sienna);
+	Draw.boundRectButton(restartButton, 'Restart (S)', C.sienna);
+	Draw.boundRectButton(fastButton, 'Fast-forward (D)', C.sienna);
+	if (BoundRect.click(saveModelButton)) saveModelButton.click();
+	if (BoundRect.click(skipButton)) skipButton.click();
+	if (BoundRect.click(respawnButton)) respawnButton.click();
+	if (BoundRect.click(restartButton)) restartButton.click();
+	if (BoundRect.hover(fastButton) && Input.mouseHold(0)) fastButton.click();
 
 };
 
@@ -656,9 +642,12 @@ const makeInputFile = (boundRect, onload) => {
 		let f = e.target.files[0],
 			reader = new FileReader();
 		reader.onload = onload;
-		reader.readAsText(f);
+		try { reader.readAsText(f); } catch {}
 	};
-	input.onclick = () => input.blur();
+	input.onclick = () => {
+		Stage.canvas.focus();
+		input.blur();
+	};
 	input.style.top = `${boundRect.top}px`;
 	input.style.left = `${boundRect.left}px`;
 	input.style.width = `${boundRect.w}px`;
@@ -666,6 +655,10 @@ const makeInputFile = (boundRect, onload) => {
 	input.style.opacity = '0';
 	input.style.position = 'fixed';
 	document.body.appendChild(input);
+	return input;
 };
 
-makeInputFile(loadModelButton, (e) => Manager.start(JSON.parse(e.target.result)));
+(function() {
+	let input = makeInputFile(loadModelButton, (e) => Manager.start(JSON.parse(e.target.result)));
+	loadModelButton.on('click', () => input.click());
+})();
