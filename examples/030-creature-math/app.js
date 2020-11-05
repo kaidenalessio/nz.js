@@ -1,19 +1,19 @@
 // inspired by carykh
 
 const Manager = {
-	GRAVITY: 0.5,
+	GRAVITY: 0.9,
 	GROUND_Y: 440,
 	GROUND_HEIGHT: 100,
 	STRENGTH_MIN: 0.05,
 	STRENGTH_MAX: 0.25,
 	NODE_RADIUS: 16,
-	NODE_BOUNCE: 0.5,
+	NODE_BOUNCE: 0.8,
 	MUSCLE_SIZE_MIN: 5,
 	MUSCLE_SIZE_MAX: 10,
 	PIXEL_PER_METER: 400,
 	TICK_INCREMENT: Time.fixedDeltaTime * 0.005,
 	UPDATE_ITERATION: 1, // can be fast forward by holding space
-	CONSRAINT_ITERATION: 5,
+	CONSRAINT_ITERATION: 4,
 	CONSRAINT_WITH_FRICTION: true,
 	TIME_DURATION: 15000,
 	TIME_INCREMENT: Time.fixedDeltaTime,
@@ -531,6 +531,8 @@ class Muscle {
 	}
 }
 
+let loadModelButton = BoundRect.create(8, 8, 100, 24);
+
 Scene.current.start = () => {
 	Manager.start();
 };
@@ -538,6 +540,14 @@ Scene.current.start = () => {
 Scene.current.render = () => {
 	Manager.update();
 	Manager.render();
+
+	let hover = BoundRect.hover(loadModelButton);
+	Draw.setFill(hover? C.white: C.sienna);
+	Draw.boundRect(loadModelButton);
+	Draw.setFill(hover? C.sienna : C.white);
+	Draw.setFont(Font.m);
+	Draw.setHVAlign(Align.c, Align.m);
+	Draw.text(loadModelButton.center, loadModelButton.middle, 'Load Model');
 };
 
 Font.setFamily('Patrick Hand, cursive');
@@ -547,5 +557,45 @@ NZ.start({
 	h: 540,
 	bgColor: Manager.COLOR_SKY,
 	embedGoogleFonts: 'Patrick Hand',
-	stylePreset: StylePreset.noGapCenter
+	stylePreset: StylePreset.noGap
 });
+
+(function() {
+	const input = document.createElement('input');
+	input.type = 'file';
+	input.onchange = (e) => {
+		const f = e.target.files[0];
+		const reader = new FileReader();
+		reader.onload = (e) => {
+			let model;
+			try {
+				model = JSON.parse(e.target.result)
+				Manager.start(model);
+			}
+			catch (e) {
+				console.error(e);
+			}
+		};
+		try {
+			reader.readAsText(f);
+		}
+		catch (e) {
+			console.error(e);
+		}
+		input.blur();
+	};
+	const style = document.createElement('style');
+	style.innerHTML = `
+		input[type="file"] {
+			top: 8px;
+			left: 8px;
+			width: 100px;
+			height: 24px;
+			opacity: 0;
+			position: fixed;
+			background-color: magenta;
+		}
+	`;
+	document.head.appendChild(style);
+	document.body.appendChild(input);
+}());
