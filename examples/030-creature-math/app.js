@@ -7,19 +7,22 @@ const Manager = {
 	STRENGTH_MIN: 0.05,
 	STRENGTH_MAX: 0.25,
 	NODE_RADIUS: 16,
-	NODE_BOUNCE: 1,
+	NODE_BOUNCE: 0,
 	MUSCLE_SIZE_MIN: 5,
 	MUSCLE_SIZE_MAX: 10,
 	PIXEL_PER_METER: 400,
 	TICK_INCREMENT: Time.fixedDeltaTime * 0.005,
 	UPDATE_ITERATION: 1, // can be fast forward by holding space
-	CONSRAINT_ITERATION: 1,
-	CONSRAINT_WITH_FRICTION: true,
+	CONSRAINT_ITERATION: 10,
+	CONSRAINT_WITH_FRICTION: false,
 	TIME_DURATION: 15000,
 	TIME_INCREMENT: Time.fixedDeltaTime,
 	COLOR_SKY: C.blanchedAlmond,
 	COLOR_GROUND: C.plum,
-	SIGN_AMOUNT: 500, // -500m to 500m
+	SIGN_AMOUNT: 500, // -500m to 500m,
+	ELASTIC_CAMERA: false,
+	SHOW_FITNESS: true,
+	SKIP_KEYCODE: KeyCode.P,
 	nodes: [],
 	muscles: [],
 	currentModel: {},
@@ -91,7 +94,7 @@ const Manager = {
 	},
 	update() {
 		let h = this.UPDATE_ITERATION * (1 + 9 * Input.keyHold(KeyCode.Space));
-		while (h-- > 0) {
+		while (h-- > 0 || Input.keyDown(Manager.SKIP_KEYCODE)) {
 			for (let i = this.nodes.length - 1; i >= 0; --i) {
 				this.nodes[i].update();
 				this.nodes[i].constraint();
@@ -120,23 +123,28 @@ const Manager = {
 				}
 			}
 			else {
-				// if (Input.keyDown(KeyCode.Enter)) {
-				// 	Scene.restart();
-				// }
+				if (Input.keyDown(Manager.SKIP_KEYCODE))
+					break;
 			}
+		}
 
-			if (Input.keyDown(KeyCode.Enter)) {
-				Scene.restart();
-			}
+		if (Input.keyDown(KeyCode.Enter)) {
+			Scene.restart();
 		}
 	},
 	render() {
-		// elastic camera position
-		this.cameraXVel += this.cameraXAcc;
-		this.cameraXVel *= 0.7;
-		this.cameraXAcc *= 0.025;
-		this.cameraXAcc += 0.1 * (this.nodesMidX - this.cameraX);
-		this.cameraX += this.cameraXVel;
+		if (this.ELASTIC_CAMERA) {
+			// elastic camera position
+			this.cameraXVel += this.cameraXAcc;
+			this.cameraXVel *= 0.7;
+			this.cameraXAcc *= 0.025;
+			this.cameraXAcc += 0.1 * (this.nodesMidX - this.cameraX);
+			this.cameraX += this.cameraXVel;
+		}
+		else {
+			// lerp camera position
+			this.cameraX -= 0.05 * (this.cameraX - this.nodesMidX);
+		}
 
 		// translate to camera
 		Draw.ctx.save();
@@ -148,8 +156,8 @@ const Manager = {
 		for (let i = -this.SIGN_AMOUNT; i < this.SIGN_AMOUNT; i++) {
 			let x = i * this.PIXEL_PER_METER;
 
-			if (Math.abs(x - this.nodesMidX) < Stage.w) {
-				let y = Stage.mid.h,
+			if (Math.abs(x - this.cameraX) < Stage.w) {
+				let y = Stage.mid.h + 16 * (Math.abs(i) % 2),
 					txt = `${i}m`,
 					w = Draw.getTextWidth(txt) + 20,
 					h = Draw.getTextHeight(txt) + 20
@@ -162,12 +170,32 @@ const Manager = {
 			}
 		}
 
-		if (true) {
-			let x = this.nodesMidX,
-				y = Stage.h * 0.25,
-				txt = `${((this.timesOut? this.currentFitness : this.nodesMidX) / this.PIXEL_PER_METER).toFixed(2)}m`,
+		// Draw muscles
+		for (let i = this.muscles.length - 1; i >= 0; --i) {
+			this.muscles[i].render();
+		}
+
+		// Draw nodes
+		for (let i = this.nodes.length - 1; i >= 0; --i) {
+			this.nodes[i].render();
+		}
+
+		// end of camera
+		Draw.ctx.restore();
+
+		// Draw ground on top of sign and creature
+		Draw.setFill(Manager.COLOR_GROUND);
+		Draw.rect(0, Manager.GROUND_Y, Stage.w, Manager.GROUND_HEIGHT);
+
+		// Draw fitness board
+		Draw.setFont(Font.xxlb);
+		Draw.setHVAlign(Align.c, Align.m);
+		if (this.SHOW_FITNESS) {
+			let txt = `${((this.timesOut? this.currentFitness : this.nodesMidX) / this.PIXEL_PER_METER).toFixed(2)}m`,
 				w = Draw.getTextWidth(txt) + 20,
-				h = Draw.getTextHeight(txt) + 20
+				h = Draw.getTextHeight(txt) + 20,
+				x = Mathz.clamp(this.nodesMidX - this.cameraX + Stage.mid.w, w * 0.5, Stage.w - w * 0.5),
+				y = Stage.h * 0.25;
 
 			Draw.setFill(C.brown);
 			Draw.rect(x - w * 0.5, y - h * 0.5, w, h);
@@ -192,22 +220,6 @@ const Manager = {
 				Draw.text(x, y + h * 0.5 + 8, `Overtime\n${(this.nodesMidX / this.PIXEL_PER_METER).toFixed(2)}m`);
 			}
 		}
-
-		// Draw muscles
-		for (let i = this.muscles.length - 1; i >= 0; --i) {
-			this.muscles[i].render();
-		}
-
-		// Draw nodes
-		for (let i = this.nodes.length - 1; i >= 0; --i) {
-			this.nodes[i].render();
-		}
-
-		Draw.ctx.restore();
-
-		// Draw ground on top of sign and creature
-		Draw.setFill(Manager.COLOR_GROUND);
-		Draw.rect(0, Manager.GROUND_Y, Stage.w, Manager.GROUND_HEIGHT);
 
 		// Draw time text
 		Draw.setFont(Font.lb);
