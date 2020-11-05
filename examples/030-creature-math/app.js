@@ -533,7 +533,8 @@ class Muscle {
 	}
 }
 
-let loadModelButton = BoundRect.create(8, 8, 100, 24);
+let saveModelButton = BoundRect.create(8, 8, 100, 24),
+	loadModelButton = BoundRect.create(116, 8, 100, 24);
 
 Scene.current.start = () => {
 	Manager.start();
@@ -543,13 +544,16 @@ Scene.current.render = () => {
 	Manager.update();
 	Manager.render();
 
-	let hover = BoundRect.hover(loadModelButton);
-	Draw.setFill(hover? C.white: C.sienna);
-	Draw.boundRect(loadModelButton);
-	Draw.setFill(hover? C.sienna : C.white);
 	Draw.setFont(Font.m);
-	Draw.setHVAlign(Align.c, Align.m);
-	Draw.text(loadModelButton.center, loadModelButton.middle, 'Load Model');
+	Draw.boundRectButton(saveModelButton, 'Save Model', C.sienna);
+	Draw.boundRectButton(loadModelButton, 'Load Model', C.sienna);
+
+	if (BoundRect.click(saveModelButton)) {
+		let name = prompt('You are about to save a model. Please provide a name:');
+		if (name) {
+			Manager.saveModel(name);
+		}
+	}
 };
 
 Font.setFamily('Patrick Hand, cursive');
@@ -562,42 +566,23 @@ NZ.start({
 	stylePreset: StylePreset.noGap
 });
 
-(function() {
-	const input = document.createElement('input');
+const makeInputFile = (boundRect, onload) => {
+	let input = document.createElement('input');
 	input.type = 'file';
 	input.onchange = (e) => {
-		const f = e.target.files[0];
-		const reader = new FileReader();
-		reader.onload = (e) => {
-			let model;
-			try {
-				model = JSON.parse(e.target.result)
-				Manager.start(model);
-			}
-			catch (e) {
-				console.error(e);
-			}
-		};
-		try {
-			reader.readAsText(f);
-		}
-		catch (e) {
-			console.error(e);
-		}
+		let f = e.target.files[0],
+			reader = new FileReader();
+		reader.onload = onload;
+		reader.readAsText(f);
 		input.blur();
 	};
-	const style = document.createElement('style');
-	style.innerHTML = `
-		input[type="file"] {
-			top: 8px;
-			left: 8px;
-			width: 100px;
-			height: 24px;
-			opacity: 0;
-			position: fixed;
-			background-color: magenta;
-		}
-	`;
-	document.head.appendChild(style);
+	input.style.top = `${boundRect.top}px`;
+	input.style.left = `${boundRect.left}px`;
+	input.style.width = `${boundRect.w}px`;
+	input.style.height = `${boundRect.h}px`;
+	input.style.opacity = '0';
+	input.style.position = 'fixed';
 	document.body.appendChild(input);
-}());
+};
+
+makeInputFile(loadModelButton, (e) => Manager.start(JSON.parse(e.target.result)));
