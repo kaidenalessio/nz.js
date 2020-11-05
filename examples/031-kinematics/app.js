@@ -31,50 +31,58 @@ class Arm {
 	}
 }
 
-let arm1, arm2, arm3, angle, angleInc, canvas2;
+class FKSystem {
+	constructor(x, y) {
+		this.x = x;
+		this.y = y;
+		this.arms = [];
+		this.lastArm = null;
+	}
+	addArm(length) {
+		const arm = new Arm(0, 0, 0, length);
+		this.arms.push(arm);
+		arm.parent = this.lastArm;
+		this.lastArm = arm;
+		this.update();
+	}
+	update() {
+		for (let i = 0; i < this.arms.length; i++) {
+			const arm = this.arms[i];
+			if (arm.parent) {
+				arm.x = arm.parent.getEndX();
+				arm.y = arm.parent.getEndY();
+			}
+			else {
+				arm.x = this.x;
+				arm.y = this.y;
+			}
+		}
+	}
+	render() {
+		Draw.setStroke(C.black);
+		Draw.setLineCap(LineCap.round);
+		Draw.setLineWidth(4);
+		for (let i = this.arms.length - 1; i >= 0; --i) {
+			this.arms[i].render();
+		}
+	}
+	rotateArm(index, angle) {
+		this.arms[index].angle = angle;
+	}
+}
+
+let fks;
 
 Scene.current.start = () => {
-	arm1 = new Arm(Stage.mid.w, Stage.mid.h, 0, 100);
-	arm2 = new Arm(0, 0, 0, 120);
-	arm3 = new Arm(0, 0, 0, 80);
-	arm2.parent = arm1;
-	arm3.parent = arm2;
-	angle = 0;
-	angleInc = 0.05;
-	canvas2 = Draw.createCanvas(Stage.w, Stage.h);
+	fks = new FKSystem(Stage.mid.w, Stage.mid.h);
+	fks.addArm(100);
+	fks.addArm(120);
+	fks.addArm(80);
 };
 
 Scene.current.render = () => {
-
-	arm1.angle = Math.sin(angle) * 2.4;
-	arm2.angle = Math.cos(angle * 1.57) * 3.14;
-	arm3.angle = Math.sin(angle * 3.14) * 1.34;
-
-	angle += angleInc;
-	angleInc += Math.cos(Time.time * 0.001) * 0.0001;
-
-	arm2.x = arm1.getEndX();
-	arm2.y = arm1.getEndY();
-
-	arm3.x = arm2.getEndX();
-	arm3.y = arm2.getEndY();
-
-	Draw.onCtx(canvas2.ctx, () => {
-		Draw.setAlpha(0.8);
-		Draw.setFill(C.random());
-		Draw.circle(arm3.getEndX(), arm3.getEndY(), 2);
-	});
-
-	Draw.imageEl(canvas2, Stage.mid.w, Stage.mid.h);
-
-	Draw.setStroke(C.black);
-	Draw.setLineCap(LineCap.round);
-	Draw.setLineWidth(4);
-	arm1.render();
-	arm2.render();
-	arm3.render();
-
-	if (Input.keyDown(KeyCode.Space)) Scene.restart();
+	fks.update();
+	fks.render();
 };
 
 NZ.start();
