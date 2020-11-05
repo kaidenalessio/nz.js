@@ -34,6 +34,8 @@ const Manager = {
 	cameraX: 0,
 	cameraT: 0.05, // interpolation point, used when lerp camera position
 	nodesMidX: 0,
+	fastForward: false, // get reset every frame (see afterRender)
+	skipActive: false, // get reset every frame (note: only need to trigger once, more than that doesn't affect anything)
 	getNumber(value, fallback=0) {
 		return value === 0? 0 : value || fallback;
 	},
@@ -226,6 +228,21 @@ const Manager = {
 
 		return data;
 	},
+	afterRender() {
+		this.fastForward = false;
+		this.skipActive = false;
+	},
+	skip() {
+		if (!this.timesOut) {
+			this.skipActive = true;
+		}
+	},
+	respawn() {
+		this.start(this.currentModel);
+	},
+	restart() {
+		Scene.restart();
+	},
 	start(model) {
 		this.currentModel = model || this.getRandomModel();
 		this.loadModel(this.currentModel, -50, this.GROUND_Y - 16);
@@ -242,8 +259,14 @@ const Manager = {
 		this.currentFitness = this.nodesMidX;
 	},
 	update() {
-		let h = this.UPDATE_ITERATION * (1 + 9 * Input.keyHold(KeyCode.Space));
-		while (h-- > 0 || Input.keyDown(Manager.SKIP_KEYCODE)) {
+		if (Input.keyHold(KeyCode.Space)) {
+			this.fastForward = true;
+		}
+		if (Input.keyDown(Manager.SKIP_KEYCODE)) {
+			this.skip();
+		}
+		let h = this.UPDATE_ITERATION * (1 + 9 * this.fastForward);
+		while (h-- > 0 || this.skipActive) {
 			for (let i = this.nodes.length - 1; i >= 0; --i) {
 				this.nodes[i].update();
 				this.nodes[i].constraint();
@@ -272,13 +295,13 @@ const Manager = {
 				}
 			}
 			else {
-				if (Input.keyDown(Manager.SKIP_KEYCODE))
+				if (this.skipActive)
 					break;
 			}
 		}
 
 		if (Input.keyDown(KeyCode.Enter)) {
-			Scene.restart();
+			this.restart();
 		}
 	},
 	render() {
@@ -388,8 +411,11 @@ const Manager = {
 			Draw.setFill(C.black);
 			Draw.setFont(Font.m);
 			Draw.setHVAlign(Align.l, Align.b);
-			Draw.text(16, Stage.h - 16, `Hold space to fast-forward (${Input.keyHold(KeyCode.Space)? '10x FASTER' : 'NORMAL'})`);
+			Draw.text(16, Stage.h - 16, `Hold space to fast-forward (${this.fastForward? '10x FASTER' : 'NORMAL'})`);
 		}
+
+		// reset stuff
+		this.afterRender();
 	}
 };
 
@@ -533,8 +559,12 @@ class Muscle {
 	}
 }
 
-let saveModelButton = BoundRect.create(8, 8, 100, 24),
-	loadModelButton = BoundRect.create(116, 8, 100, 24);
+let saveModelButton = 	BoundRect.create(8      , 8     , 100, 24),
+	loadModelButton = 	BoundRect.create(8 + 108, 8     , 100, 24),
+	skipButton 		= 	BoundRect.create(8 + 216, 8     , 100, 24),
+	respawnButton 	= 	BoundRect.create(8      , 8 + 32, 100, 24),
+	restartButton 	= 	BoundRect.create(8 + 108, 8 + 32, 100, 24),
+	fastButton 		= 	BoundRect.create(8 + 216, 8 + 32, 100, 24);
 
 Scene.current.start = () => {
 	Manager.start();
@@ -547,6 +577,10 @@ Scene.current.render = () => {
 	Draw.setFont(Font.m);
 	Draw.boundRectButton(saveModelButton, 'Save Model', C.sienna);
 	Draw.boundRectButton(loadModelButton, 'Load Model', C.sienna);
+	Draw.boundRectButton(skipButton, 'Skip', C.sienna);
+	Draw.boundRectButton(respawnButton, 'Respawn', C.sienna);
+	Draw.boundRectButton(restartButton, 'Restart', C.sienna);
+	Draw.boundRectButton(fastButton, 'Fast-forward', C.sienna);
 
 	if (BoundRect.click(saveModelButton)) {
 		let name = prompt('You are about to save a model. Please provide a name:');
@@ -554,6 +588,25 @@ Scene.current.render = () => {
 			Manager.saveModel(name);
 		}
 	}
+
+	if (BoundRect.click(skipButton)) {
+		Manager.skip();
+	}
+
+	if (BoundRect.click(respawnButton)) {
+		Manager.respawn();
+	}
+
+	if (BoundRect.click(restartButton)) {
+		Manager.restart();
+	}
+
+	if (BoundRect.hover(fastButton)) {
+		if (Input.mouseHold(0)) {
+			Manager.fastForward = true;
+		}
+	}
+
 };
 
 Font.setFamily('Patrick Hand, cursive');
@@ -574,8 +627,8 @@ const makeInputFile = (boundRect, onload) => {
 			reader = new FileReader();
 		reader.onload = onload;
 		reader.readAsText(f);
-		input.blur();
 	};
+	input.onclick = () => input.blur();
 	input.style.top = `${boundRect.top}px`;
 	input.style.left = `${boundRect.left}px`;
 	input.style.width = `${boundRect.w}px`;
