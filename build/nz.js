@@ -946,6 +946,15 @@ NZ.Draw = {
 		this.ctx.lineTo(p2.x, p2.y);
 		this.ctx.lineTo(p2.x + polar2.x, p2.y + polar2.y);
 		this.ctx.stroke();
+	},
+	// require NZ.BoundRect
+	boundRectButton(boundRect, text, bgColor='black', textColor='white') {
+		let hover = NZ.BoundRect.hover(boundRect);
+		this.setFill(hover? textColor: bgColor);
+		this.boundRect(boundRect);
+		this.setFill(hover? bgColor : textColor);
+		this.setHVAlign('center', 'middle');
+		this.text(boundRect.center, boundRect.middle, text);
 	}
 };var NZ = NZ || {};
 
