@@ -39,8 +39,8 @@ NZ.BoundRect = {
 			}
 		}
 	},
-	create(x, y, w, h) {
-		return this.add(new NZ.BoundRect.rect(x, y, w, h));
+	create(x, y, w, h, onclick) {
+		return this.add(new NZ.BoundRect.rect(x, y, w, h, onclick));
 	},
 	hover(rect) {
 		return rect.containsPoint(NZ.Input.mousePosition);
@@ -50,7 +50,7 @@ NZ.BoundRect = {
 	}
 };
 
-NZ.BoundRect.rect = function(x, y, w, h) {
+NZ.BoundRect.rect = function(x, y, w, h, onclick) {
 	this.x = x || 0;
 	this.y = y || 0;
 	this.w = w || 32;
@@ -79,6 +79,11 @@ NZ.BoundRect.rect = function(x, y, w, h) {
 	this.reset = () => {
 		this.set();
 	};
+	this.click = () => {
+		for (let i = this.listeners['click'].length - 1; i >= 0; --i) {
+			this.listeners['click'][i]();
+		}
+	};
 	this.listeners = {
 		'click': []
 	};
@@ -102,6 +107,11 @@ NZ.BoundRect.rect = function(x, y, w, h) {
 		if (y === undefined) y = x;
 		return (x >= this.left && x <= this.right && y >= this.top && y <= this.bottom);
 	};
+
+	// should have use prototype
+	if (typeof onclick === 'function') {
+		this.on('click', onclick);
+	}
 };var NZ = NZ || {};
 
 // Collection of color variables and functions to make or convert color in CSS color style
