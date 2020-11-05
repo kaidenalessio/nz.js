@@ -17,6 +17,26 @@ NZ.Stage = {
 		h: 75
 	},
 	size: { x: 300, y: 150, mid: { x: 150, y: 75 } },
+	listeners: {
+		'resize': []
+	},
+	on(event, fn) {
+		this.listeners[event].push(fn);
+		return fn;
+	},
+	off(event, fn) {
+		const h = this.listeners[event];
+		for (let i = h.length - 1; i >= 0; --i) {
+			if (h[i] === fn) {
+				return h.splice(i, 1)[0];
+			}
+		}
+	},
+	trigger(event) {
+		for (let i = this.listeners[event].length - 1; i >= 0; --i) {
+			this.listeners[event][i]();
+		}
+	},
 	get randomX() {
 		return Math.random() * this.size.x;
 	},
@@ -75,6 +95,7 @@ NZ.Stage = {
 		this.size.y = h;
 		this.size.mid.x = this.size.x * 0.5;
 		this.size.mid.y = this.size.y * 0.5;
+		this.trigger('resize');
 	},
 	resizeEvent() {
 		const b = NZ.Stage.canvas.getBoundingClientRect();
