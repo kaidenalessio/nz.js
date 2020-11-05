@@ -2,6 +2,7 @@
 
 const Manager = {
 	GRAVITY: 0.9, // amount of vertical speed added to node every update
+	// update ground y and ground height to match stage
 	GROUND_Y: 440, // constraint node to go below GROUND_Y
 	GROUND_HEIGHT: 100, // display (only for drawing, doesnt affect physics)
 	STRENGTH_MIN: 0.05,
@@ -26,7 +27,7 @@ const Manager = {
 	SHOW_FITNESS: true, // toggle draw fitness board
 	SHOW_BUTTONS: true, // toggle show buttons (see top left)
 	SKIP_KEYCODE: KeyCode.E,
-	DRAG_RANGE: 150,
+	DRAG_RANGE: 150, // gets calculated on restart
 	nodes: [], // nodes list
 	muscles: [], // muscles list
 	currentModel: {},
@@ -268,6 +269,11 @@ const Manager = {
 		Scene.restart();
 	},
 	start(model) {
+		this.GROUND_Y = Stage.h * 0.82;
+		this.GROUND_HEIGHT = Stage.h - this.GROUND_Y;
+
+		this.DRAG_RANGE = 0.27 * Math.min(Stage.w, Stage.h);
+
 		this.currentModel = model || this.getRandomModel();
 		this.loadModel(this.currentModel, -50, this.GROUND_Y - 16);
 
@@ -344,7 +350,7 @@ const Manager = {
 		}
 
 		// dragging update
-		if (Input.mouseHold(0)) {
+		if (Input.mouseDown(0)) {
 			let dist  = Number.POSITIVE_INFINITY;
 			for (let i = this.nodes.length - 1; i >= 0; --i) {
 				let dx = ~~Math.abs((Input.mouseX + this.cameraX - Stage.mid.w) - this.nodes[i].x),
@@ -662,8 +668,8 @@ Scene.current.render = () => {
 Font.setFamily('Patrick Hand SC, cursive');
 
 NZ.start({
-	w: 960,
-	h: 540,
+	// w: 960,
+	// h: 540,
 	bgColor: Manager.COLOR_SKY,
 	embedGoogleFonts: 'Patrick Hand SC',
 	stylePreset: StylePreset.noGap
