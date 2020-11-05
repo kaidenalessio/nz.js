@@ -26,6 +26,7 @@ const Manager = {
 	SHOW_FITNESS: true, // toggle draw fitness board
 	SHOW_BUTTONS: true, // toggle show buttons (see top left)
 	SKIP_KEYCODE: KeyCode.E,
+	DRAG_RANGE: 150,
 	nodes: [], // nodes list
 	muscles: [], // muscles list
 	currentModel: {},
@@ -39,6 +40,7 @@ const Manager = {
 	nodesMidX: 0, // intermediate x between nodes, also fitness
 	fastForward: false, // get reset every frame (see afterRender)
 	skipActive: false, // get reset every frame (note: only need to trigger once, more than that doesn't affect anything)
+	draggedNode: null,
 	// just utils to get number with fallback
 	getNumber(value, fallback=0) {
 		return value === 0? 0 : value || fallback;
@@ -341,6 +343,29 @@ const Manager = {
 			this.cameraX -= this.cameraT * (this.cameraX - this.nodesMidX);
 		}
 
+		// dragging update
+		if (Input.mouseDown(0)) {
+			let dist  = Number.POSITIVE_INFINITY;
+			for (let i = this.nodes.length - 1; i >= 0; --i) {
+				let d = ~~Math.abs((Input.mouseX + this.cameraX - Stage.mid.w) - this.nodes[i].x);
+				if (d < this.DRAG_RANGE && d < dist) {
+					this.draggedNode = this.nodes[i];
+					dist = d;
+				}
+			}
+		}
+
+		if (this.draggedNode) {
+			if (Input.mouseHold(0)) {
+				let x = Input.mouseX - Stage.mid.w + this.cameraX,
+					y = Input.mouseY;
+				this.draggedNode.setPosition(x, y);
+			}
+			else {
+				this.draggedNode = null;
+			}
+		}
+
 		// translate to camera
 		Draw.ctx.save();
 		Draw.ctx.translate(Stage.mid.w - this.cameraX, 0);
@@ -461,6 +486,10 @@ class Node {
 		this.color = '';
 		this.outlineColor = '';
 		this.calcColor();
+	}
+	setPosition(x, y) {
+		this.xprev = this.x = x;
+		this.yprev = this.y = y;
 	}
 	calcColor() {
 		// 1=green -> 0.5=yellow -> 0=red
