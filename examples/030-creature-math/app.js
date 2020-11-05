@@ -32,6 +32,7 @@ const Manager = {
 	cameraXAcc: 0,
 	cameraXVel: 0,
 	cameraX: 0,
+	cameraT: 0.05, // interpolation point, used when lerp camera position
 	nodesMidX: 0,
 	getNumber(value, fallback=0) {
 		return value === 0? 0 : value || fallback;
@@ -204,7 +205,7 @@ const Manager = {
 			+ '\n}';
 		}
 
-		let filename = `${modelName}.json`,
+		let filename = `model_${modelName}.json`,
 			file = new Blob([data], { type: 'text/plain' });
 
 		if (navigator.msSaveOrOpenBlob) {
@@ -291,7 +292,8 @@ const Manager = {
 		}
 		else {
 			// lerp camera position
-			this.cameraX -= 0.05 * (this.cameraX - this.nodesMidX);
+			this.cameraT -= 0.01 * (this.cameraT - (0.05 + 0.95 * (Math.abs(this.cameraX - this.nodesMidX) > Stage.mid.w - 64)));
+			this.cameraX -= this.cameraT * (this.cameraX - this.nodesMidX);
 		}
 
 		// translate to camera
