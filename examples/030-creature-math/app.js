@@ -7,14 +7,14 @@ const Manager = {
 	STRENGTH_MIN: 0.05,
 	STRENGTH_MAX: 0.25,
 	NODE_RADIUS: 16,
-	NODE_BOUNCE: 0,
+	NODE_BOUNCE: 0.5,
 	MUSCLE_SIZE_MIN: 5,
 	MUSCLE_SIZE_MAX: 10,
 	PIXEL_PER_METER: 400,
 	TICK_INCREMENT: Time.fixedDeltaTime * 0.005,
 	UPDATE_ITERATION: 1, // can be fast forward by holding space
-	CONSRAINT_ITERATION: 10,
-	CONSRAINT_WITH_FRICTION: false,
+	CONSRAINT_ITERATION: 5,
+	CONSRAINT_WITH_FRICTION: true,
 	TIME_DURATION: 15000,
 	TIME_INCREMENT: Time.fixedDeltaTime,
 	COLOR_SKY: C.blanchedAlmond,
@@ -33,12 +33,122 @@ const Manager = {
 	cameraXVel: 0,
 	cameraX: 0,
 	nodesMidX: 0,
+	getNumber(value, fallback=0) {
+		return value === 0? 0 : value || fallback;
+	},
 	/*  model: {}
 	 *  	nodes: [{}]
 	 *  		{ x, y, friction }
 	 *  	muscles: [{}]
-	 *  		{ nid0, nid1, length }
+	 *  		{ nid0, nid1, length, strength, switchTime, contractTo, expandTo }
 	*/
+	MODEL_TIPTOP: {
+		nodes: [
+			{ x: 129.62329332874648, y: -69.43240256233953, friction: 0.8341780570535275 },
+			{ x: 126.6267431098636, y: -36.64645106863404, friction: 0.3710271270024219 },
+			{ x: 98.71780280844888, y: -73.01600335238936, friction: 0.958748329374866 },
+			{ x: 111.3436271633775, y: -19.33748102590404, friction: 0.02502233249900576 }
+		],
+		muscles: [
+			{
+				contractTo: 0.5054044455611135,
+				expandTo: 1.3851091187045113,
+				length: -1,
+				nid0: 0,
+				nid1: 1,
+				strength: 0.8341377835836989,
+				switchTime: 0.3058050543729238
+			},
+			{
+				contractTo: 0.6209372813032994,
+				expandTo: 1.1159437583409075,
+				length: -1,
+				nid0: 1,
+				nid1: 2,
+				strength: 0.283105726253966,
+				switchTime: 0.5530744390228293
+			},
+			{
+				contractTo: 0.6656863126685544,
+				expandTo: 1.1862247324644248,
+				length: -1,
+				nid0: 2,
+				nid1: 0,
+				strength: 0.09938877459853401,
+				switchTime: 0.3037099721506896
+			},
+			{
+				contractTo: 0.5088114084850547,
+				expandTo: 1.481624155866731,
+				length: -1,
+				nid0: 3,
+				nid1: 0,
+				strength: 0.958112585576935,
+				switchTime: 0.5008537663712856
+			},
+			{
+				contractTo: 0.8633790295525205,
+				expandTo: 1.1462537128020829,
+				length: -1,
+				nid0: 3,
+				nid1: 1,
+				strength: 0.6063533330763231,
+				switchTime: 0.5905646400027795
+			},
+			{
+				contractTo: 0.7676963438519316,
+				expandTo: 1.4778383162355988,
+				length: -1,
+				nid0: 3,
+				nid1: 2,
+				strength: 0.7518483661119781,
+				switchTime: 0.37303682118178444
+			}
+		]
+	},
+	getRandomModel(xrange=150, yrange=-100) {
+		return {
+			nodes: [
+				{ x: Mathz.range(xrange), y: Mathz.range(yrange), friction: Mathz.range(1)},
+				{ x: Mathz.range(xrange), y: Mathz.range(yrange), friction: Mathz.range(1)},
+				{ x: Mathz.range(xrange), y: Mathz.range(yrange), friction: Mathz.range(1)},
+				{ x: Mathz.range(xrange), y: Mathz.range(yrange), friction: Mathz.range(1)}
+			],
+			muscles: [
+				// length -1 means get the length from calculating distance between n0 and n1
+				{
+					nid0: 0, nid1: 1, length: -1,
+					strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7),
+					contractTo: Mathz.range(0.5, 0.95), expandTo: Mathz.range(1.05, 1.5)
+				},
+				{
+					nid0: 1, nid1: 2, length: -1,
+					strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7),
+					contractTo: Mathz.range(0.5, 0.95), expandTo: Mathz.range(1.05, 1.5)
+				},
+				{
+					nid0: 2, nid1: 0, length: -1,
+					strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7),
+					contractTo: Mathz.range(0.5, 0.95), expandTo: Mathz.range(1.05, 1.5)
+				},
+				{
+					nid0: 3, nid1: 0, length: -1,
+					strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7),
+					contractTo: Mathz.range(0.5, 0.95), expandTo: Mathz.range(1.05, 1.5)
+				},
+				{
+					nid0: 3, nid1: 1, length: -1,
+					strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7),
+					contractTo: Mathz.range(0.5, 0.95), expandTo: Mathz.range(1.05, 1.5)
+				},
+				{
+					nid0: 3, nid1: 2, length: -1,
+					strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7),
+					contractTo: Mathz.range(0.5, 0.95), expandTo: Mathz.range(1.05, 1.5)
+				}
+			]
+		};
+	},
 	loadModel(model, offsetX, offsetY) {
 		// reset list
 		this.nodes.length = 0;
@@ -61,24 +171,62 @@ const Manager = {
 			this.muscles.push(new Muscle(n0, n1, length, strength, n.switchTime));
 		}
 	},
-	start() {
-		this.currentModel = {
-			nodes: [
-				{ x: Mathz.range(150), y: Mathz.range(-100), friction: Mathz.range(1)},
-				{ x: Mathz.range(150), y: Mathz.range(-100), friction: Mathz.range(1)},
-				{ x: Mathz.range(150), y: Mathz.range(-100), friction: Mathz.range(1)},
-				{ x: Mathz.range(150), y: Mathz.range(-100), friction: Mathz.range(1)}
-			],
-			muscles: [
-				// length -1 means get the length from calculating distance between n0 and n1
-				{ nid0: 0, nid1: 1, length: -1, strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7) },
-				{ nid0: 1, nid1: 2, length: -1, strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7) },
-				{ nid0: 2, nid1: 0, length: -1, strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7) },
-				{ nid0: 3, nid1: 0, length: -1, strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7) },
-				{ nid0: 3, nid1: 1, length: -1, strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7) },
-				{ nid0: 3, nid1: 2, length: -1, strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7) }
-			]
-		};
+	saveModel(modelName, stringify=true) {
+		let data;
+
+		if (stringify) {
+			data = JSON.stringify(this.currentModel);
+		}
+		else {
+			let nodes = [],
+				muscles = [];
+
+			for (let node of this.currentModel.nodes) {
+				nodes.push(`\t\t{ "x": ${node.x}, "y": ${node.y}, "friction": ${node.friction} }`);
+			}
+
+			for (let muscle of this.currentModel.muscles) {
+				let m = [];
+				for (const key of Object.keys(muscle)) {
+					m.push(`\t\t\t"${key}": ${muscle[key]}`);
+				}
+				muscles.push(m);
+			}
+
+			data =
+			'{\n'
+			+ '\t"nodes": [\n'
+			+ nodes.join(',\n')
+			+ '\n\t],'
+			+ '\n\t"muscles": [\n'
+			+ muscles.map(x => '\t\t{\n' + x.join(',\n') + '\n\t\t}').join(',\n')
+			+ '\n\t]'
+			+ '\n}';
+		}
+
+		let filename = `${modelName}.json`,
+			file = new Blob([data], { type: 'text/plain' });
+
+		if (navigator.msSaveOrOpenBlob) {
+			navigator.msSaveOrOpenBlob(file, filename);
+		}
+		else {
+			const a = document.createElement('a');
+			const url = URL.createObjectURL(file);
+			a.href = url;
+			a.download = filename;
+			document.body.appendChild(a);
+			a.click();
+			setTimeout(() => {
+				document.body.removeChild(a);
+				URL.revokeObjectURL(url);
+			});
+		}
+
+		return data;
+	},
+	start(model) {
+		this.currentModel = model || this.getRandomModel();
 		this.loadModel(this.currentModel, -50, this.GROUND_Y - 16);
 
 		this.currentFitness = 0;
@@ -252,7 +400,7 @@ class Node {
 
 		this.radius = Manager.NODE_RADIUS;
 		this.bounce = Manager.NODE_BOUNCE;
-		this.friction = friction === 0? 0 : friction || 0.9;
+		this.friction = Manager.getNumber(friction, 0.9);
 
 		this.isOnGround = false;
 
@@ -314,15 +462,15 @@ class Node {
 }
 
 class Muscle {
-	constructor(n0, n1, length, strength, switchTime) {
+	constructor(n0, n1, length, strength, switchTime, contractTo, expandTo) {
 		this.n0 = n0 || null;
 		this.n1 = n1 || null;
 		this.distance = 0;
 
-		this.strength = strength || Manager.STRENGTH_MIN;
-		this.length = length || 100;
-		this.min = this.length * 0.8;
-		this.max = this.length * 1.2;
+		this.strength = strength || Manager.STRENGTH_MIN; // if strength 0, fallback to strength min
+		this.length = length || 100; // if length 0, fallback to 100
+		this.min = this.length * Manager.getNumber(contractTo, 0.8);
+		this.max = this.length * Manager.getNumber(expandTo, 1.2);
 		this.switchTime = switchTime;
 
 		this.tick = 0;
