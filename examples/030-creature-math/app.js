@@ -1,30 +1,33 @@
 // inspired by carykh
 
 const Manager = {
-	GRAVITY: 0.9,
-	GROUND_Y: 440,
-	GROUND_HEIGHT: 100,
+	GRAVITY: 0.9, // amount of vertical speed added to node every update
+	GROUND_Y: 440, // constraint node to go below GROUND_Y
+	GROUND_HEIGHT: 100, // display (only for drawing, doesnt affect physics)
 	STRENGTH_MIN: 0.05,
 	STRENGTH_MAX: 0.25,
-	NODE_RADIUS: 16,
-	NODE_BOUNCE: 0.8,
-	MUSCLE_SIZE_MIN: 5,
-	MUSCLE_SIZE_MAX: 10,
-	PIXEL_PER_METER: 400,
-	TICK_INCREMENT: Time.fixedDeltaTime * 0.005,
-	UPDATE_ITERATION: 1, // can be fast forward by holding space
-	CONSRAINT_ITERATION: 4,
-	CONSRAINT_WITH_FRICTION: true,
-	TIME_DURATION: 15000,
-	TIME_INCREMENT: Time.fixedDeltaTime,
-	COLOR_SKY: C.blanchedAlmond,
-	COLOR_GROUND: C.plum,
-	SIGN_AMOUNT: 500, // -500m to 500m,
+	NODE_RADIUS: 16, // node radius (affect physics)
+	NODE_BOUNCE: 0.2,
+	MUSCLE_SIZE_MIN: 5, // display, muscle minimum size when contract
+	MUSCLE_SIZE_MAX: 10, // display, muscle maximum size when expand
+	PIXEL_PER_METER: 400, // affect fitness
+	TICK_INCREMENT: 1 / 12, // (1 / 12) means 1 tick = 12 frames (value must < 1)
+	UPDATE_ITERATION: 1, // how many updates per frame, can be fast forward by holding space
+	CONSRAINT_ITERATION: 20,
+	CONSRAINT_WITH_FRICTION: false,
+	TIME_DURATION: 15000, // time before fitness returned (in milliseconds)
+	TIME_INCREMENT: Time.fixedDeltaTime, // in milliseconds
+	COLOR_SKY: C.blanchedAlmond, // display
+	COLOR_GROUND: C.plum, // display
+	SIGN_AMOUNT: 500, // display -500m to 500m sign
 	ELASTIC_CAMERA: false,
-	SHOW_FITNESS: true,
+	SHOW_TIME: true, // toggle draw time text (see on the top right of the screen)
+	SHOW_INFO: true, // toggle draw info text (see on the bottom)
+	SHOW_FITNESS: true, // toggle draw fitness board
+	SHOW_BUTTONS: true, // toggle show buttons (see top left)
 	SKIP_KEYCODE: KeyCode.P,
-	nodes: [],
-	muscles: [],
+	nodes: [], // nodes list
+	muscles: [], // muscles list
 	currentModel: {},
 	currentFitness: 0,
 	time: 0,
@@ -33,11 +36,30 @@ const Manager = {
 	cameraXVel: 0,
 	cameraX: 0,
 	cameraT: 0.05, // interpolation point, used when lerp camera position
-	nodesMidX: 0,
+	nodesMidX: 0, // intermediate x between nodes, also fitness
 	fastForward: false, // get reset every frame (see afterRender)
 	skipActive: false, // get reset every frame (note: only need to trigger once, more than that doesn't affect anything)
+	// just utils to get number with fallback
 	getNumber(value, fallback=0) {
 		return value === 0? 0 : value || fallback;
+	},
+	showUI() {
+		this.SHOW_TIME = true;
+		this.SHOW_INFO = true;
+		this.SHOW_FITNESS = true;
+		this.SHOW_BUTTONS = true;
+	},
+	hideUI() {
+		this.SHOW_TIME = false;
+		this.SHOW_INFO = false;
+		this.SHOW_FITNESS = false;
+		this.SHOW_BUTTONS = false;
+	},
+	toggleUI() {
+		this.SHOW_TIME = !this.SHOW_TIME;
+		this.SHOW_INFO = !this.SHOW_INFO;
+		this.SHOW_FITNESS = !this.SHOW_FITNESS;
+		this.SHOW_BUTTONS = !this.SHOW_BUTTONS;
 	},
 	/*  model: {}
 	 *  	nodes: [{}]
@@ -395,23 +417,27 @@ const Manager = {
 		}
 
 		// Draw time text
-		Draw.setFont(Font.lb);
-		Draw.setFill(C.black);
-		Draw.setHVAlign(Align.r, Align.t);
-		Draw.text(Stage.w - 16, 16, `${(this.time * 0.001).toFixed(2)}/${(this.TIME_DURATION * 0.001).toFixed(2)}`);
+		if (this.SHOW_TIME) {
+			Draw.setFont(Font.lb);
+			Draw.setFill(C.black);
+			Draw.setHVAlign(Align.r, Align.t);
+			Draw.text(Stage.w - 16, 16, `${(this.time * 0.001).toFixed(2)}/${(this.TIME_DURATION * 0.001).toFixed(2)}`);
+		}
 
 		// info text
-		if (this.timesOut) {
-			Draw.setFont(Font.l);
-			Draw.setFill(C.white);
-			Draw.setHVAlign(Align.c, Align.m);
-			Draw.text(Stage.mid.w, Stage.h - 50, 'Press enter to restart.');
-		}
-		else {
-			Draw.setFill(C.black);
-			Draw.setFont(Font.m);
-			Draw.setHVAlign(Align.l, Align.b);
-			Draw.text(16, Stage.h - 16, `Hold space to fast-forward (${this.fastForward? '10x FASTER' : 'NORMAL'})`);
+		if (this.SHOW_INFO) {
+			if (this.timesOut) {
+				Draw.setFont(Font.l);
+				Draw.setFill(C.white);
+				Draw.setHVAlign(Align.c, Align.m);
+				Draw.text(Stage.mid.w, Stage.h - 50, 'Press enter to restart.');
+			}
+			else {
+				Draw.setFill(C.black);
+				Draw.setFont(Font.m);
+				Draw.setHVAlign(Align.l, Align.b);
+				Draw.text(16, Stage.h - 16, `Hold space to fast-forward (${this.fastForward? '10x FASTER' : 'NORMAL'})`);
+			}
 		}
 
 		// reset stuff
@@ -573,6 +599,10 @@ Scene.current.start = () => {
 Scene.current.render = () => {
 	Manager.update();
 	Manager.render();
+
+	if (Input.keyDown(KeyCode.O)) Manager.toggleUI();
+
+	if (!Manager.SHOW_BUTTONS) return;
 
 	Draw.setFont(Font.m);
 	Draw.boundRectButton(saveModelButton, 'Save Model', C.sienna);
