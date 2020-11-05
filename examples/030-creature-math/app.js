@@ -436,8 +436,8 @@ const Manager = {
 			Draw.setFill(C.brown);
 			if (!this.timesOut) {
 				Draw.triangle(
-					x - w * 0.1, y + h * 0.5,
-					x + w * 0.1, y + h * 0.5,
+					x - w * 0.1, y + h * 0.5 - 2,
+					x + w * 0.1, y + h * 0.5 - 2,
 					x, y + h * 0.5 + 20
 				);
 			}

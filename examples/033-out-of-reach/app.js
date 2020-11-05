@@ -169,7 +169,7 @@ Scene.current.start = () => {
 	ball = new Ball(Stage.mid.w, Stage.mid.h);
 
 	stars = [];
-	stars.push(new Star(Stage.w * 0.1, Stage.h * 0.1));
+	stars.push(new Star(Stage.w * 0.1, Stage.h * 0.6));
 	stars.push(new Star(Stage.w * 0.9, Stage.h * 0.1));
 	stars.push(new Star(Stage.mid.w, Stage.h * 0.95));
 
@@ -214,9 +214,20 @@ Scene.current.render = () => {
 		iks[i].render();
 	}
 
+	let y = 0;
+	const textBG = (txt) => {
+		Draw.textBG(0, y, txt, { bgColor: C.none, textColor: C.black });
+		y += Font.m.size + 10;
+	};
+
 	Draw.setFont(Font.m);
-	Draw.textBG(0, 0, `Star: ${starCount}`);
-	Draw.textBG(0, Font.m.size + 10, `Time: ${(timer * 0.001).toFixed(2)} ${gameOverText}`);
+	textBG(`Star: ${starCount}`);
+	textBG(`Time: ${(timer * 0.001).toFixed(2)}`);
+	textBG(`Try not to get touched by\nany arm until time's out!`);
+	y += Font.m.size;
+	textBG('Move using arrow keys!');
+	Draw.setFont(Font.xl);
+	textBG(gameOverText);
 
 	if (Input.keyDown(KeyCode.Space) || Input.keyDown(KeyCode.Enter)) Scene.restart();
 };
@@ -224,4 +235,4 @@ Scene.current.render = () => {
 NZ.start({
 	w: 960,
 	h: 540
-});
+});	
