@@ -344,10 +344,13 @@ const Manager = {
 		}
 
 		// dragging update
-		if (Input.mouseDown(0)) {
+		if (Input.mouseHold(0)) {
 			let dist  = Number.POSITIVE_INFINITY;
 			for (let i = this.nodes.length - 1; i >= 0; --i) {
-				let d = ~~Math.abs((Input.mouseX + this.cameraX - Stage.mid.w) - this.nodes[i].x);
+				let dx = ~~Math.abs((Input.mouseX + this.cameraX - Stage.mid.w) - this.nodes[i].x),
+					dy = ~~Math.abs(Input.mouseY - this.nodes[i].y),
+					d = Math.sqrt(dx*dx + dy*dy);
+
 				if (d < this.DRAG_RANGE && d < dist) {
 					this.draggedNode = this.nodes[i];
 					dist = d;
