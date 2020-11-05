@@ -586,13 +586,15 @@ class Muscle {
 }
 
 let saveModelButton = 	BoundRect.create(8      , 8     , 100, 24, () => { let name = prompt('You are about to save a model. Please provide a name:'); if (name) Manager.saveModel(name); }),
-	loadModelButton = 	BoundRect.create(8 + 108, 8     , 100, 24),
-	skipButton 		= 	BoundRect.create(8 + 216, 8     , 100, 24, () => Manager.skip()),
+	skipButton 		= 	BoundRect.create(8 + 108, 8     , 100, 24, () => Manager.skip()),
+	loadModelButton = 	BoundRect.create(8 + 216, 8     , 100, 24),
 	respawnButton 	= 	BoundRect.create(8      , 8 + 32, 100, 24, () => Manager.respawn()),
 	restartButton 	= 	BoundRect.create(8 + 108, 8 + 32, 100, 24, () => Manager.restart()),
 	fastButton 		= 	BoundRect.create(8 + 216, 8 + 32, 100, 24, () => { Manager.fastForward = true; });
 
 Scene.current.start = () => {
+	Stage.setPixelRatio(Stage.HIGH);
+	Stage.applyPixelRatio();
 	Manager.start();
 };
 
@@ -602,8 +604,8 @@ Scene.current.render = () => {
 
 	if (Input.keyDown(KeyCode.U)) Manager.toggleUI();
 	if (Input.keyDown(KeyCode.Q)) saveModelButton.click();
-	if (Input.keyDown(KeyCode.W)) loadModelButton.click();
-	if (Input.keyDown(KeyCode.E)) skipButton.click();
+	if (Input.keyDown(KeyCode.E)) loadModelButton.click();
+	if (Input.keyDown(KeyCode.W)) skipButton.click();
 	if (Input.keyDown(KeyCode.A)) respawnButton.click();
 	if (Input.keyDown(KeyCode.S)) restartButton.click();
 	if (Input.keyHold(KeyCode.D)) fastButton.click();
@@ -612,8 +614,8 @@ Scene.current.render = () => {
 
 	Draw.setFont(Font.sm);
 	Draw.boundRectButton(saveModelButton, 'Save Model (Q)', C.sienna);
-	Draw.boundRectButton(loadModelButton, 'Load Model (W)', C.sienna);
-	Draw.boundRectButton(skipButton, 'Skip (E)', C.sienna);
+	Draw.boundRectButton(loadModelButton, 'Load Model (E)', C.sienna);
+	Draw.boundRectButton(skipButton, 'Skip (W)', C.sienna);
 	Draw.boundRectButton(respawnButton, 'Respawn (A)', C.sienna);
 	Draw.boundRectButton(restartButton, 'Restart (S)', C.sienna);
 	Draw.boundRectButton(fastButton, 'Fast-forward (D)', C.sienna);
@@ -625,13 +627,13 @@ Scene.current.render = () => {
 
 };
 
-Font.setFamily('Patrick Hand, cursive');
+Font.setFamily('Patrick Hand SC, cursive');
 
 NZ.start({
 	w: 960,
 	h: 540,
 	bgColor: Manager.COLOR_SKY,
-	embedGoogleFonts: 'Patrick Hand',
+	embedGoogleFonts: 'Patrick Hand SC',
 	stylePreset: StylePreset.noGap
 });
 
