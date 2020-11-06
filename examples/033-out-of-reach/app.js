@@ -18,8 +18,10 @@ class Arm {
 			y: this.getEndY()
 		};
 	}
-	render() {
+	render(i) {
+		Draw.setLineWidth(i*3);
 		Draw.line(this.x, this.y, this.getEndX(), this.getEndY());
+		Draw.circle(this.x, this.y, i);
 	}
 	pointAt(x, y) {
 		let dx = x - this.x,
@@ -37,11 +39,15 @@ class Arm {
 }
 
 class IKSystem {
+	static colors = [
+		C.red, C.orchid, C.gold, C.orange, C.orangeRed, C.yellow, C.green, C.blue
+	];
 	constructor(x, y) {
 		this.x = x;
 		this.y = y;
 		this.arms = [];
 		this.lastArm = null;
+		this.c = Utils.pick(IKSystem.colors);
 	}
 	addArm(length) {
 		const arm = new Arm(0, 0, length, 0);
@@ -58,11 +64,14 @@ class IKSystem {
 		this.lastArm = arm;
 	}
 	render() {
-		Draw.setStroke(C.black);
+		Draw.setAlpha(0.5);
+		Draw.setColor(C.white, this.c);
 		Draw.setLineCap(LineCap.round);
-		for (let i = this.arms.length - 1; i >= 0; --i) {
-			this.arms[i].render();
+		let n = this.arms.length;
+		for (let i = n - 1; i >= 0; --i) {
+			this.arms[i].render(n - i);
 		}
+		Draw.resetAlpha();
 	}
 	drag(x, y) {
 		this.lastArm.drag(x, y);
@@ -128,9 +137,11 @@ class Ball {
 		}
 	}
 	render() {
-		Draw.setColor(C.white, C.black);
-		Draw.circle(this.x, this.y, this.r - 1);
-		Draw.stroke();
+		Draw.setStroke(starCount > 1? C.gold : C.white);
+		Draw.setAlpha(0.5);
+		Draw.setLineWidth(this.r * 0.5);
+		Draw.circle(this.x, this.y, this.r * 0.75, true);
+		Draw.resetAlpha();
 	}
 }
 
@@ -141,10 +152,8 @@ class Star {
 		this.r = 20;
 	}
 	render() {
-		Draw.setColor(C.gold, C.black);
+		Draw.setFill(C.gold);
 		Draw.starTransformed(this.x, this.y, this.r, false, Math.sin(Time.time * 0.01 + this.x), 1, 0);
-		Draw.setLineJoin(LineJoin.round);
-		Draw.stroke();
 	}
 }
 
@@ -160,9 +169,9 @@ Scene.current.start = () => {
 	iks.push(new IKSystem(Stage.mid.w, 0));
 
 	for (let i = iks.length - 1; i >= 0; --i) {
-		let n = i === 2? 30 : 50;
+		let n = i === 2? 3 : 5;
 		while (n-- > 0) {
-			iks[i].addArm(4);
+			iks[i].addArm(40);
 		}
 	}
 
@@ -216,16 +225,17 @@ Scene.current.render = () => {
 
 	let y = 0;
 	const textBG = (txt) => {
-		Draw.textBG(0, y, txt, { bgColor: C.none, textColor: C.black });
+		Draw.textBG(0, y, txt, { bgColor: C.none, textColor: C.white });
 		y += Font.m.size + 10;
 	};
 
 	Draw.setFont(Font.m);
 	textBG(`Star: ${starCount}`);
 	textBG(`Time: ${(timer * 0.001).toFixed(2)}`);
-	textBG(`Try not to get touched by\nany arm until time's out!`);
+	textBG(`Try not to get touched by\ntentacles until time's out!`);
 	y += Font.m.size;
 	textBG('Move using arrow keys!');
+	textBG('Get 2 stars to unlock the next level!');
 	Draw.setFont(Font.xl);
 	textBG(gameOverText);
 
@@ -234,5 +244,6 @@ Scene.current.render = () => {
 
 NZ.start({
 	w: 960,
-	h: 540
-});	
+	h: 540,
+	bgColor: BGColor.dark
+});
