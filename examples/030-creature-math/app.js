@@ -134,48 +134,44 @@ const Manager = {
 			}
 		]
 	},
-	getRandomModel(xrange=150, yrange=-100) {
-		return {
-			nodes: [
-				{ x: Mathz.range(xrange), y: Mathz.range(yrange), friction: Mathz.range(1)},
-				{ x: Mathz.range(xrange), y: Mathz.range(yrange), friction: Mathz.range(1)},
-				{ x: Mathz.range(xrange), y: Mathz.range(yrange), friction: Mathz.range(1)},
-				{ x: Mathz.range(xrange), y: Mathz.range(yrange), friction: Mathz.range(1)}
-			],
-			muscles: [
-				// length -1 means get the length from calculating distance between n0 and n1
-				{
-					nid0: 0, nid1: 1, length: -1,
-					strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7),
-					contractTo: Mathz.range(0.5, 0.95), expandTo: Mathz.range(1.05, 1.5)
-				},
-				{
-					nid0: 1, nid1: 2, length: -1,
-					strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7),
-					contractTo: Mathz.range(0.5, 0.95), expandTo: Mathz.range(1.05, 1.5)
-				},
-				{
-					nid0: 2, nid1: 0, length: -1,
-					strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7),
-					contractTo: Mathz.range(0.5, 0.95), expandTo: Mathz.range(1.05, 1.5)
-				},
-				{
-					nid0: 3, nid1: 0, length: -1,
-					strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7),
-					contractTo: Mathz.range(0.5, 0.95), expandTo: Mathz.range(1.05, 1.5)
-				},
-				{
-					nid0: 3, nid1: 1, length: -1,
-					strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7),
-					contractTo: Mathz.range(0.5, 0.95), expandTo: Mathz.range(1.05, 1.5)
-				},
-				{
-					nid0: 3, nid1: 2, length: -1,
-					strength: Mathz.range(1), switchTime: Mathz.range(0.3, 0.7),
-					contractTo: Mathz.range(0.5, 0.95), expandTo: Mathz.range(1.05, 1.5)
-				}
-			]
-		};
+	getRandomModel(xrange=150, yrange=-100, len=Mathz.choose(3, 4, 5, 6)) {
+		let nodes = [],
+			muscles = [],
+			musclePath = '';
+
+		for (let i = 0; i < len; i++) {
+			nodes.push({ x: Mathz.range(xrange), y: Mathz.range(yrange), friction: Mathz.range(1)});
+		}
+
+		if (len === 3) {
+			musclePath = '. 0 1 . 1 2 . 2 0';
+		}
+		if (len === 4) {
+			musclePath = '. 0 1 . 1 2 . 2 0 . 3 0 . 3 1 . 3 2';
+		}
+		if (len === 5) {
+			musclePath = '. 0 1 . 1 2 . 2 3 . 3 4 . 4 0 . 0 2 . 1 3';
+		}
+		if (len === 6) {
+			musclePath = '. 0 1 . 1 2 . 2 3 . 3 4 . 4 5 . 5 0';
+		}
+		
+		musclePath = musclePath.split(/\s/);
+		while (musclePath.length) {
+			if (musclePath.shift() === '.') {
+				muscles.push({
+					nid0: musclePath.shift(),
+					nid1: musclePath.shift(),
+					length: -1,
+					strength: Mathz.range(1),
+					switchTime: Mathz.range(0.3, 0.7),
+					contractTo: Mathz.range(0.5, 0.95),
+					expandTo: Mathz.range(1.05, 1.5)
+				});
+			}
+		}
+
+		return { nodes, muscles };
 	},
 	loadModel(model, offsetX, offsetY) {
 		// reset list
