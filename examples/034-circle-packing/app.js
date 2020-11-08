@@ -7,6 +7,7 @@ class Circle {
 		this.active = true;
 		this.xd = Stage.randomX;
 		this.yd = -Stage.h;
+		this.out = false;
 		this.stay = 0;
 	}
 	init(intersects=()=>{}) {
@@ -42,8 +43,17 @@ class Circle {
 			this.updateDraw();
 		}
 		else {
-			this.stay += 0.0005;
-			this.yd += this.stay;
+			if (!this.out) {
+				this.stay += this.r * 0.001;
+				if (this.stay > 1) {
+					this.yd += this.stay;
+					this.stay += 0.05;
+				}
+				if (this.yd > Stage.h + 200) {
+					outCircle++;
+					this.out = true;
+				}
+			}
 		}
 		this.constraint();
 	}
@@ -82,7 +92,7 @@ OBJ.addLink('Circle', Circle);
 OBJ.disableUpdate();
 
 Font.giant = Font.generate(240, Font.bold);
-let refText, refImage, imgData, intersectsFn, numCircle = 500;
+let refText, refImage, imgData, intersectsFn, outCircle, maxCircle;
 
 Debug.mode = 1;
 
@@ -93,6 +103,8 @@ NZ.start({
 	stylePreset: StylePreset.noGap,
 	debugModeAmount: 2,
 	start() {
+		outCircle = 0;
+		maxCircle = 500;
 		refText = refText || Math.random().toString(36).substr(2, 5);
 		refImage = Draw.createCanvasExt(Stage.w, Stage.h, () => {
 			Draw.setHVAlign(Align.c, Align.m);
@@ -115,7 +127,7 @@ NZ.start({
 
 		while (i-- > 0) {
 			count = OBJ.count('Circle');
-			if (count < numCircle) {
+			if (count < maxCircle) {
 				const n = OBJ.create('Circle', Stage.randomX, Stage.randomY, 1);
 				if (!n.init(intersectsFn)) {
 					OBJ.removeFrom('Circle', n.id);
@@ -157,7 +169,7 @@ NZ.start({
 			Scene.restart();
 		}
 
-		if (Input.keyDown(KeyCode.Enter)) {
+		if (Input.keyDown(KeyCode.Enter) || outCircle >= maxCircle) {
 			Scene.restart();
 		}
 	}
