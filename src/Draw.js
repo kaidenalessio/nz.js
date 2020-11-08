@@ -518,6 +518,10 @@ NZ.Draw = {
 	textBG(x, y, text, options={}) {
 		this.textBackground(x, y, text, options);
 	},
+	// generate y from i
+	textBGi(x, i, text, options={}) {
+		this.textBackground(x, i * (this.textHeight + 2 * (options.gap || 5)), text, options);
+	},
 	heart(x, y, w, h, isStroke=false) {
 		w = w * 0.5;
 		h = h * 0.5;

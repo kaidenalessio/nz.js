@@ -32,6 +32,7 @@ var NZ = NZ || {};
  *		start: Scene.current.start
  *		update: Scene.current.update
  *		render: Scene.current.render
+ *		renderUI: Scene.current.renderUI
  *	};
  */
 NZ.start = (options={}) => {
@@ -148,6 +149,7 @@ NZ.start = (options={}) => {
 	if (options.start) NZ.Scene.current.start = () => options.start();
 	if (options.update) NZ.Scene.current.update = () => options.update();
 	if (options.render) NZ.Scene.current.render = () => options.render();
+	if (options.renderUI) NZ.Scene.current.renderUI = () => options.renderUI();
 
 	NZ.Scene.restart();
 	NZ.Runner.start();

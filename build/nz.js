@@ -926,6 +926,10 @@ NZ.Draw = {
 	textBG(x, y, text, options={}) {
 		this.textBackground(x, y, text, options);
 	},
+	// generate y from i
+	textBGi(x, i, text, options={}) {
+		this.textBackground(x, i * (this.textHeight + 2 * (options.gap || 5)), text, options);
+	},
 	heart(x, y, w, h, isStroke=false) {
 		w = w * 0.5;
 		h = h * 0.5;
@@ -1553,6 +1557,7 @@ NZ.Loader = {
  *		start: Scene.current.start
  *		update: Scene.current.update
  *		render: Scene.current.render
+ *		renderUI: Scene.current.renderUI
  *	};
  */
 NZ.start = (options={}) => {
@@ -1669,6 +1674,7 @@ NZ.start = (options={}) => {
 	if (options.start) NZ.Scene.current.start = () => options.start();
 	if (options.update) NZ.Scene.current.update = () => options.update();
 	if (options.render) NZ.Scene.current.render = () => options.render();
+	if (options.renderUI) NZ.Scene.current.renderUI = () => options.renderUI();
 
 	NZ.Scene.restart();
 	NZ.Runner.start();

@@ -7,7 +7,7 @@ class Circle {
 		this.active = true;
 	}
 	init() {
-		let maxIter = 100,
+		let maxIter = 10,
 			notIntersect;
 
 		while (maxIter-- > 0) {
@@ -38,6 +38,8 @@ class Circle {
 			if (c.id !== this.id) {
 				if (this.intersects(c)) {
 					this.r--;
+					if (this.r < 3)
+						OBJ.removeFrom('Circle', this.id);
 					this.active = false;
 					break;
 				}
@@ -53,7 +55,7 @@ class Circle {
 	}
 	render() {
 		Draw.setColor(this.c);
-		Draw.circle(this.x, this.y, this.r, this.r < 20);
+		Draw.circle(this.x, this.y, this.r, this.r > 40);
 	}
 }
 
@@ -63,13 +65,18 @@ OBJ.disableUpdate();
 let t = 0;
 NZ.start({
 	update() {
-		let i = 5;
+		let i = 2 + 18 * Input.keyHold(KeyCode.Space);
 		while (i-- > 0) {
-			const n = OBJ.create('Circle', Stage.randomX, Stage.randomY, 1);
-			if (!n.init()) {
-				OBJ.removeFrom('Circle', n.id);
+			if (OBJ.count('Circle') < 3000) {
+				const n = OBJ.create('Circle', Stage.randomX, Stage.randomY, 0);
+				if (!n.init())
+					OBJ.removeFrom('Circle', n.id);
 			}
 			OBJ.updateAll();
 		}
+	},
+	renderUI() {
+		Draw.textBGi(0, 0, Time.FPS);
+		Draw.textBGi(0, 1, OBJ.count('Circle'));
 	}
 });
