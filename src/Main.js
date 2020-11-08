@@ -151,6 +151,11 @@ NZ.start = (options={}) => {
 	if (options.render) NZ.Scene.current.render = () => options.render();
 	if (options.renderUI) NZ.Scene.current.renderUI = () => options.renderUI();
 
+	// reset input on scene restart
+	NZ.Scene.on('restart', () => {
+		NZ.Input.reset();
+	});
+
 	NZ.Scene.restart();
 	NZ.Runner.start();
 };
