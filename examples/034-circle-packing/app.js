@@ -3,13 +3,14 @@ class Circle {
 		this.x = x;
 		this.y = y;
 		this.r = r;
-		this.c = C.random();
+		this.c = C.white;
 		this.active = true;
 		this.xd = Stage.randomX;
-		this.yd = Stage.randomY;
+		this.yd = -Stage.h;
+		this.stay = 0;
 	}
 	init(intersects=()=>{}) {
-		let maxIter = 1000,
+		let maxIter = 500,
 			notIntersect;
 
 		while (maxIter-- > 0) {
@@ -36,16 +37,28 @@ class Circle {
 		return notIntersect;
 	}
 	update() {
-		if (this.active) this.r += 0.05;
+		if (this.active) {
+			this.r += 0.01;
+			this.updateDraw();
+		}
+		else {
+			this.stay += 0.0005;
+			this.yd += this.stay;
+		}
 		this.constraint();
+	}
+	updateDraw() {
+		let dx = this.x - this.xd,
+			dy = this.y - this.yd,
+			w = this.r * 2;
+
+		this.xd += dx * 1;
+		this.yd += dy * 0.2;
 	}
 	constraint() {
 		for (const c of OBJ.takeFrom('Circle')) {
 			if (c.id !== this.id) {
 				if (this.intersects(c)) {
-					this.r -= 0.05;
-					if (this.r < 2)
-						OBJ.removeFrom('Circle', this.id);
 					this.active = false;
 					break;
 				}
@@ -60,21 +73,8 @@ class Circle {
 		return dist < rr;
 	}
 	render() {
-		let dx = this.x - this.xd,
-			dy = this.y - this.yd;
-
-		this.xd += dx * 0.2;
-		this.yd += dy * 0.2;
-
-		let x = this.xd + Math.sin(this.x * 0.01 + Time.frameCount * 0.1) * 10,
-			y = this.yd + Math.sin(this.x * 0.005 + Time.frameCount * 0.08) * 60,
-			w = this.r * 1.5,
-			angle = this.id * (Time.frameCount % 60);
-
-		this.c = C.random();
-
 		Draw.setColor(this.c);
-		Draw.rectRotated(x, y, w, w, angle, Math.random() < 0.5);
+		Draw.circle(this.xd, this.yd, this.r * 1.5);
 	}
 }
 
@@ -82,12 +82,14 @@ OBJ.addLink('Circle', Circle);
 OBJ.disableUpdate();
 
 Font.giant = Font.generate(240, Font.bold);
-let refText, refImage, imgData;
+let refText, refImage, imgData, intersectsFn, numCircle = 500;
+
+Debug.mode = 1;
 
 NZ.start({
 	w: 960,
 	h: 540,
-	bgColor: BGColor.dark,
+	bgColor: BGColor.sea,
 	stylePreset: StylePreset.noGap,
 	debugModeAmount: 2,
 	start() {
@@ -95,36 +97,55 @@ NZ.start({
 		refImage = Draw.createCanvasExt(Stage.w, Stage.h, () => {
 			Draw.setHVAlign(Align.c, Align.m);
 			Draw.setFont(Font.giant);
-			Draw.setFill(C.white);
-			Draw.text(Stage.mid.w, Stage.mid.h, refText);
+			Draw.setColor(C.white);
+			Draw.textRegular(Stage.mid.w, Stage.mid.h, refText, true);
 		});
 		imgData = refImage.ctx.getImageData(0, 0, Stage.w, Stage.h).data;
+		intersectsFn = (c) => {
+			let i = Math.floor(c.x) * 4 + Math.floor(c.y) * Stage.w * 4;
+			if (imgData[i + 3] === 0) {
+				return true;
+			}
+			return false;
+		};
 	},
 	update() {
-		let i = 2 + 18 * Input.keyHold(KeyCode.Space);
+		let i = 2 + 18 * Input.keyHold(KeyCode.Space),
+			count;
+
 		while (i-- > 0) {
-			if (OBJ.count('Circle') < 500) {
-				const n = OBJ.create('Circle', Stage.randomX, Stage.randomY, 0);
-				const intersects = (c) => {
-					let i = Math.floor(c.x) * 4 + Math.floor(c.y) * Stage.w * 4;
-					if (imgData[i + 3] === 0) {
-						return true;
-					}
-					return false;
-				};
-				if (!n.init(intersects))
+			count = OBJ.count('Circle');
+			if (count < numCircle) {
+				const n = OBJ.create('Circle', Stage.randomX, Stage.randomY, 1);
+				if (!n.init(intersectsFn)) {
 					OBJ.removeFrom('Circle', n.id);
-			}
-			else {
-				i = 0;
+				}
 			}
 			OBJ.updateAll();
 		}
 	},
-	render() {
+	renderUI() {
+		Draw.onTransform(0, Stage.h * 0.8, 0.2, 0.2, 0, () => {
+			Draw.imageEl(Stage.canvas, 0, 0, Vec2.zero);
+		});
+
 		if (Debug.mode > 0) {
 			Draw.imageEl(refImage, Stage.mid.w, Stage.mid.h);
 		}
+
+		let options = {
+			bgColor: C.makeRGBA(0, 0.1)
+		};
+
+		Draw.setFont(Font.s);
+		Draw.textBGi(0, 0, `Hold space to fast-forward (${Input.keyHold(KeyCode.Space)? '10x FASTER' : 'NORMAL'})`, options);
+		Draw.textBGi(0, 1, `Press U to ${Debug.mode > 0? 'hide' : 'show'} ref image (${refText})`, options);
+		Draw.textBGi(0, 2, 'Press P to provide custom text', options);
+		options.origin = Vec2.right;
+		Draw.textBGi(Stage.w, 0, 'Press M to randomize text', options);
+		Draw.textBGi(Stage.w, 1, 'Press enter to restart', options);
+		Draw.textBGi(Stage.w, 2, `Amount: ${OBJ.count('Circle')}`, options);
+		Draw.textBGi(Stage.w, 3, `FPS: ${Time.FPS}`, options);
 
 		if (Input.keyDown(KeyCode.P)) {
 			refText = prompt('Please provide a text (5 characters for better display):');
@@ -139,15 +160,5 @@ NZ.start({
 		if (Input.keyDown(KeyCode.Enter)) {
 			Scene.restart();
 		}
-	},
-	renderUI() {
-		Draw.setFont(Font.s);
-		Draw.textBGi(0, 0, `Hold space to fast-forward (${Input.keyHold(KeyCode.Space)? '10x FASTER' : 'NORMAL'})`);
-		Draw.textBGi(0, 1, `Press U to ${Debug.mode > 0? 'hide' : 'show'} ref image (${refText})`);
-		Draw.textBGi(0, 2, 'Press P to provide custom text');
-		Draw.textBGi(Stage.w, 0, 'Press M to randomize text', { origin: Vec2.right });
-		Draw.textBGi(Stage.w, 1, 'Press enter to restart', { origin: Vec2.right });
-		Draw.textBGi(Stage.w, 2, `Amount: ${OBJ.count('Circle')}`, { origin: Vec2.right });
-		Draw.textBGi(Stage.w, 3, `FPS: ${Time.FPS}`, { origin: Vec2.right });
 	}
 });
