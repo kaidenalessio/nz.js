@@ -17,6 +17,15 @@ NZ.Draw = {
 	sprites: {},
 	strips: {},
 	vertices: [],
+	getImage(name) {
+		return this.images[name];
+	},
+	getSprite(name) {
+		return this.sprites[name];
+	},
+	getStrip(name) {
+		return this.strips[name];
+	},
 	degtorad(deg) {
 		return deg * 0.017453292519943295;
 	},
