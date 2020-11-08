@@ -91,18 +91,23 @@ class Circle {
 OBJ.addLink('Circle', Circle);
 OBJ.disableUpdate();
 
-Font.giant = Font.generate(240, Font.bold);
+Font.giant = Font.generate(220);
 let refText, refImage, imgData, intersectsFn, outCircle, maxCircle;
 
 Debug.mode = 1;
 
+Font.setFamily('Maven Pro, sans-serif');
+
 NZ.start({
+	embedGoogleFonts: 'Maven Pro',
 	w: 960,
 	h: 540,
 	bgColor: BGColor.sea,
 	stylePreset: StylePreset.noGap,
 	debugModeAmount: 2,
 	start() {
+		Stage.setPixelRatio(Stage.HIGH);
+		Stage.applyPixelRatio();
 		outCircle = 0;
 		maxCircle = 500;
 		refText = refText || Math.random().toString(36).substr(2, 5);
@@ -137,8 +142,8 @@ NZ.start({
 		}
 	},
 	renderUI() {
-		Draw.onTransform(0, Stage.h * 0.8, 0.2, 0.2, 0, () => {
-			Draw.imageEl(Stage.canvas, 0, 0, Vec2.zero);
+		Draw.onTransform(0, Stage.h * 0.9, 0.1, 0.1, 0, () => {
+			Draw.imageEl(Stage.canvas, 0, 0, new Vec2(0, 0.5));
 		});
 
 		if (Debug.mode > 0) {
