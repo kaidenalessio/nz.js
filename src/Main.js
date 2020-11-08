@@ -29,6 +29,9 @@ var NZ = NZ || {};
  *		stageAutoResize: (enabled by default) auto resize canvas when the stage gets resized, set this to false will strecth the canvas when resizing viewport
  *		embedGoogleFonts: array of font names/specimen from fonts.google.com
  *		favicon: favicon href, provide this will automatically appends a link to head
+ *		start: Scene.current.start
+ *		update: Scene.current.update
+ *		render: Scene.current.render
  *	};
  */
 NZ.start = (options={}) => {
@@ -141,6 +144,10 @@ NZ.start = (options={}) => {
 		n.href = options.favicon;
 		document.head.appendChild(n);
 	}
+
+	if (options.start) NZ.Scene.current.start = () => options.start();
+	if (options.update) NZ.Scene.current.update = () => options.update();
+	if (options.render) NZ.Scene.current.render = () => options.render();
 
 	NZ.Scene.restart();
 	NZ.Runner.start();

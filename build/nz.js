@@ -1550,6 +1550,9 @@ NZ.Loader = {
  *		stageAutoResize: (enabled by default) auto resize canvas when the stage gets resized, set this to false will strecth the canvas when resizing viewport
  *		embedGoogleFonts: array of font names/specimen from fonts.google.com
  *		favicon: favicon href, provide this will automatically appends a link to head
+ *		start: Scene.current.start
+ *		update: Scene.current.update
+ *		render: Scene.current.render
  *	};
  */
 NZ.start = (options={}) => {
@@ -1662,6 +1665,10 @@ NZ.start = (options={}) => {
 		n.href = options.favicon;
 		document.head.appendChild(n);
 	}
+
+	if (options.start) NZ.Scene.current.start = () => options.start();
+	if (options.update) NZ.Scene.current.update = () => options.update();
+	if (options.render) NZ.Scene.current.render = () => options.render();
 
 	NZ.Scene.restart();
 	NZ.Runner.start();
@@ -2187,6 +2194,18 @@ NZ.OBJ = {
 		}
 	},
 	link(name, cls) {
+		cls.prototype.x = 0;
+		cls.prototype.y = 0;
+		cls.prototype.id = 0;
+		cls.prototype.nzDepth = 0;
+		cls.prototype.nzActive = true;
+		cls.prototype.nzVisible = true;
+		cls.prototype.nzPersistent = false;
+		if (!cls.prototype.start) cls.prototype.start = function() {};
+		if (!cls.prototype.preUpdate) cls.prototype.preUpdate = function() {};
+		if (!cls.prototype.update) cls.prototype.update = function() {};
+		if (!cls.prototype.postUpdate) cls.prototype.postUpdate = function() {};
+		if (!cls.prototype.render) cls.prototype.render = function() {};
 		this.linkedClass[name] = cls;
 	},
 	addLink(name, cls) {
