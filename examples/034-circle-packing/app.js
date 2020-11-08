@@ -5,6 +5,8 @@ class Circle {
 		this.r = r;
 		this.c = C.random();
 		this.active = true;
+		this.xd = Stage.randomX;
+		this.yd = Stage.randomY;
 	}
 	init(intersects=()=>{}) {
 		let maxIter = 1000,
@@ -58,8 +60,21 @@ class Circle {
 		return dist < rr;
 	}
 	render() {
+		let dx = this.x - this.xd,
+			dy = this.y - this.yd;
+
+		this.xd += dx * 0.2;
+		this.yd += dy * 0.2;
+
+		let x = this.xd + Math.sin(this.x * 0.01 + Time.frameCount * 0.1) * 10,
+			y = this.yd + Math.sin(this.x * 0.005 + Time.frameCount * 0.08) * 60,
+			w = this.r * 1.5,
+			angle = this.id * (Time.frameCount % 60);
+
+		this.c = C.random();
+
 		Draw.setColor(this.c);
-		Draw.circle(this.x, this.y, this.r);
+		Draw.rectRotated(x, y, w, w, angle, Math.random() < 0.5);
 	}
 }
 
@@ -107,7 +122,7 @@ NZ.start({
 		}
 	},
 	render() {
-		if (Debug.mode === 0) {
+		if (Debug.mode > 0) {
 			Draw.imageEl(refImage, Stage.mid.w, Stage.mid.h);
 		}
 
@@ -128,7 +143,7 @@ NZ.start({
 	renderUI() {
 		Draw.setFont(Font.s);
 		Draw.textBGi(0, 0, `Hold space to fast-forward (${Input.keyHold(KeyCode.Space)? '10x FASTER' : 'NORMAL'})`);
-		Draw.textBGi(0, 1, `Press U to ${Debug.mode === 0? 'hide' : 'show'} ref image (${refText})`);
+		Draw.textBGi(0, 1, `Press U to ${Debug.mode > 0? 'hide' : 'show'} ref image (${refText})`);
 		Draw.textBGi(0, 2, 'Press P to provide custom text');
 		Draw.textBGi(Stage.w, 0, 'Press M to randomize text', { origin: Vec2.right });
 		Draw.textBGi(Stage.w, 1, 'Press enter to restart', { origin: Vec2.right });
