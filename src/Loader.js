@@ -6,12 +6,49 @@ NZ.Loader = {
 	loaded: false,
 	loadAmount: 0,
 	loadedCount: 0,
+	events: {
+		'loaded': []
+	},
+	on(eventName, callback) {
+		this.events[eventName].push(callback);
+		return callback;
+	},
+	off(eventName, callback) {
+		let callbacks = this.events[eventName],
+			newCallbacks = [];
+
+		for (let i = 0; i < callbacks; i++) {
+			if (callbacks[i] !== callback) {
+				newCallbacks.push(callbacks[i]);
+			}
+		}
+
+		this.events[eventName] = newCallbacks;
+	},
+	trigger(eventName, event) {
+		if (!event)
+			event = {};
+
+		event.name = eventName;
+		event.source = this;
+
+		let callbacks = this.events[eventName];
+
+		for (let i = 0; i < callbacks.length; i++) {
+			callbacks[i].apply(this, [event]);
+		}
+	},
 	get loadProgress() {
 		return this.loadAmount < 1? 1 : this.loadedCount / this.loadAmount;
 	},
 	setOnLoadEvent(img) {
-		this.loadAmount++; _this = this;
-		img.onload = () => { _this.loadedCount++; };
+		this.loadAmount++;
+		img.addEventListener('load', () => {
+			this.loadedCount++;
+			if (this.loadedCount >= this.loadAmount) {
+				this.trigger('loaded');
+			}
+		});
 	},
 	loadImage(origin, name, src) {
 		const img = new Image();
