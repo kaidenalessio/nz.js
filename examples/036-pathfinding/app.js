@@ -9,6 +9,9 @@ let cols = 10,
 	closedset,
 	icurrent,
 	current,
+	cameFrom,
+	result,
+	reconstructing,
 	grid;
 
 const getNode = (i, j) => {
@@ -44,7 +47,8 @@ const reconstruct = () => {
 
 const drawRect = (i, j, isStroke, isBlocked) => {
 	if (isBlocked) {
-		Draw.rect(x + (i + 0.1) * w, y + (j + 0.1) * w, w * 0.8, w * 0.8, isStroke);
+		Draw.rect(x + (i + 0.1) * w, y + (j + 0.1) * w, w * 0.8, w * 0.8);
+		Draw.rect(x + i * w, y + j * w, w, w, true);
 	}
 	else {
 		Draw.rect(x + i * w, y + j * w, w, w, isStroke);
@@ -70,10 +74,15 @@ start() {
 				f: 0,
 				g: -1,
 				h: 0,
-				blocked: Mathz.randbool(0.2)
+				blocked: Mathz.randbool(0.2),
+				cameFrom: null
 			});
 		}
 	}
+
+	reconstructing = false;
+	result = [];
+	cameFrom = [];
 
 	const pool = grid.slice();
 
@@ -92,6 +101,15 @@ start() {
 update() {
 	if (Input.keyDown(KeyCode.Enter)) Scene.restart();
 	if (!Input.keyRepeat(KeyCode.Space)) return;
+	if (reconstructing) {
+
+		if (current.cameFrom) {
+			result.unshift(current.cameFrom);
+			current = current.cameFrom;
+		}
+
+		return;
+	}
 	if (openset.length === 0) return;
 
 	icurrent = 0;
@@ -107,7 +125,10 @@ update() {
 	openset.splice(icurrent, 1);
 
 	if (equals(current, goal)) {
-		return reconstruct();
+		current = goal;
+		result.push(current);
+		reconstructing = true;
+		return;
 	}
 
 	if (current.blocked)
@@ -122,17 +143,21 @@ update() {
 	for (const neighbour of neighbours) {
 		if (neighbour) {
 			if (!neighbour.blocked && distance(current, neighbour) === 1) {
-				if (equals(neighbour, goal)) {
-					return reconstruct();
-				}
 				if (!includes(openset, neighbour) && !includes(closedset, neighbour)) {
 					let g = current.g + 10;
 					if (g < neighbour.g || neighbour.g < 0) {
 						neighbour.g = g;
+						neighbour.cameFrom = current;
 					}
 					neighbour.h = distance(neighbour, goal);
 					neighbour.f = neighbour.g + neighbour.h;
 					openset.push(neighbour);
+					if (equals(neighbour, goal)) {
+						current = goal;
+						result.push(current);
+						reconstructing = true;
+						return;
+					}
 				}
 			}
 		}
@@ -173,6 +198,11 @@ render() {
 			Draw.setHAlign(Align.l);
 			Draw.text(xx + 5, yy + 5, node.h);
 		}
+	}
+	for (let i = 0; i < result.length; i++) {
+		let dist = result[i].g / goal.g;
+		Draw.setFill(C.makeRGBA(dist * 255, 0, (1 - dist) * 255, 0.8));
+		drawRect(result[i].i, result[i].j);
 	}
 	Draw.textBGi(0, 0, Time.FPS);
 }
