@@ -1,8 +1,8 @@
-let cols = 10,
-	rows = 10,
-	w = 80,
-	x = 24,
-	y = 24,
+let cols = 48,
+	rows = 36,
+	w = 24,
+	x = 0,
+	y = 0,
 	start,
 	goal,
 	openset,
@@ -12,7 +12,9 @@ let cols = 10,
 	cameFrom,
 	result,
 	reconstructing,
-	grid;
+	grid,
+	done = false,
+	showInfo = false;
 
 const getNode = (i, j) => {
 	i += current.i;
@@ -96,67 +98,73 @@ start() {
 
 	openset = [start];
 	closedset = [];
+
+	done = false;
 },
 
 update() {
 	if (Input.keyDown(KeyCode.Enter)) Scene.restart();
-	if (!Input.keyRepeat(KeyCode.Space)) return;
-	if (reconstructing) {
-
-		if (current.cameFrom) {
-			result.unshift(current.cameFrom);
-			current = current.cameFrom;
+	if (done) return;
+	let iter = 1 + 9 * Input.keyHold(KeyCode.Space);
+	while (iter-- > 0) {
+		if (reconstructing) {
+			if (current.cameFrom) {
+				result.unshift(current.cameFrom);
+				current = current.cameFrom;
+			}
+			else {
+				openset.length = 0;
+				closedset.length = 0;
+				done = true;
+			}
 		}
+		else {
+			if (openset.length) {
+				icurrent = 0;
 
-		return;
-	}
-	if (openset.length === 0) return;
+				for (let i = 1; i < openset.length; i++) {
+					if (openset[i].f < openset[icurrent].f)
+						icurrent = i;
+				}
 
-	icurrent = 0;
+				current = openset[icurrent];
 
-	for (let i = 1; i < openset.length; i++) {
-		if (openset[i].f < openset[icurrent].f)
-			icurrent = i;
-	}
+				closedset.push(current);
+				openset.splice(icurrent, 1);
 
-	current = openset[icurrent];
+				if (equals(current, goal)) {
+					current = goal;
+					result.push(current);
+					reconstructing = true;
+					break;
+				}
 
-	closedset.push(current);
-	openset.splice(icurrent, 1);
+				const neighbours = [];
+				neighbours.push(getNode(0, -1));
+				neighbours.push(getNode(1, 0));
+				neighbours.push(getNode(0, 1));
+				neighbours.push(getNode(-1, 0));
 
-	if (equals(current, goal)) {
-		current = goal;
-		result.push(current);
-		reconstructing = true;
-		return;
-	}
-
-	if (current.blocked)
-		return [];
-
-	const neighbours = [];
-	neighbours.push(getNode(0, -1));
-	neighbours.push(getNode(1, 0));
-	neighbours.push(getNode(0, 1));
-	neighbours.push(getNode(-1, 0));
-
-	for (const neighbour of neighbours) {
-		if (neighbour) {
-			if (!neighbour.blocked && distance(current, neighbour) === 1) {
-				if (!includes(openset, neighbour) && !includes(closedset, neighbour)) {
-					let g = current.g + 10;
-					if (g < neighbour.g || neighbour.g < 0) {
-						neighbour.g = g;
-						neighbour.cameFrom = current;
-					}
-					neighbour.h = distance(neighbour, goal);
-					neighbour.f = neighbour.g + neighbour.h;
-					openset.push(neighbour);
-					if (equals(neighbour, goal)) {
-						current = goal;
-						result.push(current);
-						reconstructing = true;
-						return;
+				for (const neighbour of neighbours) {
+					if (neighbour) {
+						if (!neighbour.blocked && distance(current, neighbour) === 1) {
+							if (!includes(openset, neighbour) && !includes(closedset, neighbour)) {
+								let g = current.g + 10;
+								if (g < neighbour.g || neighbour.g < 0) {
+									neighbour.g = g;
+									neighbour.cameFrom = current;
+								}
+								neighbour.h = distance(neighbour, goal) * 10;
+								neighbour.f = neighbour.g + neighbour.h;
+								openset.push(neighbour);
+								if (equals(neighbour, goal)) {
+									current = goal;
+									result.push(current);
+									reconstructing = true;
+									break;
+								}
+							}
+						}
 					}
 				}
 			}
@@ -166,11 +174,11 @@ update() {
 },
 
 render() {
-	Draw.setFill(C.orchid);
+	Draw.setFill(C.gold);
 	for (let i = 0; i < openset.length; i++) {
 		drawRect(openset[i].i, openset[i].j);
 	}
-	Draw.setFill(C.blueViolet);
+	Draw.setFill(C.lemonChiffon);
 	for (let i = 0; i < closedset.length; i++) {
 		drawRect(closedset[i].i, closedset[i].j);
 	}
@@ -187,7 +195,7 @@ render() {
 
 			drawRect(i, j, !node.blocked, node.blocked);
 
-			if (node.blocked) continue;
+			if (node.blocked || !showInfo) continue;
 
 			Draw.setFont(Font.mb);
 			Draw.setHVAlign(Align.c, Align.b);
@@ -206,38 +214,4 @@ render() {
 	}
 	Draw.textBGi(0, 0, Time.FPS);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 });
