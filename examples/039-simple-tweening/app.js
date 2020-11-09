@@ -1,16 +1,16 @@
 // inspired by Coding Math
 
 let circle = {
-		x: 50,
-		y: 50,
+		x: 200,
+		y: 200,
 		r: 16,
 		alpha: 1
 	};
 
 const tween = (obj, props, frames, easingFunc) => {
-	let starts = {},
-		changes = {},
-		count = 0;
+	let count = 0,
+		starts = {},
+		changes = {};
 
 	for (const prop in props) {
 		starts[prop] = obj[prop];
@@ -21,7 +21,9 @@ const tween = (obj, props, frames, easingFunc) => {
 		if (++count < frames) window.requestAnimationFrame(_update);
 		else count = frames;
 		for (const prop in props) {
-			obj[prop] = easingFunc(0, count, starts[prop], changes[prop], frames);
+			if (changes[prop]) {
+				obj[prop] = easingFunc(count, starts[prop], changes[prop], frames);
+			}
 		}
 	};
 
@@ -31,7 +33,7 @@ const tween = (obj, props, frames, easingFunc) => {
 NZ.start({
 
 start() {
-	tween(circle, { x: 400, y: 200, r: 20, alpha: 0 }, 60, Easing.easeInQuad);
+	tween(circle, { x: 400, y: 200, r: 20 }, 60, Easing.easeOutBounce);
 },
 
 render() {
