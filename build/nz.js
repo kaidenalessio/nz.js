@@ -978,6 +978,16 @@ NZ.Draw = {
 		this.setFill(hover? bgColor : textColor);
 		this.setHVAlign('center', 'middle');
 		this.text(boundRect.center, boundRect.middle, text);
+	},
+	healthBar(x, y, value, w, h, color) {
+		value = Math.min(1, Math.max(0, value));
+		w = w || 100;
+		h = h || 12;
+		color = color || `rgba(${(1 - value) * 255}, ${value * 255}, 0)`;
+		Draw.setFill(C.black);
+		Draw.rect(x - 1, y - 1, w + 2, h + 2);
+		Draw.setFill(color);
+		Draw.rect(x, y, w * value, h);
 	}
 };var NZ = NZ || {};
 
