@@ -21,7 +21,7 @@ class Circle {
 			this.y = Stage.randomY;
 
 			for (const c of OBJ.takeFrom('Circle')) {
-				if (c.id !== this.id) {
+				if (c.id !== this.id && !c.out) {
 					if (this.intersects(c)) {
 						notIntersect = false;
 					}
@@ -84,7 +84,7 @@ class Circle {
 	}
 	render() {
 		Draw.setColor(this.c);
-		Draw.circle(this.xd, this.yd, this.r * 1.5);
+		Draw.circle(this.xd, this.yd, this.r * 1.2);
 	}
 }
 
@@ -108,9 +108,9 @@ NZ.start({
 	start() {
 		Stage.setPixelRatio(Stage.HIGH);
 		Stage.applyPixelRatio();
-		outCircle = 0;
-		maxCircle = 500;
 		refText = refText || Math.random().toString(36).substr(2, 5);
+		maxCircle = refText.length * 100;
+		outCircle = 0;
 		refImage = Draw.createCanvasExt(Stage.w, Stage.h, () => {
 			Draw.setHVAlign(Align.c, Align.m);
 			Draw.setFont(Font.giant);
