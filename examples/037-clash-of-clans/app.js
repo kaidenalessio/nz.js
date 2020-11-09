@@ -40,8 +40,8 @@ class Defense extends Building {
 	}
 	render() {
 		Draw.setColor(C.orange);
-		Draw.rect(this.x, this.y, Building.W, Building.W);
-		Draw.healthBar(this.x - 25 + Building.W * 0.5, this.y - 20, this.hp / this.maxhp, 50, 6, C.orchid);
+		Draw.rectRotated(this.x, this.y, Building.W, Building.W);
+		Draw.healthBar(this.x - 15, this.y - Building.W, this.hp / this.maxhp, 30, 3, C.orchid);
 	}
 }
 
@@ -97,7 +97,7 @@ class Troop {
 		if (this.target) {
 			let dx = this.target.x - this.x,
 				dy = this.target.y - this.y,
-				dist = Math.abs(dx) + Math.abs(dy);
+				dist = Math.sqrt(dx*dx + dy*dy);
 
 			if (dist > this.stats.range) {
 				// out of range, moving
@@ -127,9 +127,15 @@ class Troop {
 		Draw.setColor(this.c, C.black);
 		Draw.circle(this.x, this.y, 8 * this.scale);
 		Draw.stroke();
-		Draw.setAlpha(0.5);
-		Draw.circle(this.x, this.y, this.stats.range, true);
-		Draw.resetAlpha();
+		if (this.target) {
+			let dx = this.target.x - this.x,
+				dy = this.target.y - this.y;
+
+			Draw.pointArrow(this, Vec2.fromObject(this.target).sub(dx * 0.5, dy * 0.5), 10);
+		}
+		// Draw.setAlpha(0.5);
+		// Draw.circle(this.x, this.y, this.stats.range, true);
+		// Draw.resetAlpha();
 	}
 }
 
