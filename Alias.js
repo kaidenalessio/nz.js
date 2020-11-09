@@ -22,6 +22,7 @@ const {
 	Stage,
 	Utils,
 	Cursor,
+	Easing,
 	Loader,
 	BGColor,
 	KeyCode,
