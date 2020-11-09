@@ -8,39 +8,36 @@
  * https://raw.github.com/danro/jquery-easing/master/LICENSE
  * ======================================================== */
 
- // with modification
+ // with modifications to remove duration and avoid division
 
 NZ.Easing = {
-	// t: current time, b: beginning value, c: change in value, d: duration
-	easeInQuad(t, b, c, d) {
-		return c*(t/=d)*t + b;
+	// t: normalized time, b: beginning value, c: change in value
+	easeInQuad(t, b, c) {
+		return c*t*t+b;
 	},
-	easeOutQuad(t, b, c, d) {
-		return -c *(t/=d)*(t-2) + b;
+	easeOutQuad(t, b, c) {
+		return -c*t*(t-2)+b;
 	},
-	easeInOutQuad(t, b, c, d) {
-		if ((t/=d/2) < 1) return c/2*t*t + b;
-		return -c/2 * ((--t)*(t-2) - 1) + b;
+	easeInOutQuad(t, b, c) {
+		return (t*=2)<1?c*0.5*t*t+b:-c*0.5*(--t*(t-2)-1)+b;
 	},
-	easeInCubic(t, b, c, d) {
-		return c*(t/=d)*t*t + b;
+	easeInCubic(t, b, c) {
+		return c*t*t*t+b;
 	},
-	easeOutCubic(t, b, c, d) {
-		return c*((t=t/d-1)*t*t + 1) + b;
+	easeOutCubic(t, b, c) {
+		return c*(--t*t*t+1)+b;
 	},
-	easeInOutCubic(t, b, c, d) {
-		if ((t/=d/2) < 1) return c/2*t*t*t + b;
-		return c/2*((t-=2)*t*t + 2) + b;
+	easeInOutCubic(t, b, c) {
+		return (t*=2)<1?c*0.5*t*t*t+b:c*0.5*((t-=2)*t*t+2)+b;
 	},
-	easeInQuart(t, b, c, d) {
-		return c*(t/=d)*t*t*t + b;
+	easeInQuart(t, b, c) {
+		return c*t*t*t*t+b;
 	},
-	easeOutQuart(t, b, c, d) {
-		return -c * ((t=t/d-1)*t*t*t - 1) + b;
+	easeOutQuart(t, b, c) {
+		return -c*(--t*t*t*t-1)+b;
 	},
-	easeInOutQuart(t, b, c, d) {
-		if ((t/=d/2) < 1) return c/2*t*t*t*t + b;
-		return -c/2 * ((t-=2)*t*t*t - 2) + b;
+	easeInOutQuart(t, b, c) {
+		return (t*=2)<1?c*0.5*t*t*t*t+b:-c*0.5*((t-=2)*t*t*t-2)+b;
 	},
 	easeInQuint(t, b, c, d) {
 		return c*(t/=d)*t*t*t*t + b;

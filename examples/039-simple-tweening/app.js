@@ -1,7 +1,7 @@
 // inspired by Coding Math
 
 let circle = {
-		x: 200,
+		x: 50,
 		y: 200,
 		r: 16,
 		alpha: 1
@@ -22,7 +22,8 @@ const tween = (obj, props, frames, easingFunc) => {
 		else count = frames;
 		for (const prop in props) {
 			if (changes[prop]) {
-				obj[prop] = easingFunc(count, starts[prop], changes[prop], frames);
+				obj[prop] = easingFunc(count/frames, starts[prop], changes[prop]);
+				// obj[prop] = easingFunc(count, starts[prop], changes[prop], frames);
 			}
 		}
 	};
@@ -33,7 +34,7 @@ const tween = (obj, props, frames, easingFunc) => {
 NZ.start({
 
 start() {
-	tween(circle, { x: 400, y: 200, r: 20 }, 60, Easing.easeOutBounce);
+	tween(circle, { x: 1200, y: 200 }, 60, Easing.easeOutQuart);
 },
 
 render() {
