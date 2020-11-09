@@ -1,5 +1,5 @@
 let cols = 48,
-	rows = 36,
+	rows = 24,
 	w = 24,
 	x = 0,
 	y = 0,
@@ -13,7 +13,11 @@ let cols = 48,
 	result,
 	reconstructing,
 	grid,
+	hideRectPath = true,
+	stepByStep = false,
+	showBlockOnly = true,
 	done = false,
+	disableDiagonal = true,
 	showInfo = false;
 
 const getNode = (i, j) => {
@@ -48,13 +52,17 @@ const reconstruct = () => {
 };
 
 const drawRect = (i, j, isStroke, isBlocked) => {
+	let xx = x + i * w,
+		yy = y + j * w;
 	if (isBlocked) {
 		Draw.rect(x + (i + 0.1) * w, y + (j + 0.1) * w, w * 0.8, w * 0.8);
-		Draw.rect(x + i * w, y + j * w, w, w, true);
+		Draw.rect(xx, yy, w, w, true);
 	}
 	else {
-		Draw.rect(x + i * w, y + j * w, w, w, isStroke);
+		Draw.rect(xx, yy, w, w, isStroke);
 	}
+
+	return { x: xx, y: yy }
 };
 
 NZ.start({
@@ -66,6 +74,8 @@ NZ.start({
 
 
 start() {
+	Debug.mode = showInfo;
+
 	grid = [];
 
 	for (let j = 0; j < rows; j++) {
@@ -76,7 +86,7 @@ start() {
 				f: 0,
 				g: -1,
 				h: 0,
-				blocked: Mathz.randbool(0.2),
+				blocked: Mathz.randbool(0.3),
 				cameFrom: null
 			});
 		}
@@ -102,10 +112,17 @@ start() {
 	done = false;
 },
 
+debugModeAmount: 2,
+
 update() {
+	showInfo = Debug.mode;
 	if (Input.keyDown(KeyCode.Enter)) Scene.restart();
 	if (done) return;
 	let iter = 1 + 9 * Input.keyHold(KeyCode.Space);
+	if (stepByStep) {
+		if (!Input.keyRepeat(KeyCode.Space)) return;
+		iter = 1;
+	}
 	while (iter-- > 0) {
 		if (reconstructing) {
 			if (current.cameFrom) {
@@ -140,14 +157,20 @@ update() {
 				}
 
 				const neighbours = [];
-				neighbours.push(getNode(0, -1));
-				neighbours.push(getNode(1, 0));
-				neighbours.push(getNode(0, 1));
-				neighbours.push(getNode(-1, 0));
+				if (current.i > 0) neighbours.push(getNode(-1, 0));
+				if (current.j > 0) neighbours.push(getNode(0, -1));
+				if (current.i < cols - 1)neighbours.push(getNode(1, 0));
+				if (current.j < rows - 1)neighbours.push(getNode(0, 1));
+				if (!disableDiagonal) {
+					if (current.i > 0 && current.j > 0) neighbours.push(getNode(-1, -1));
+					if (current.i > 0 && current.j < rows - 1) neighbours.push(getNode(-1, 1));
+					if (current.i < cols - 1 && current.j > 0) neighbours.push(getNode(1, -1));
+					if (current.i < cols - 1 && current.j < rows - 1) neighbours.push(getNode(1, 1));
+				}
 
 				for (const neighbour of neighbours) {
 					if (neighbour) {
-						if (!neighbour.blocked && distance(current, neighbour) === 1) {
+						if (!neighbour.blocked) {
 							if (!includes(openset, neighbour) && !includes(closedset, neighbour)) {
 								let g = current.g + 10;
 								if (g < neighbour.g || neighbour.g < 0) {
@@ -193,7 +216,13 @@ render() {
 				yy = y + j * w,
 				node = grid[i + j * cols];
 
-			drawRect(i, j, !node.blocked, node.blocked);
+			if (showBlockOnly) {
+				if (node.blocked)
+					drawRect(i, j, !node.blocked, node.blocked);
+			}
+			else {
+				drawRect(i, j, !node.blocked, node.blocked);
+			}
 
 			if (node.blocked || !showInfo) continue;
 
@@ -207,11 +236,26 @@ render() {
 			Draw.text(xx + 5, yy + 5, node.h);
 		}
 	}
+	Draw.primitiveBegin();
+	Draw.setStroke(C.none);
 	for (let i = 0; i < result.length; i++) {
-		let dist = result[i].g / goal.g;
-		Draw.setFill(C.makeRGBA(dist * 255, 0, (1 - dist) * 255, 0.8));
-		drawRect(result[i].i, result[i].j);
+		let dist = result[i].g / goal.g,
+			c = C.makeRGBA(dist * 255, 0, (1 - dist) * 255, 0.8);
+		Draw.setFill(c);
+		Draw.vertex(drawRect(result[i].i, result[i].j, hideRectPath));
 	}
+	for (let i = 0; i < Draw.vertices.length; i++) {
+		Draw.vertices[i].x += w * 0.5;
+		Draw.vertices[i].y += w * 0.5;
+	}
+	Draw.setLineCap(LineCap.round);
+	Draw.setLineJoin(LineJoin.round);
+	Draw.setLineWidth(w * 0.4 * Mathz.map(Time.cos(), -1, 1, 0.2, 1));
+	Draw.setAlpha(0.8);
+	Draw.setStroke(C.orange);
+	Draw.primitiveEnd(Primitive.Line);
+	Draw.resetAlpha();
+	Draw.resetLineWidth();
 	Draw.textBGi(0, 0, Time.FPS);
 }
 });
