@@ -1086,27 +1086,23 @@ NZ.Easing = {
 	easeInOutSine(t, b, c) {
 		return -c*0.5*(Math.cos(t*Math.PI)-1)+b;
 	},
-	easeInExpo(t, b, c, d) {
-		return (t==0) ? b : c * Math.pow(2, 10 * (t/d - 1)) + b;
+	easeInExpo(t, b, c) {
+		return t===0?b:c*Math.pow(2,10*(t-1))+b;
 	},
-	easeOutExpo(t, b, c, d) {
-		return (t==d) ? b+c : c * (-Math.pow(2, -10 * t/d) + 1) + b;
+	easeOutExpo(t, b, c) {
+		return t===1?b+c:c*(-Math.pow(2,-10*t)+1)+b;
 	},
-	easeInOutExpo(t, b, c, d) {
-		if (t==0) return b;
-		if (t==d) return b+c;
-		if ((t/=d/2) < 1) return c/2 * Math.pow(2, 10 * (t - 1)) + b;
-		return c/2 * (-Math.pow(2, -10 * --t) + 2) + b;
+	easeInOutExpo(t, b, c) {
+		return t===0?b:t===1?b+c:(t*=2)<1?c*0.5*Math.pow(2,10*(t-1))+b:c*0.5*(-Math.pow(2,-10*--t)+2)+b;
 	},
-	easeInCirc(t, b, c, d) {
-		return -c * (Math.sqrt(1 - (t/=d)*t) - 1) + b;
+	easeInCirc(t, b, c) {
+		return -c*(Math.sqrt(1-t*t)-1)+b;
 	},
-	easeOutCirc(t, b, c, d) {
-		return c * Math.sqrt(1 - (t=t/d-1)*t) + b;
+	easeOutCirc(t, b, c) {
+		return c*Math.sqrt(1- --t*t)+b;
 	},
-	easeInOutCirc(t, b, c, d) {
-		if ((t/=d/2) < 1) return -c/2 * (Math.sqrt(1 - t*t) - 1) + b;
-		return c/2 * (Math.sqrt(1 - (t-=2)*t) + 1) + b;
+	easeInOutCirc(t, b, c) {
+		return (t*=2)<1?-c*0.5*(Math.sqrt(1-t*t)-1)+b:c*0.5*(Math.sqrt(1-(t-=2)*t)+1)+b;
 	},
 	easeInElastic(t, b, c, d) {
 		let s = 1.70158,

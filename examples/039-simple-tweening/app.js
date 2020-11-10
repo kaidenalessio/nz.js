@@ -36,9 +36,9 @@ start() {
 			y: Stage.h / 4 * (i+1)
 		});
 	}
-	tween(circles[0], { x: Stage.w - 50 }, 60, Easing.easeInSine);
-	tween(circles[1], { x: Stage.w - 50 }, 60, Easing.easeOutSine);
-	tween(circles[2], { x: Stage.w - 50 }, 60, Easing.easeInOutSine);
+	tween(circles[0], { x: Stage.w - 50 }, 60, Easing.easeInCirc);
+	tween(circles[1], { x: Stage.w - 50 }, 60, Easing.easeOutCirc);
+	tween(circles[2], { x: Stage.w - 50 }, 60, Easing.easeInOutCirc);
 },
 
 render() {
@@ -46,6 +46,7 @@ render() {
 	for (let i = 0; i < circles.length; i++) {
 		Draw.pointCircle(circles[i], 16);
 	}
+	Draw.textBG(0, 0, 'NEW');
 	if (Input.keyDown(KeyCode.Space)) Scene.restart();
 }
 
