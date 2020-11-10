@@ -1122,23 +1122,14 @@ NZ.Easing = {
 	easeInOutBack(t, b, c, s=1.70158) {
 		return (t*=2)<1?c*0.5*(t*t*(((s*=1.525)+1)*t-s))+b:c*0.5*((t-=2)*t*(((s*=1.525)+1)*t+s)+2)+b;
 	},
-	easeInBounce(t, b, c, d) {
-		return c - NZ.Easing.easeOutBounce(d-t, 0, c, d) + b;
+	easeInBounce(t, b, c) {
+		return c-NZ.Easing.easeOutBounce(1-t,0,c)+b;
 	},
-	easeOutBounce(t, b, c, d) {
-		if ((t/=d) < (1/2.75)) {
-			return c*(7.5625*t*t) + b;
-		} else if (t < (2/2.75)) {
-			return c*(7.5625*(t-=(1.5/2.75))*t + .75) + b;
-		} else if (t < (2.5/2.75)) {
-			return c*(7.5625*(t-=(2.25/2.75))*t + .9375) + b;
-		} else {
-			return c*(7.5625*(t-=(2.625/2.75))*t + .984375) + b;
-		}
+	easeOutBounce(t, b, c) {
+		return t<1/2.75?c*(7.5625*t*t)+b:t<2/2.75?c*(7.5625*(t-=1.5/2.75)*t+0.75)+b:t<2.5/2.75?c*(7.5625*(t-=2.25/2.75)*t+0.9375)+b:c*(7.5625*(t-=2.625/2.75)*t+0.984375)+b;
 	},
-	easeInOutBounce(t, b, c, d) {
-		if (t < d/2) return NZ.Easing.easeInBounce(t*2, 0, c, d) * .5 + b;
-		return NZ.Easing.easeOutBounce(t*2-d, 0, c, d) * .5 + c*.5 + b;
+	easeInOutBounce(t, b, c) {
+		return t<0.5?NZ.Easing.easeInBounce(t*2,0,c)*0.5+b:NZ.Easing.easeOutBounce(t*2-1,0,c)*0.5+c*0.5+b;
 	}
 };
 

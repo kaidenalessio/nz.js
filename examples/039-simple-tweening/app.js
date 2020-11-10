@@ -36,9 +36,9 @@ start() {
 			y: Stage.h / 4 * (i+1)
 		});
 	}
-	tween(circles[0], { x: Stage.w - 100 }, 60, Easing.easeInBack);
-	tween(circles[1], { x: Stage.w - 100 }, 60, Easing.easeOutBack);
-	tween(circles[2], { x: Stage.w - 100 }, 60, Easing.easeInOutBack);
+	tween(circles[0], { x: Stage.w - 100 }, 60, Easing.easeInBounce);
+	tween(circles[1], { x: Stage.w - 100 }, 60, Easing.easeOutBounce);
+	tween(circles[2], { x: Stage.w - 100 }, 60, Easing.easeInOutBounce);
 },
 
 render() {
