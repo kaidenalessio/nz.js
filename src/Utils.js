@@ -20,6 +20,12 @@ NZ.Utils = {
 			fn(j++);
 		}
 	},
+	distanceSq(a, b) {
+		return (b.x-a.x)*(b.x-a.x) + (b.y-a.y)*(b.y-a.y);
+	},
+	distance(a, b) {
+		return Math.sqrt(NZ.Utils.distanceSq(a, b));
+	},
 	copyToClipboard(text) {
 		const t = document.createElement('textarea');
 		t.value = text;
