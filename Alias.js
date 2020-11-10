@@ -20,6 +20,7 @@ const {
 	Scene,
 	Sound,
 	Stage,
+	Tween,
 	Utils,
 	Cursor,
 	Easing,
