@@ -1037,101 +1037,40 @@ NZ.Primitive = {
  * https://raw.github.com/danro/jquery-easing/master/LICENSE
  * ======================================================== */
 
- // with modifications to remove duration
-
-NZ.Easing = {
-	// t: normalized time, b: beginning value, c: change in value
-	easeInQuad(t, b, c) {
-		return c*t*t+b;
-	},
-	easeOutQuad(t, b, c) {
-		return -c*t*(t-2)+b;
-	},
-	easeInOutQuad(t, b, c) {
-		return (t*=2)<1?c*0.5*t*t+b:-c*0.5*(--t*(t-2)-1)+b;
-	},
-	easeInCubic(t, b, c) {
-		return c*t*t*t+b;
-	},
-	easeOutCubic(t, b, c) {
-		return c*(--t*t*t+1)+b;
-	},
-	easeInOutCubic(t, b, c) {
-		return (t*=2)<1?c*0.5*t*t*t+b:c*0.5*((t-=2)*t*t+2)+b;
-	},
-	easeInQuart(t, b, c) {
-		return c*t*t*t*t+b;
-	},
-	easeOutQuart(t, b, c) {
-		return -c*(--t*t*t*t-1)+b;
-	},
-	easeInOutQuart(t, b, c) {
-		return (t*=2)<1?c*0.5*t*t*t*t+b:-c*0.5*((t-=2)*t*t*t-2)+b;
-	},
-	easeInQuint(t, b, c) {
-		return c*t*t*t*t*t+b;
-	},
-	easeOutQuint(t, b, c) {
-		return c*(--t*t*t*t*t+1)+b;
-	},
-	easeInOutQuint(t, b, c) {
-		return (t*=2)<1?c*0.5*t*t*t*t*t+b:c*0.5*((t-=2)*t*t*t*t+2)+b;
-	},
-	easeInSine(t, b, c) {
-		return -c*Math.cos(t*Math.PI*0.5)+c+b;
-	},
-	easeOutSine(t, b, c) {
-		return c*Math.sin(t*Math.PI*0.5)+b;
-	},
-	easeInOutSine(t, b, c) {
-		return -c*0.5*(Math.cos(t*Math.PI)-1)+b;
-	},
-	easeInExpo(t, b, c) {
-		return t===0?b:c*Math.pow(2,10*(t-1))+b;
-	},
-	easeOutExpo(t, b, c) {
-		return t===1?b+c:c*(-Math.pow(2,-10*t)+1)+b;
-	},
-	easeInOutExpo(t, b, c) {
-		return t===0?b:t===1?b+c:(t*=2)<1?c*0.5*Math.pow(2,10*(t-1))+b:c*0.5*(-Math.pow(2,-10*--t)+2)+b;
-	},
-	easeInCirc(t, b, c) {
-		return -c*(Math.sqrt(1-t*t)-1)+b;
-	},
-	easeOutCirc(t, b, c) {
-		return c*Math.sqrt(1- --t*t)+b;
-	},
-	easeInOutCirc(t, b, c) {
-		return (t*=2)<1?-c*0.5*(Math.sqrt(1-t*t)-1)+b:c*0.5*(Math.sqrt(1-(t-=2)*t)+1)+b;
-	},
-	easeInElastic(t, b, c) {
-		let s=1.70158,p=0.3,a=c;return t===0?b:t===1?b+c:(a<Math.abs(c)?(a=c,s=p*0.25):s=p/(2*Math.PI)*Math.asin(c/a),-a*Math.pow(2,10*--t)*Math.sin((t-s)*(2*Math.PI)/p)+b);
-	},
-	easeOutElastic(t, b, c) {
-		let s=1.70158,p=0.3,a=c;return t===0?b:t===1?b+c:(a<Math.abs(c)?(a=c,s=p*0.25):s=p/(2*Math.PI)*Math.asin(c/a),a*Math.pow(2,-10*t)*Math.sin((t-s)*(2*Math.PI)/p)+c+b);
-	},
-	easeInOutElastic(t, b, c) {
-		let s=1.70158,p=0.3*1.5,a=c;return t===0?b:(t*=2)===2?b+c:(a<Math.abs(c)?(a=c,s=p*0.25):s=p/(2*Math.PI)*Math.asin(c/a),t<1?-0.5*a*Math.pow(2,10*--t)*Math.sin((t-s)*(2*Math.PI)/p)+b:a*Math.pow(2,-10*--t)*Math.sin((t-s)*(2*Math.PI)/p)*0.5+c+b);
-	},
-	easeInBack(t, b, c, s=1.70158) {
-		return c*t*t*((s+1)*t-s)+b;
-	},
-	easeOutBack(t, b, c, s=1.70158) {
-		return c*(--t*t*((s+1)*t+s)+1)+b;
-	},
-	easeInOutBack(t, b, c, s=1.70158) {
-		return (t*=2)<1?c*0.5*(t*t*(((s*=1.525)+1)*t-s))+b:c*0.5*((t-=2)*t*(((s*=1.525)+1)*t+s)+2)+b;
-	},
-	easeInBounce(t, b, c) {
-		return c-NZ.Easing.easeOutBounce(1-t,0,c)+b;
-	},
-	easeOutBounce(t, b, c) {
-		return t<1/2.75?c*(7.5625*t*t)+b:t<2/2.75?c*(7.5625*(t-=1.5/2.75)*t+0.75)+b:t<2.5/2.75?c*(7.5625*(t-=2.25/2.75)*t+0.9375)+b:c*(7.5625*(t-=2.625/2.75)*t+0.984375)+b;
-	},
-	easeInOutBounce(t, b, c) {
-		return t<0.5?NZ.Easing.easeInBounce(t*2,0,c)*0.5+b:NZ.Easing.easeOutBounce(t*2-1,0,c)*0.5+c*0.5+b;
-	}
-};
+// with modifications to remove duration
+// t: normalized time, b: beginning value, c: change in value
+NZ.Easing = {};
+NZ.Easing.easeInQuad = (t, b, c) => c*t*t+b;
+NZ.Easing.easeOutQuad = (t, b, c) => -c*t*(t-2)+b;
+NZ.Easing.easeInOutQuad = (t, b, c) => (t*=2)<1?c*0.5*t*t+b:-c*0.5*(--t*(t-2)-1)+b;
+NZ.Easing.easeInCubic = (t, b, c) => c*t*t*t+b;
+NZ.Easing.easeOutCubic = (t, b, c) => c*(--t*t*t+1)+b;
+NZ.Easing.easeInOutCubic = (t, b, c) => (t*=2)<1?c*0.5*t*t*t+b:c*0.5*((t-=2)*t*t+2)+b;
+NZ.Easing.easeInQuart = (t, b, c) => c*t*t*t*t+b;
+NZ.Easing.easeOutQuart = (t, b, c) => -c*(--t*t*t*t-1)+b;
+NZ.Easing.easeInOutQuart = (t, b, c) => (t*=2)<1?c*0.5*t*t*t*t+b:-c*0.5*((t-=2)*t*t*t-2)+b;
+NZ.Easing.easeInQuint = (t, b, c) => c*t*t*t*t*t+b;
+NZ.Easing.easeOutQuint = (t, b, c) => c*(--t*t*t*t*t+1)+b;
+NZ.Easing.easeInOutQuint = (t, b, c) => (t*=2)<1?c*0.5*t*t*t*t*t+b:c*0.5*((t-=2)*t*t*t*t+2)+b;
+NZ.Easing.easeInSine = (t, b, c) => -c*Math.cos(t*Math.PI*0.5)+c+b;
+NZ.Easing.easeOutSine = (t, b, c) => c*Math.sin(t*Math.PI*0.5)+b;
+NZ.Easing.easeInOutSine = (t, b, c) => -c*0.5*(Math.cos(t*Math.PI)-1)+b;
+NZ.Easing.easeInExpo = (t, b, c) => t===0?b:c*Math.pow(2,10*(t-1))+b;
+NZ.Easing.easeOutExpo = (t, b, c) => t===1?b+c:c*(-Math.pow(2,-10*t)+1)+b;
+NZ.Easing.easeInOutExpo = (t, b, c) => t===0?b:t===1?b+c:(t*=2)<1?c*0.5*Math.pow(2,10*(t-1))+b:c*0.5*(-Math.pow(2,-10*--t)+2)+b;
+NZ.Easing.easeInCirc = (t, b, c) => -c*(Math.sqrt(1-t*t)-1)+b;
+NZ.Easing.easeOutCirc = (t, b, c) => c*Math.sqrt(1- --t*t)+b;
+NZ.Easing.easeInOutCirc = (t, b, c) => (t*=2)<1?-c*0.5*(Math.sqrt(1-t*t)-1)+b:c*0.5*(Math.sqrt(1-(t-=2)*t)+1)+b;
+NZ.Easing.easeInElastic = (t, b, c) => {s=1.70158,p=0.3,a=c;return t===0?b:t===1?b+c:(a<Math.abs(c)?(a=c,s=p*0.25):s=p/(2*Math.PI)*Math.asin(c/a),-a*Math.pow(2,10*--t)*Math.sin((t-s)*(2*Math.PI)/p)+b)};
+NZ.Easing.easeOutElastic = (t, b, c) => {s=1.70158,p=0.3,a=c;return t===0?b:t===1?b+c:(a<Math.abs(c)?(a=c,s=p*0.25):s=p/(2*Math.PI)*Math.asin(c/a),a*Math.pow(2,-10*t)*Math.sin((t-s)*(2*Math.PI)/p)+c+b)};
+NZ.Easing.easeInOutElastic = (t, b, c) => {s=1.70158,p=0.3*1.5,a=c;return t===0?b:(t*=2)===2?b+c:(a<Math.abs(c)?(a=c,s=p*0.25):s=p/(2*Math.PI)*Math.asin(c/a),t<1?-0.5*a*Math.pow(2,10*--t)*Math.sin((t-s)*(2*Math.PI)/p)+b:a*Math.pow(2,-10*--t)*Math.sin((t-s)*(2*Math.PI)/p)*0.5+c+b)};
+NZ.Easing.easeInBack = (t, b, c, s=1.70158) => c*t*t*((s+1)*t-s)+b;
+NZ.Easing.easeOutBack = (t, b, c, s=1.70158) => c*(--t*t*((s+1)*t+s)+1)+b;
+NZ.Easing.easeInOutBack = (t, b, c, s=1.70158) => (t*=2)<1?c*0.5*(t*t*(((s*=1.525)+1)*t-s))+b:c*0.5*((t-=2)*t*(((s*=1.525)+1)*t+s)+2)+b;
+NZ.Easing.easeInBounce = (t, b, c) => c-NZ.Easing.easeOutBounce(1-t,0,c)+b;
+NZ.Easing.easeOutBounce = (t, b, c) => t<1/2.75?c*(7.5625*t*t)+b:t<2/2.75?c*(7.5625*(t-=1.5/2.75)*t+0.75)+b:t<2.5/2.75?c*(7.5625*(t-=2.25/2.75)*t+0.9375)+b:c*(7.5625*(t-=2.625/2.75)*t+0.984375)+b;
+NZ.Easing.easeInOutBounce = (t, b, c) => t<0.5?NZ.Easing.easeInBounce(t*2,0,c)*0.5+b:NZ.Easing.easeOutBounce(t*2-1,0,c)*0.5+c*0.5+b;
+NZ.Easing.keys = Object.keys(NZ.Easing);
 
 /*
  *

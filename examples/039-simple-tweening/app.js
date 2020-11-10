@@ -18,7 +18,6 @@ const tween = (obj, props, frames, easingFunc) => {
 		for (const prop in props) {
 			if (changes[prop]) {
 				obj[prop] = easingFunc(count/frames, starts[prop], changes[prop]);
-				// obj[prop] = easingFunc(count, starts[prop], changes[prop], frames);
 			}
 		}
 	};
@@ -36,9 +35,10 @@ start() {
 			y: Stage.h / 4 * (i+1)
 		});
 	}
-	tween(circles[0], { x: Stage.w - 100 }, 60, Easing.easeInBounce);
-	tween(circles[1], { x: Stage.w - 100 }, 60, Easing.easeOutBounce);
-	tween(circles[2], { x: Stage.w - 100 }, 60, Easing.easeInOutBounce);
+	let i = 3*7;
+	tween(circles[0], { x: Stage.w - 100 }, 60, Easing[Easing.keys[i+0]]);
+	tween(circles[1], { x: Stage.w - 100 }, 60, Easing[Easing.keys[i+1]]);
+	tween(circles[2], { x: Stage.w - 100 }, 60, Easing[Easing.keys[i+2]]);
 },
 
 render() {
@@ -46,7 +46,6 @@ render() {
 	for (let i = 0; i < circles.length; i++) {
 		Draw.pointCircle(circles[i], 16);
 	}
-	Draw.textBG(0, 0, 'NEW');
 	if (Input.keyDown(KeyCode.Space)) Scene.restart();
 }
 
