@@ -2315,6 +2315,7 @@ NZ.OBJ = {
 	list: [],
 	names: [],
 	marks: {},
+	rawList: {},
 	linkedClass: {},
 	_currentMark: null,
 	_updateDisabled: false,
@@ -2354,6 +2355,55 @@ NZ.OBJ = {
 	addLink(name, cls) {
 		this.add(name);
 		this.link(name, cls);
+	},
+	addRaw(name) {
+		this.rawList[name] = [];
+	},
+	takeRaw(name) {
+		return this.rawList[name];
+	},
+	pushRaw(name, instance) {
+		this.rawList[name].push(instance);
+		return instance;
+	},
+	popRaw(name) {
+		return this.rawList[name].pop();
+	},
+	// callbackFn is the test that will get executed
+	// on each element. If the test returns true,
+	// means it passes the test, that element will
+	// be returned. callbackFn accepts three arguments:
+	// callbackFn(currentValue, index, array);
+	// Kind of similar to js array filter
+	getRaw(name, callbackFn) {
+		const array = this.rawList[name];
+		for (let i = 0; i < array.length; i++) {
+			if (callbackFn(array[i], i, array))
+				return array[i];
+		}
+		return null;
+	},
+	// Similar to getRaw, the first element that pass
+	// the test will be returned but also get removed
+	// from the list.
+	removeRaw(name, callbackFn) {
+		const array = this.rawList[name];
+		for (let i = 0; i < array.length; i++) {
+			if (callbackFn(array[i], i, array))
+				return array.splice(i, 1)[0];
+		}
+		return null;
+	},
+	countRaw(name) {
+		return this.rawList[name].length;
+	},
+	clearRaw(name) {
+		this.rawList[name].length = 0;
+	},
+	clearAllRaw() {
+		for (const name in this.rawList) {
+			this.rawList[name].length = 0;
+		}
 	},
 	updateAll() {
 		for (let i = this.list.length - 1; i >= 0; --i) {
