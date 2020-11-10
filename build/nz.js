@@ -1162,7 +1162,15 @@ NZ.Font.xlb  = NZ.Font.generate(NZ.Font.xl.size, NZ.Font.bold, NZ.Font.xl.family
 NZ.Font.lb   = NZ.Font.generate(NZ.Font.l.size, NZ.Font.bold, NZ.Font.l.family);
 NZ.Font.mb   = NZ.Font.generate(NZ.Font.m.size, NZ.Font.bold, NZ.Font.m.family);
 NZ.Font.smb  = NZ.Font.generate(NZ.Font.sm.size, NZ.Font.bold, NZ.Font.sm.family);
-NZ.Font.sb   = NZ.Font.generate(NZ.Font.s.size, NZ.Font.bold, NZ.Font.s.family);var NZ = NZ || {};
+NZ.Font.sb   = NZ.Font.generate(NZ.Font.s.size, NZ.Font.bold, NZ.Font.s.family);NZ.Global = {
+	key: '_' + Math.random().toString(36).substr(2, 9),
+	sessionSave(key, value) {
+		sessionStorage.setItem(key, value);
+	},
+	sessionLoad(key) {
+		return sessionStorage.getItem(key);
+	}
+};var NZ = NZ || {};
 
 NZ.Input = {
 	targetElement: null,
@@ -4045,6 +4053,7 @@ const {
 	Utils,
 	Cursor,
 	Easing,
+	Global,
 	Loader,
 	BGColor,
 	KeyCode,

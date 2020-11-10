@@ -24,6 +24,7 @@ const {
 	Utils,
 	Cursor,
 	Easing,
+	Global,
 	Loader,
 	BGColor,
 	KeyCode,
