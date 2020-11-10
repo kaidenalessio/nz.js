@@ -20,6 +20,16 @@ NZ.Utils = {
 			fn(j++);
 		}
 	},
+	// 1 level clone, not deep
+	// if given object have a child object,
+	// it will not be cloned
+	clone(object) {
+		const n = {};
+		for (const key in object) {
+			n[key] = object[key];
+		}
+		return n;
+	},
 	distanceSq(a, b) {
 		return (b.x-a.x)*(b.x-a.x) + (b.y-a.y)*(b.y-a.y);
 	},
