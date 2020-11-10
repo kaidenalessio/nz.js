@@ -32,13 +32,13 @@ start() {
 	circles.length = 0;
 	for (let i = 0; i < 3; i++) {
 		circles.push({
-			x: 50,
+			x: 100,
 			y: Stage.h / 4 * (i+1)
 		});
 	}
-	tween(circles[0], { x: Stage.w - 50 }, 60, Easing.easeInCirc);
-	tween(circles[1], { x: Stage.w - 50 }, 60, Easing.easeOutCirc);
-	tween(circles[2], { x: Stage.w - 50 }, 60, Easing.easeInOutCirc);
+	tween(circles[0], { x: Stage.w - 100 }, 60, Easing.easeInBack);
+	tween(circles[1], { x: Stage.w - 100 }, 60, Easing.easeOutBack);
+	tween(circles[2], { x: Stage.w - 100 }, 60, Easing.easeInOutBack);
 },
 
 render() {

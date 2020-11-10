@@ -8,7 +8,7 @@
  * https://raw.github.com/danro/jquery-easing/master/LICENSE
  * ======================================================== */
 
- // with modifications to remove duration and avoid division
+ // with modifications to remove duration
 
 NZ.Easing = {
 	// t: normalized time, b: beginning value, c: change in value
@@ -75,44 +75,23 @@ NZ.Easing = {
 	easeInOutCirc(t, b, c) {
 		return (t*=2)<1?-c*0.5*(Math.sqrt(1-t*t)-1)+b:c*0.5*(Math.sqrt(1-(t-=2)*t)+1)+b;
 	},
-	easeInElastic(t, b, c, d) {
-		let s = 1.70158,
-			p = 0,
-			a = c;
-		if (t == 0) return b;
-		if ((t/=d) == 1) return b + c;
-		if (!p) p = d * 0.3;
-		if (a < Math.abs(c)) { a = c; s = p / 4; }
-		else s = p / (2 * Math.PI) * Math.asin(c / a);
-		return -(a * Math.pow(2, 10 * (--t)) * Math.sin((t * d - s) * (2 * Math.PI) / p)) + b;
+	easeInElastic(t, b, c) {
+		let s=1.70158,p=0.3,a=c;return t===0?b:t===1?b+c:(a<Math.abs(c)?(a=c,s=p*0.25):s=p/(2*Math.PI)*Math.asin(c/a),-a*Math.pow(2,10*--t)*Math.sin((t-s)*(2*Math.PI)/p)+b);
 	},
-	easeOutElastic(t, b, c, d) {
-		var s=1.70158;var p=0;var a=c;
-		if (t==0) return b;  if ((t/=d)==1) return b+c;  if (!p) p=d*.3;
-		if (a < Math.abs(c)) { a=c; var s=p/4; }
-		else var s = p/(2*Math.PI) * Math.asin (c/a);
-		return a*Math.pow(2,-10*t) * Math.sin( (t*d-s)*(2*Math.PI)/p ) + c + b;
+	easeOutElastic(t, b, c) {
+		let s=1.70158,p=0.3,a=c;return t===0?b:t===1?b+c:(a<Math.abs(c)?(a=c,s=p*0.25):s=p/(2*Math.PI)*Math.asin(c/a),a*Math.pow(2,-10*t)*Math.sin((t-s)*(2*Math.PI)/p)+c+b);
 	},
-	easeInOutElastic(t, b, c, d) {
-		var s=1.70158;var p=0;var a=c;
-		if (t==0) return b;  if ((t/=d/2)==2) return b+c;  if (!p) p=d*(.3*1.5);
-		if (a < Math.abs(c)) { a=c; var s=p/4; }
-		else var s = p/(2*Math.PI) * Math.asin (c/a);
-		if (t < 1) return -.5*(a*Math.pow(2,10*(t-=1)) * Math.sin( (t*d-s)*(2*Math.PI)/p )) + b;
-		return a*Math.pow(2,-10*(t-=1)) * Math.sin( (t*d-s)*(2*Math.PI)/p )*.5 + c + b;
+	easeInOutElastic(t, b, c) {
+		let s=1.70158,p=0.3*1.5,a=c;return t===0?b:(t*=2)===2?b+c:(a<Math.abs(c)?(a=c,s=p*0.25):s=p/(2*Math.PI)*Math.asin(c/a),t<1?-0.5*a*Math.pow(2,10*--t)*Math.sin((t-s)*(2*Math.PI)/p)+b:a*Math.pow(2,-10*--t)*Math.sin((t-s)*(2*Math.PI)/p)*0.5+c+b);
 	},
-	easeInBack(t, b, c, d, s) {
-		if (s == undefined) s = 1.70158;
-		return c*(t/=d)*t*((s+1)*t - s) + b;
+	easeInBack(t, b, c, s=1.70158) {
+		return c*t*t*((s+1)*t-s)+b;
 	},
-	easeOutBack(t, b, c, d, s) {
-		if (s == undefined) s = 1.70158;
-		return c*((t=t/d-1)*t*((s+1)*t + s) + 1) + b;
+	easeOutBack(t, b, c, s=1.70158) {
+		return c*(--t*t*((s+1)*t+s)+1)+b;
 	},
-	easeInOutBack(t, b, c, d, s) {
-		if (s == undefined) s = 1.70158; 
-		if ((t/=d/2) < 1) return c/2*(t*t*(((s*=(1.525))+1)*t - s)) + b;
-		return c/2*((t-=2)*t*(((s*=(1.525))+1)*t + s) + 2) + b;
+	easeInOutBack(t, b, c, s=1.70158) {
+		return (t*=2)<1?c*0.5*(t*t*(((s*=1.525)+1)*t-s))+b:c*0.5*((t-=2)*t*(((s*=1.525)+1)*t+s)+2)+b;
 	},
 	easeInBounce(t, b, c, d) {
 		return c - NZ.Easing.easeOutBounce(d-t, 0, c, d) + b;
