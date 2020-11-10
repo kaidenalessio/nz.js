@@ -39,24 +39,23 @@ NZ.Easing = {
 	easeInOutQuart(t, b, c) {
 		return (t*=2)<1?c*0.5*t*t*t*t+b:-c*0.5*((t-=2)*t*t*t-2)+b;
 	},
-	easeInQuint(t, b, c, d) {
-		return c*(t/=d)*t*t*t*t + b;
+	easeInQuint(t, b, c) {
+		return c*t*t*t*t*t+b;
 	},
-	easeOutQuint(t, b, c, d) {
-		return c*((t=t/d-1)*t*t*t*t + 1) + b;
+	easeOutQuint(t, b, c) {
+		return c*(--t*t*t*t*t+1)+b;
 	},
-	easeInOutQuint(t, b, c, d) {
-		if ((t/=d/2) < 1) return c/2*t*t*t*t*t + b;
-		return c/2*((t-=2)*t*t*t*t + 2) + b;
+	easeInOutQuint(t, b, c) {
+		return (t*=2)<1?c*0.5*t*t*t*t*t+b:c*0.5*((t-=2)*t*t*t*t+2)+b;
 	},
-	easeInSine(t, b, c, d) {
-		return -c * Math.cos(t/d * (Math.PI/2)) + c + b;
+	easeInSine(t, b, c) {
+		return -c*Math.cos(t*Math.PI*0.5)+c+b;
 	},
-	easeOutSine(t, b, c, d) {
-		return c * Math.sin(t/d * (Math.PI/2)) + b;
+	easeOutSine(t, b, c) {
+		return c*Math.sin(t*Math.PI*0.5)+b;
 	},
-	easeInOutSine(t, b, c, d) {
-		return -c/2 * (Math.cos(Math.PI*t/d) - 1) + b;
+	easeInOutSine(t, b, c) {
+		return -c*0.5*(Math.cos(t*Math.PI)-1)+b;
 	},
 	easeInExpo(t, b, c, d) {
 		return (t==0) ? b : c * Math.pow(2, 10 * (t/d - 1)) + b;

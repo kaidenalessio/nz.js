@@ -1,11 +1,6 @@
 // inspired by Coding Math
 
-let circle = {
-		x: 50,
-		y: 200,
-		r: 16,
-		alpha: 1
-	};
+let circles = [];
 
 const tween = (obj, props, frames, easingFunc) => {
 	let count = 0,
@@ -34,14 +29,24 @@ const tween = (obj, props, frames, easingFunc) => {
 NZ.start({
 
 start() {
-	tween(circle, { x: 1200, y: 200 }, 60, Easing.easeOutQuart);
+	circles.length = 0;
+	for (let i = 0; i < 3; i++) {
+		circles.push({
+			x: 50,
+			y: Stage.h / 4 * (i+1)
+		});
+	}
+	tween(circles[0], { x: Stage.w - 50 }, 60, Easing.easeInSine);
+	tween(circles[1], { x: Stage.w - 50 }, 60, Easing.easeOutSine);
+	tween(circles[2], { x: Stage.w - 50 }, 60, Easing.easeInOutSine);
 },
 
 render() {
 	Draw.setColor(C.black);
-	Draw.setAlpha(circle.alpha);
-	Draw.circle(circle.x, circle.y, circle.r);
-	Draw.resetAlpha();
+	for (let i = 0; i < circles.length; i++) {
+		Draw.pointCircle(circles[i], 16);
+	}
+	if (Input.keyDown(KeyCode.Space)) Scene.restart();
 }
 
 });
