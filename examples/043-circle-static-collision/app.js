@@ -6,6 +6,10 @@ class Ball {
 		this.y = y;
 		this.r = r || 40;
 		this.c = c || C.random();
+		this.vx = 0;
+		this.vy = 0;
+		this.bounce = -0.5;
+		this.friction = 0.97;
 	}
 }
 
@@ -25,7 +29,7 @@ NZ.start({
 	},
 	render() {
 
-		if (Input.mouseDown(0)) {
+		if (Input.mouseDown(0) || Input.mouseDown(2)) {
 			Global.selected = null;
 			for (const ball of OBJ.takeRaw('Ball')) {
 				if (Global.circleContains(Input.mouseX - ball.x, Input.mouseY - ball.y, ball.r)) {
@@ -43,6 +47,14 @@ NZ.start({
 
 		if (Input.mouseUp(0)) {
 			Global.selected = null;
+		}
+
+		if (Input.mouseUp(2)) {
+			if (Global.selected) {
+				Global.selected.vx = 0.05 * (Global.selected.x - Input.mouseX);
+				Global.selected.vy = 0.05 * (Global.selected.y - Input.mouseY);
+				Global.selected = null;
+			}
 		}
 
 		if (Input.keyDown(KeyCode.Space)) Global.checkCollision = !Global.checkCollision;
@@ -74,18 +86,28 @@ NZ.start({
 		}
 
 		for (const ball of OBJ.takeRaw('Ball')) {
+			// update
+			ball.vx *= ball.friction;
+			ball.vy *= ball.friction;
+			ball.x += ball.vx;
+			ball.y += ball.vy;
+
 			// constraint
 			if (ball.x > Stage.w - ball.r) {
 				ball.x = Stage.w - ball.r;
+				ball.vx *= ball.bounce;
 			}
 			if (ball.x < ball.r) {
 				ball.x = ball.r;
+				ball.vx *= ball.bounce;
 			}
 			if (ball.y > Stage.h - ball.r) {
 				ball.y = Stage.h - ball.r;
+				ball.vy *= ball.bounce;
 			}
 			if (ball.y < ball.r) {
 				ball.y = ball.r;
+				ball.vy *= ball.bounce;
 			}
 		}
 
@@ -96,7 +118,23 @@ NZ.start({
 		}
 		Draw.resetAlpha();
 
+		// draw cue
+		if (Input.mouseHold(2)) {
+			if (Global.selected) {
+				Draw.setColor(C.white);
+				Draw.setLineCap(LineCap.round);
+				Draw.setLineJoin(LineJoin.round);
+				Draw.setLineWidth(2);
+				Draw.pointArrow(Global.selected, Vec2.sub(Global.selected, Input.mousePosition).add(Global.selected), 10);
+				Draw.pointCircle(Global.selected, 2);
+				Draw.resetLineCap();
+				Draw.resetLineJoin();
+				Draw.resetLineWidth();
+			}
+		}
+
 		Draw.textBGi(0, 0, `Press space to ${Global.checkCollision? 'disable' : 'enable'} collision.`);
 	},
-	bgColor: C.black
+	bgColor: C.black,
+	preventContextMenu: true
 });
