@@ -231,13 +231,19 @@ NZ.start({
 
 		if (Input.mouseUp(0)) {
 
-			let cutter = new Line([Global.cutterStart, Input.mousePosition]),
+			let sticksToEvaluate = OBJ.rawTake('Stick').slice(),
+				cutter = Line.create([Global.cutterStart, Input.mousePosition]),
 				intersectPoint;
 
-			for (const s of OBJ.rawTake('Stick')) {
+			for (const s of sticksToEvaluate) {
 				intersectPoint = Line.create(s.p).intersects(cutter);
-
 				if (intersectPoint) {
+					// split stick by adding 2 sticks..
+					for (let i = 0; i < 2; i++) {
+						const ip = OBJ.rawPush('Point', new Point(intersectPoint.x, intersectPoint.y));
+						OBJ.rawPush('Stick', new Stick([s.p[i], ip]));
+					}
+					// ..and removing current
 					OBJ.rawRemove('Stick', (x) => x.id === s.id);
 				}
 
