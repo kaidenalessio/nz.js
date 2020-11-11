@@ -13,7 +13,7 @@ class Ball {
 	}
 }
 
-OBJ.addRaw('Ball');
+OBJ.rawAdd('Ball');
 
 Global.circleContains = (dx, dy, r) => dx*dx + dy*dy <= r*r;
 Global.circleIntersects = (dx, dy, rr) => dx*dx + dy*dy <= rr*rr;
@@ -23,15 +23,15 @@ NZ.start({
 		Global.selected = null;
 		Global.checkCollision = true;
 		Utils.repeat(200, () => {
-			OBJ.pushRaw('Ball', new Ball(Stage.randomX, Stage.randomY, Mathz.range(10, 40)));
+			OBJ.rawPush('Ball', new Ball(Stage.randomX, Stage.randomY, Mathz.range(10, 40)));
 		});
-		OBJ.pushRaw('Ball', new Ball(Stage.randomX, Stage.randomY, 100));
+		OBJ.rawPush('Ball', new Ball(Stage.randomX, Stage.randomY, 100));
 	},
 	render() {
 
 		if (Input.mouseDown(0) || Input.mouseDown(2)) {
 			Global.selected = null;
-			for (const ball of OBJ.takeRaw('Ball')) {
+			for (const ball of OBJ.rawTake('Ball')) {
 				if (Global.circleContains(Input.mouseX - ball.x, Input.mouseY - ball.y, ball.r)) {
 					Global.selected = ball;
 					break;
@@ -61,8 +61,8 @@ NZ.start({
 
 		if (Global.checkCollision) {
 			let dx, dy, dist, overlap, ox, oy;
-			for (const ball of OBJ.takeRaw('Ball')) {
-				for (const other of OBJ.takeRaw('Ball')) {
+			for (const ball of OBJ.rawTake('Ball')) {
+				for (const other of OBJ.rawTake('Ball')) {
 					if (ball.id !== other.id) {
 						dx = other.x - ball.x;
 						dy = other.y - ball.y;
@@ -85,7 +85,7 @@ NZ.start({
 			}
 		}
 
-		for (const ball of OBJ.takeRaw('Ball')) {
+		for (const ball of OBJ.rawTake('Ball')) {
 			// update
 			ball.vx *= ball.friction;
 			ball.vy *= ball.friction;
@@ -112,7 +112,7 @@ NZ.start({
 		}
 
 		Draw.setAlpha(0.5);
-		for (const ball of OBJ.takeRaw('Ball')) {
+		for (const ball of OBJ.rawTake('Ball')) {
 			Draw.setFill(Global.checkCollision? ball.c : C.white);
 			Draw.circle(ball.x, ball.y, ball.r);
 		}
