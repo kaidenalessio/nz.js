@@ -29,6 +29,7 @@ var NZ = NZ || {};
  *		stageAutoResize: (enabled by default) auto resize canvas when the stage gets resized, set this to false will strecth the canvas when resizing viewport
  *		embedGoogleFonts: array of font names/specimen from fonts.google.com
  *		favicon: favicon href, provide this will automatically appends a link to head
+ *		init: to be called once after NZ.start complete
  *		start: Scene.current.start
  *		update: Scene.current.update
  *		render: Scene.current.render
@@ -155,6 +156,8 @@ NZ.start = (options={}) => {
 	NZ.Scene.on('restart', () => {
 		NZ.Input.reset();
 	});
+
+	if (options.init) options.init();
 
 	NZ.Scene.restart();
 	NZ.Runner.start();
