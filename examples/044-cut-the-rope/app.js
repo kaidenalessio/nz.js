@@ -5,7 +5,7 @@ class Point {
 	constructor(x, y) {
 		this.x = x;
 		this.y = y;
-		this.r = 0;
+		this.r = 8;
 		this.xprev = this.x;
 		this.yprev = this.y;
 		this.pinned = false;
@@ -35,25 +35,25 @@ class Point {
 		this.y += vy;
 		this.y += Point.GRAVITY;
 	}
-	constraint() {
+	constraint(r=0) {
 		if (this.pinned) return;
 		let vx = (this.x - this.xprev) * Point.FRICTION,
 			vy = (this.y - this.yprev) * Point.FRICTION;
 
-		if (this.x > Stage.w - this.r) {
-			this.x = Stage.w - this.r;
+		if (this.x > Stage.w - r) {
+			this.x = Stage.w - r;
 			this.xprev = this.x + vx * Point.BOUNCE;
 		}
-		if (this.x < this.r) {
-			this.x = this.r;
+		if (this.x < r) {
+			this.x = r;
 			this.xprev = this.x + vx * Point.BOUNCE;
 		}
-		if (this.y > Stage.h - this.r) {
-			this.y = Stage.h - this.r;
+		if (this.y > Stage.h - r) {
+			this.y = Stage.h - r;
 			this.yprev = this.y + vy * Point.BOUNCE;
 		}
-		if (this.y < this.r) {
-			this.y = this.r;
+		if (this.y < r) {
+			this.y = r;
 			this.yprev = this.y + vy * Point.BOUNCE;
 		}
 	}
@@ -65,6 +65,8 @@ class Point {
 
 class Stick {
 	static ID = 0;
+	static EPOCH = 10;
+	static STIFFNESS = 1;
 	constructor(points, length) {
 		this.id = Stick.ID++;
 		this.p = points;
@@ -77,7 +79,7 @@ class Stick {
 	}
 	update() {
 		let dist = this.getDistance(),
-			percent = (this.length - dist) / dist * 0.5,
+			percent = (this.length - dist) / dist * 0.5 * Stick.STIFFNESS,
 			offsetX = (this.p[1].x - this.p[0].x) * percent,
 			offsetY = (this.p[1].y - this.p[0].y) * percent;
 
@@ -132,77 +134,95 @@ class Line {
 OBJ.rawAdd('Point');
 OBJ.rawAdd('Stick');
 
-NZ.start({
-	start() {
-		const p = [];
-
-		let x = Stage.mid.w,
-			y = Stage.h * 0.7 - 24,
-			r, a,
-			pts = 5,
-			inner = 32,
-			outer = 64;
-
-		for (let i = 0; i < 2 * pts; i++) {
-			r = (i % 2 === 0)? inner : outer;
-			a = Math.PI * i / pts;
-			p.push(OBJ.rawPush('Point', new Point(x + r * Math.sin(a), y + r * Math.cos(a))));
+Global.createStar = (x, y) => {
+	let p = [],
+		pts = 5,
+		inner = 32,
+		outer = 64,
+		r, a;
+	for (let i = 0; i < 2 * pts; i++) {
+		r = (i % 2 === 0)? inner : outer;
+		a = Math.PI * i / pts + Math.PI;
+		p.push(OBJ.rawPush('Point', new Point(x + r * Math.sin(a), y + r * Math.cos(a))));
+	}
+	for (let i = 0; i < p.length; i++) {
+		OBJ.rawPush('Stick', new Stick([p[i], p[(i+1) % p.length]]));
+		if (i % 2 === 0) {
+			OBJ.rawPush('Stick', new Stick([p[i], p[(i+2) % p.length]]));
+			OBJ.rawPush('Stick', new Stick([p[i], p[(i+4) % p.length]]));
 		}
+	}
+	return p;
+};
 
-		for (let i = 0; i < p.length; i++) {
-			OBJ.rawPush('Stick', new Stick([p[i], p[(i+1) % p.length]]));
-			if (i % 2 === 0) {
-				OBJ.rawPush('Stick', new Stick([p[i], p[(i+2) % p.length]]));
+Global.createRope = (x, y, len, segment) => {
+	const rope = [];
+	len /= segment;
+	for (let i = 0; i < segment; i++) {
+		rope.push(OBJ.rawPush('Point', new Point(x, y + len * i)));
+	}
+	for (let i = 0; i < segment-1; i++) {
+		OBJ.rawPush('Stick', new Stick([rope[i], rope[i+1]]));
+	}
+	return rope;
+};
+
+Global.createRect = (x, y, size) => {
+	const rect = [];
+	rect.push(OBJ.rawPush('Point', new Point(x, y - size)));
+	rect.push(OBJ.rawPush('Point', new Point(x + size, y)));
+	rect.push(OBJ.rawPush('Point', new Point(x, y + size)));
+	rect.push(OBJ.rawPush('Point', new Point(x - size, y)));
+	OBJ.rawPush('Stick', new Stick([rect[0], rect[1]]));
+	OBJ.rawPush('Stick', new Stick([rect[1], rect[2]]));
+	OBJ.rawPush('Stick', new Stick([rect[2], rect[3]]));
+	OBJ.rawPush('Stick', new Stick([rect[3], rect[0]]));
+	OBJ.rawPush('Stick', new Stick([rect[0], rect[2]]));
+	OBJ.rawPush('Stick', new Stick([rect[1], rect[3]]));
+	return rect;
+};
+
+Global.dragPoint = () => {
+	if (Input.mouseDown(2)) {
+		let minDist = Infinity;
+		for (const p of OBJ.rawTake('Point')) {
+			const dist = Utils.distanceSq(p, Input.mousePosition);
+			if (dist < minDist) {
+				Global.selected = p;
+				minDist = dist;
 			}
 		}
-		OBJ.rawPush('Stick', new Stick([p[0], p[4]]));
-		OBJ.rawPush('Stick', new Stick([p[2], p[6]]));
-		OBJ.rawPush('Stick', new Stick([p[4], p[8]]));
-		OBJ.rawPush('Stick', new Stick([p[6], p[0]]));
-		OBJ.rawPush('Stick', new Stick([p[8], p[2]]));
-
-		let rope = [],
-			len = 10;
-		for (let i = len; i >= 0; --i) {
-			rope.push(OBJ.rawPush('Point', new Point(Stage.mid.w, Stage.h * 0.1 + (Stage.h * 0.5 / len) * i)));
+	}
+	if (Input.mouseHold(2)) {
+		if (Global.selected) {
+			Global.selected.setPosition(Input.mouseX, Input.mouseY);
 		}
-		for (let i = rope.length - 1; i > 0; --i) {
-			OBJ.rawPush('Stick', new Stick([rope[i], rope[i-1]]));
+	}
+	if (Input.mouseUp(2)) {
+		Global.selected = null;
+	}
+};
+
+NZ.start({
+	start() {
+		const ropes = [];
+		for (let i = 0; i < 2; i++) {
+			ropes.push(Global.createRope(Stage.w * Mathz.range(0.2, 0.8), Stage.h * Mathz.range(0.1, 0.4), Mathz.range(300, 400), 10));
 		}
-
-		rope[rope.length - 1].pinned = true;
-
-		OBJ.rawPush('Stick', new Stick([rope[0], p[5]]));
-
-		p[5].applyForce(200, -200);
+		ropes[0][0].pinned = true;
+		ropes[1][0].pinned = true;
+		ropes[0][ropes[0].length-1].applyForce(Mathz.range(-200, 200), -50);
+		ropes[1][ropes[1].length-1].applyForce(Mathz.range(-200, 200), -50);
+		// const rect = Global.createRect(Stage.mid.w, 0, 50);
+		// OBJ.rawPush('Stick', new Stick([ropes[0][ropes[0].length-1], rect[0]], 24));
+		// OBJ.rawPush('Stick', new Stick([ropes[1][ropes[1].length-1], rect[1]], 24));
 
 		Global.selected = null;
-
-		Global.cutterStart = Vec2.zero;
-
 		Global.cutting = false;
+		Global.cutterStart = Vec2.zero;
 	},
 	render() {
-		// point draggin
-		// if (Input.mouseDown(0)) {
-		// 	let minDist = Infinity;
-		// 	for (const p of OBJ.rawTake('Point')) {
-		// 		const dist = Utils.distanceSq(p, Input.mousePosition);
-		// 		if (dist < minDist) {
-		// 			Global.selected = p;
-		// 			minDist = dist;
-		// 		}
-		// 	}
-		// }
-		// if (Input.mouseHold(0)) {
-		// 	if (Global.selected) {
-		// 		Global.selected.setPosition(Input.mouseX, Input.mouseY);
-		// 	}
-		// }
-		// if (Input.mouseUp(0)) {
-		// 	Global.selected = null;
-		// }
-
+		Global.dragPoint();
 
 		if (Input.mouseDown(0)) {
 			Global.cutterStart.set(Input.mousePosition);
@@ -229,7 +249,7 @@ NZ.start({
 		for (const p of OBJ.rawTake('Point')) {
 			p.update();
 		}
-		let iter = 20;
+		let iter = Stick.EPOCH;
 		while (iter-- > 0) {
 			for (const s of OBJ.rawTake('Stick')) {
 				s.update();
@@ -241,8 +261,17 @@ NZ.start({
 		for (const s of OBJ.rawTake('Stick')) {
 			s.render();
 		}
+
 		for (const p of OBJ.rawTake('Point')) {
-			p.render();
+			if (Debug.mode > 0) {
+				p.render();
+			}
+			else {
+				if (p.pinned) {
+					Draw.setFill(C.black);
+					Draw.pointCircle(p, 4);
+				}
+			}
 		}
 
 		// draw cutter cue
@@ -255,8 +284,11 @@ NZ.start({
 		Draw.textBGi(0, 0, 'Press space to spawn more');
 		Draw.textBGi(0, 1, `points count: ${OBJ.rawCount('Point')}`);
 		Draw.textBGi(0, 2, `sticks count: ${OBJ.rawCount('Stick')}`);
-		Draw.textBGi(0, 3, `FPS: ${Time.FPS}`);
+		Draw.textBGi(0, 3, `debug mode: ${Debug.mode}`);
+		Draw.textBGi(0, 4, `FPS: ${Time.FPS}`);
 
-		if (Input.keyDown(KeyCode.Space)) Scene.restart();
-	}
+		if (Input.keyRepeat(KeyCode.Space)) Scene.restart();
+	},
+	debugModeAmount: 2,
+	preventContextMenu: true
 });
