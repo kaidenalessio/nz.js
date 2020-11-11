@@ -3136,9 +3136,9 @@ NZ.Tri.prototype.calculateDepth = function() {
 };// Inspired by Coding Math Tweening Series https://youtu.be/zIl5Q-dThi8
 
 NZ.Tween = {
-	lastFrames: 0,
-	chainedFrames: 0,
-	tween(obj, props, frames, easingFunc, delay=0, onComplete=()=>{}, onProgress=()=>{}, resetChain=true) {
+	lastDuration: 0,
+	chainedDuration: 0,
+	tween(object, targetProperties, durationInFrames, easingFunction, delay=0, onComplete=()=>{}, onProgress=()=>{}, resetChain=true) {
 		let count = -delay-1,
 			starts = {},
 			changes = {};
@@ -3147,36 +3147,43 @@ NZ.Tween = {
 			count++;
 
 			if (count === 0) {
-				for (const prop in props) {
-					starts[prop] = obj[prop];
-					changes[prop] = props[prop] - starts[prop];
+				for (const prop in targetProperties) {
+					starts[prop] = object[prop];
+					changes[prop] = targetProperties[prop] - starts[prop];
 				}
 			}
 
-			count < frames? window.requestAnimationFrame(_update) : count = frames;
+			count < durationInFrames? window.requestAnimationFrame(_update) : count = durationInFrames;
 
 			if (count >= 0) {
-				for (const prop in props) {
+				for (const prop in targetProperties) {
 					if (changes[prop]) {
-						obj[prop] = easingFunc(count/frames, starts[prop], changes[prop]);
+						object[prop] = easingFunction(count/durationInFrames, starts[prop], changes[prop]);
 					}
 				}
 			}
 
-			count < frames? onProgress() : onComplete();
+			count < durationInFrames? onProgress() : onComplete();
 		};
 
 		_update();
 
-		NZ.Tween.lastFrames = frames;
-		if (resetChain) NZ.Tween.chainedFrames = 0;
+		NZ.Tween.lastDuration = durationInFrames;
+		if (resetChain) NZ.Tween.chainedDuration = 0;
 
 		return NZ.Tween;
 	},
-	chain(obj, props, frames, easingFunc, delay=0, onComplete, onProgress) {
-		NZ.Tween.chainedFrames += NZ.Tween.lastFrames;
-		NZ.Tween.tween(obj, props, frames, easingFunc, delay+NZ.Tween.chainedFrames, onComplete, onProgress, false);
+	chain(object, targetProperties, durationInFrames, easingFunction, delay=0, onComplete, onProgress) {
+		NZ.Tween.chainedDuration += NZ.Tween.lastDuration;
+		NZ.Tween.tween(object, targetProperties, durationInFrames, easingFunction, delay+NZ.Tween.chainedDuration, onComplete, onProgress, false);
 		return NZ.Tween;
+	},
+	// automatically assign interpolated number between
+	// object and given targetProperties to object
+	lerp(object, targetProperties, interpolationValue) {
+		for (const key in targetProperties) {
+			object[key] = object[key] + interpolationValue * (targetProperties[key] - object[key]);
+		}
 	}
 };var NZ = NZ || {};
 

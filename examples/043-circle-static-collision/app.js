@@ -37,8 +37,7 @@ NZ.start({
 
 		if (Input.mouseHold(0)) {
 			if (Global.selected) {
-				Global.selected.x = Input.mouseX;
-				Global.selected.y = Input.mouseY;
+				Tween.lerp(Global.selected, { x: Input.mouseX, y: Input.mouseY }, 0.2);
 			}
 		}
 
