@@ -1,14 +1,17 @@
 class Point {
+	static ID = 0;
 	static BOUNCE = 0.9;
 	static GRAVITY = 0.5;
 	static FRICTION = 0.999;
 	constructor(x, y) {
+		this.id = Point.ID++;
 		this.x = x;
 		this.y = y;
 		this.r = 8;
 		this.xprev = this.x;
 		this.yprev = this.y;
 		this.pinned = false;
+		this.onGroundTime = 0;
 	}
 	setPosition(x, y) {
 		this.xprev = this.x = x;
@@ -56,10 +59,16 @@ class Point {
 			this.y = r;
 			this.yprev = this.y + vy * Point.BOUNCE;
 		}
+		if (this.y >= Stage.h - r) {
+			if (++this.onGroundTime > 120 * Stick.EPOCH) {
+				OBJ.rawRemove('Stick', (s) => s.p[0].id === this.id || s.p[1].id === this.id);
+				OBJ.rawRemove('Point', (x) => x.id === this.id);
+			}
+		}
 	}
 	render() {
-		Draw.setColor(C.black);
 		Draw.pointCircle(this, this.r, true);
+		if (this.pinned) Draw.pointCircle(this, this.r * 0.5);
 	}
 }
 
@@ -67,6 +76,7 @@ class Stick {
 	static ID = 0;
 	static EPOCH = 10;
 	static STIFFNESS = 1;
+	static COLORS = [C.white, C.red, C.yellow, C.blue, C.green, C.orange, C.orchid];
 	constructor(points, length) {
 		this.id = Stick.ID++;
 		this.p = points;
@@ -93,7 +103,6 @@ class Stick {
 		}
 	}
 	render() {
-		Draw.setStroke(C.black);
 		Draw.pointLine(this.p[0], this.p[1]);
 	}
 }
@@ -204,10 +213,14 @@ Global.dragPoint = () => {
 };
 
 NZ.start({
+	init() {
+		// Stage.setPixelRatio(Stage.HIGH);
+		// Stage.applyPixelRatio();
+	},
 	start() {
 		const ropes = [];
 		for (let i = 0; i < 2; i++) {
-			ropes.push(Global.createRope(Stage.w * Mathz.range(0.2, 0.8), Stage.h * Mathz.range(0.1, 0.4), Mathz.range(300, 400), 10));
+			ropes.push(Global.createRope(Stage.w * Mathz.range(0.2, 0.8), Stage.h * Mathz.range(0.1, 0.4), Mathz.range(300, 400), 25));
 		}
 		ropes[0][0].pinned = true;
 		ropes[1][0].pinned = true;
@@ -252,6 +265,7 @@ NZ.start({
 			Global.cutting = false;
 		}
 
+		// UPDATE ///////////
 		for (const p of OBJ.rawTake('Point')) {
 			p.update();
 		}
@@ -264,28 +278,30 @@ NZ.start({
 				p.constraint();
 			}
 		}
+		/////////////////////
+
+		// RENDER ///////////
+		Draw.setLineCap(LineCap.round);
+		Draw.setLineJoin(LineJoin.round);
+		Draw.setLineWidth(5);
 		for (const s of OBJ.rawTake('Stick')) {
+			Draw.setStroke(Stick.COLORS[s.id % Stick.COLORS.length]);
 			s.render();
 		}
-
-		for (const p of OBJ.rawTake('Point')) {
-			if (Debug.mode > 0) {
-				p.render();
-			}
-			else {
-				if (p.pinned) {
-					Draw.setFill(C.black);
-					Draw.pointCircle(p, 4);
-				}
-			}
-		}
-
 		// draw cutter cue
 		if (Input.mouseHold(0)) {
 			if (Global.cutting) {
+				Draw.setStroke(C.white);
 				Draw.pointLine(Global.cutterStart, Input.mousePosition);
 			}
 		}
+		if (Debug.mode > 0) {
+			Draw.setColor(C.black);
+			for (const p of OBJ.rawTake('Point')) {
+				p.render();
+			}
+		}
+		/////////////////////
 
 		Draw.textBGi(0, 0, 'Press space to spawn more');
 		Draw.textBGi(0, 1, `points count: ${OBJ.rawCount('Point')}`);
@@ -295,6 +311,7 @@ NZ.start({
 
 		if (Input.keyRepeat(KeyCode.Space)) Scene.restart();
 	},
+	bgColor: C.black,
 	debugModeAmount: 2,
 	preventContextMenu: true
 });
