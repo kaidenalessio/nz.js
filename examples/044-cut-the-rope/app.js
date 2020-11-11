@@ -1,8 +1,10 @@
 class Point {
 	static ID = 0;
-	static BOUNCE = 0.9;
+	static WIND_X = 0;
+	static BOUNCE = 0.5;
 	static GRAVITY = 0.5;
-	static FRICTION = 0.999;
+	static FRICTION = 0.98;
+	static AIR_FRICTION = 0.999;
 	constructor(x, y) {
 		this.id = Point.ID++;
 		this.x = x;
@@ -29,19 +31,18 @@ class Point {
 	}
 	update() {
 		if (this.pinned) return;
-		let vx = (this.x - this.xprev) * Point.FRICTION,
-			vy = (this.y - this.yprev) * Point.FRICTION;
+		let vx = (this.x - this.xprev) * Point.AIR_FRICTION,
+			vy = (this.y - this.yprev) * Point.AIR_FRICTION;
 
 		this.xprev = this.x;
 		this.yprev = this.y;
-		this.x += vx;
-		this.y += vy;
-		this.y += Point.GRAVITY;
+		this.x += vx + Mathz.range(Point.WIND_X);
+		this.y += vy + Point.GRAVITY;
 	}
 	constraint(r=0) {
 		if (this.pinned) return;
-		let vx = (this.x - this.xprev) * Point.FRICTION,
-			vy = (this.y - this.yprev) * Point.FRICTION;
+		let vx = (this.x - this.xprev) * Point.AIR_FRICTION,
+			vy = (this.y - this.yprev) * Point.AIR_FRICTION;
 
 		if (this.x > Stage.w - r) {
 			this.x = Stage.w - r;
@@ -53,6 +54,7 @@ class Point {
 		}
 		if (this.y > Stage.h - r) {
 			this.y = Stage.h - r;
+			this.xprev = this.x - vx * Point.FRICTION;
 			this.yprev = this.y + vy * Point.BOUNCE;
 		}
 		if (this.y < r) {
@@ -74,7 +76,7 @@ class Point {
 
 class Stick {
 	static ID = 0;
-	static EPOCH = 10;
+	static EPOCH = 1;
 	static STIFFNESS = 1;
 	static COLORS = [C.white, C.red, C.yellow, C.blue, C.green, C.orange, C.orchid];
 	constructor(points, length) {
@@ -216,19 +218,33 @@ NZ.start({
 	init() {
 		// Stage.setPixelRatio(Stage.HIGH);
 		// Stage.applyPixelRatio();
+		Stick.EPOCH = 20;
+		Global.STICK_SIZE = 3;
+		Global.ROPE_LENGTH_MIN = 200;
+		Global.ROPE_LENGTH_MAX = 300;
+		Global.ROPE_SEGMENT = 20;
 	},
 	start() {
 		const ropes = [];
 		for (let i = 0; i < 2; i++) {
-			ropes.push(Global.createRope(Stage.w * Mathz.range(0.2, 0.8), Stage.h * Mathz.range(0.1, 0.4), Mathz.range(300, 400), 25));
+			ropes.push(
+				Global.createRope(
+					Stage.w * Mathz.range(0.2, 0.8),
+					Stage.h * Mathz.range(0.1, 0.4),
+					Mathz.range(Global.ROPE_LENGTH_MIN, Global.ROPE_LENGTH_MAX),
+					Global.ROPE_SEGMENT
+				)
+			);
 		}
 		ropes[0][0].pinned = true;
 		ropes[1][0].pinned = true;
 		ropes[0][ropes[0].length-1].applyForce(Mathz.range(-200, 200), -50);
 		ropes[1][ropes[1].length-1].applyForce(Mathz.range(-200, 200), -50);
-		// const rect = Global.createRect(Stage.mid.w, 0, 50);
-		// OBJ.rawPush('Stick', new Stick([ropes[0][ropes[0].length-1], rect[0]], 24));
-		// OBJ.rawPush('Stick', new Stick([ropes[1][ropes[1].length-1], rect[1]], 24));
+		if (Mathz.randbool()) {
+			const rect = Global.createRect(Stage.mid.w, 0, 50);
+			OBJ.rawPush('Stick', new Stick([ropes[0][ropes[0].length-1], rect[0]], 24));
+			OBJ.rawPush('Stick', new Stick([ropes[1][ropes[1].length-1], rect[1]], 24));
+		}
 
 		Global.selected = null;
 		Global.cutting = false;
@@ -266,6 +282,9 @@ NZ.start({
 		}
 
 		// UPDATE ///////////
+
+		Point.WIND_X = Math.sin(Time.frameCount * 0.01) * 2;
+
 		for (const p of OBJ.rawTake('Point')) {
 			p.update();
 		}
@@ -283,9 +302,9 @@ NZ.start({
 		// RENDER ///////////
 		Draw.setLineCap(LineCap.round);
 		Draw.setLineJoin(LineJoin.round);
-		Draw.setLineWidth(5);
+		Draw.setLineWidth(Global.STICK_SIZE);
 		for (const s of OBJ.rawTake('Stick')) {
-			Draw.setStroke(Stick.COLORS[s.id % Stick.COLORS.length]);
+			Draw.setStroke(Debug.mode > 0? Stick.COLORS[s.id % Stick.COLORS.length] : (s.id % 2) === 0? C.sienna : C.peru);
 			s.render();
 		}
 		// draw cutter cue
@@ -295,8 +314,9 @@ NZ.start({
 				Draw.pointLine(Global.cutterStart, Input.mousePosition);
 			}
 		}
-		if (Debug.mode > 0) {
-			Draw.setColor(C.black);
+		if (Debug.mode > 1) {
+			Draw.setColor(C.white);
+			Draw.resetLineWidth();
 			for (const p of OBJ.rawTake('Point')) {
 				p.render();
 			}
@@ -307,11 +327,12 @@ NZ.start({
 		Draw.textBGi(0, 1, `points count: ${OBJ.rawCount('Point')}`);
 		Draw.textBGi(0, 2, `sticks count: ${OBJ.rawCount('Stick')}`);
 		Draw.textBGi(0, 3, `debug mode: ${Debug.mode}`);
-		Draw.textBGi(0, 4, `FPS: ${Time.FPS}`);
+		Draw.textBGi(0, 4, `wind x: ${Point.WIND_X.toFixed(2)}`);
+		Draw.textBGi(0, 5, `FPS: ${Time.FPS}`);
 
 		if (Input.keyRepeat(KeyCode.Space)) Scene.restart();
 	},
-	bgColor: C.black,
-	debugModeAmount: 2,
+	bgColor: C.peachPuff,
+	debugModeAmount: 3,
 	preventContextMenu: true
 });
