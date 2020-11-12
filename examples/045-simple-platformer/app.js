@@ -22,6 +22,13 @@ class Block {
 }
 
 class Player {
+	static IDLE = 'Idle';
+	static ONWALL = 'On Wall';
+	static WALKING = 'Walking';
+	static JUMPING = 'Jumping';
+	static FALLING = 'Falling';
+	static CLIMBING = 'Climbing';
+	static WALLBOUNCING = 'Wall Bouncing';
 	// origin at center bottom
 	constructor(x, y, w, h) {
 		this.x = x;
@@ -66,6 +73,22 @@ class Player {
 		this.keyJump = false;
 		this.keyJumpPressed = false;
 		this.keyJumpReleased = false;
+		this.state = Player.IDLE;
+	}
+	changeState(newstate) {
+		switch (newstate) {
+			case Player.IDLE:
+					if (this.state === Player.JUMPING) return;
+					if (this.state === Player.WALKING && Math.abs(this.vx) > this.acc) return;
+				break;
+			case Player.WALKING:
+					if (this.state === Player.JUMPING) return;
+				break;
+			case Player.FALLING:
+					if (this.state === Player.WALLBOUNCING && this.vy < 0) return;
+				break;
+		}
+		this.state = newstate;
 	}
 	update() {
 
@@ -84,8 +107,14 @@ class Player {
 			this.vx -= this.acc;
 		}
 
-		if (!this.keyA && !this.keyD) {
-			this.vx *= this.friction;
+		// decelerate
+		if (this.keyA || this.keyD) {
+			if (this.grounded) {
+				this.changeState(Player.WALKING);
+			}
+		}
+		else {
+			this.vx *= this.friction * 0.8;
 		}
 
 		if (this.keyJump && this.jumping) {
@@ -112,6 +141,10 @@ class Player {
 					if (this.wallonleft) {
 						this.vx = this.vxlimit;
 					}
+					this.changeState(Player.WALLBOUNCING);
+				}
+				else {
+					this.changeState(Player.JUMPING);
 				}
 			}
 			this.squish();
@@ -141,8 +174,10 @@ class Player {
 			if (this.wallonleft || this.wallonright) {
 				// if we on a wall, apply smaller gravity
 				this.vy += this.gravity * 0.1;
+				this.changeState(Player.ONWALL);
 			}
 			else {
+				this.changeState(Player.FALLING);
 				this.vy += this.gravity;
 			}
 		}
@@ -181,6 +216,7 @@ class Player {
 					if (this.vy > this.gravity) this.squishTop(this.vy);
 					this.vy = 0;
 					this.grounded = true;
+					this.changeState(Player.IDLE);
 				}
 				// if we came from left
 				else if (this.vx > 0 && this.xp <= b.left - this.mid.w) {
@@ -222,6 +258,7 @@ class Player {
 			if (this.vy > this.gravity) this.squishTop(this.vy);
 			this.vy = 0;
 			this.grounded = true;
+			this.changeState(Player.IDLE);
 		}
 	}
 	render() {
@@ -287,5 +324,7 @@ NZ.start({
 		Draw.textBGi(0, 1, `vel: (${p.vx.toFixed(4)}, ${p.vy.toFixed(4)})`);
 		Draw.textBGi(0, 2, `grounded: ${p.grounded}`);
 		Draw.textBGi(0, 3, `wall on (left|right): ${p.wallonleft}|${p.wallonright}`);
+		Draw.textBGi(0, 4, `state: ${p.state}`);
+		Draw.textBG(p.x, p.y - p.h - 10, `${p.state}`, { origin: new Vec2(0.5, 1) });
 	}
 });
