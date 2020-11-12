@@ -91,21 +91,36 @@ class Player extends Point {
 			h: this.h * 0.5
 		};
 		this.grapple = {
-			range: 400,
-			length: 100,
+			range: 2000,
+			length: 50,
 			points: [],
-			sticks: []
+			sticks: [],
+			isGrappling: false,
+			pinpoint: {
+				x: 0,
+				y: 0
+			},
+			isCreated() {
+				return this.points.length > 0;
+			}
 		};
+		this.acc = 0.8;
+		this.limit = 10;
+		this.jumpAcc = -3;
+		this.isGrounded = false;
+		this.jumpHoldTime = 0;
+		this.jumpHoldDuration = 5;
+		this.isGroundedThreshold = 20;
 	}
 	createGrapple(x, y) {
 		let dx = x - this.x,
 			dy = y - this.y,
-			dist = dx*dx + dy*dy;
+			dist = Math.sqrt(dx*dx + dy*dy);
 
-		if (dist > this.grapple.range*this.grapple.range) return;
+		if (dist > this.grapple.range) return;
 
-		let segment = 10,
-			len = this.grapple.length / segment;
+		let segment = dist < this.grapple.length? 5 : 10,
+			len = Math.min(this.grapple.length, dist) / segment;
 
 		dx /= segment;
 		dy /= segment;
@@ -137,25 +152,64 @@ class Player extends Point {
 		this.grapple.sticks.length = 0;
 	}
 	update() {
-		if (Input.mouseDown(0)) {
-			this.createGrapple(Input.mouseX, Input.mouseY);
+		const keyJumpPressed = Input.keyDown(KeyCode.W) || Input.keyDown(KeyCode.Up) || Input.keyDown(KeyCode.Space);
+		if (Input.mouseDown(0) || keyJumpPressed) {
+			if (this.grapple.isGrappling) {
+				this.destroyGrapple();
+				this.grapple.isGrappling = false;
+			}
+			else {
+				// grapple creation only with mouse click
+				if (!keyJumpPressed) {
+					let x = Input.mouseX,
+						y = Input.mouseY,
+						duration = 0.00001 * Utils.distanceDXYSq(x - this.x, y - this.y),
+						onComplete = () => {
+							this.createGrapple(x, y);
+						};
+					this.grapple.pinpoint.x = this.x;
+					this.grapple.pinpoint.y = this.y;
+					Tween.tween(this.grapple.pinpoint, { x, y }, duration, Easing.QuadEaseOut, 0, onComplete);
+					this.grapple.isGrappling = true;
+				}
+			}
 		}
-		if (Input.mouseUp(0)) {
-			this.destroyGrapple();
+		if (Input.keyHold(KeyCode.A) || Input.keyHold(KeyCode.Left)) {
+			this.x -= this.acc;
 		}
-		if (Input.keyHold(KeyCode.A)) {
-			this.x -= 0.8;
+		if (Input.keyHold(KeyCode.D) || Input.keyHold(KeyCode.Right)) {
+			this.x += this.acc;
 		}
-		if (Input.keyHold(KeyCode.D)) {
-			this.x += 0.8;
+		if (this.isGrounded) {
+			if (this.x - this.px > this.limit) {
+				this.x = this.px + this.limit;
+			}
+			if (this.x - this.px < -this.limit) {
+				this.x = this.px - this.limit;
+			}
 		}
-		if (Input.keyDown(KeyCode.W)) {
-			this.py = this.y + 30;
+		if (keyJumpPressed && this.isGrounded) {
+			this.canJump = true;
+		}
+		if ((Input.keyHold(KeyCode.W) || Input.keyHold(KeyCode.Up)) && this.canJump) {
+			if (this.jumpHoldTime++ < this.jumpHoldDuration) {
+				this.y += this.jumpAcc;
+			}
+		}
+		else {
+			this.jumpHoldTime = 0;
+		}
+		if ((Input.keyUp(KeyCode.W) || Input.keyUp(KeyCode.Up))) {
+			this.canJump = false;
 		}
 		Point.update(this);
 		this.constraint();
 	}
 	constraint() {
+		this.isGrounded = false;
+		if (this.y + this.h + this.isGroundedThreshold > Stage.h) {
+			this.isGrounded = true;
+		}
 		if (this.x > Stage.w - this.mid.w) {
 			this.x = Stage.w - this.mid.w;
 			this.px = this.x + this.vx * this.bounce;
@@ -199,22 +253,27 @@ NZ.start({
 		while (iter-- > 0) {
 			for (const s of OBJ.rawTake('Stick')) { s.update(); }
 			for (const p of OBJ.rawTake('Point')) { Point.constraint(p); }
+			for (const p of OBJ.rawTake('Player')) { p.constraint(); }
 		}
 		for (const p of OBJ.rawTake('Player')) {
+			if (p.grapple.isGrappling && !p.grapple.isCreated()) {
+				Draw.setColor(C.brown);
+				Draw.pointLine(p, p.grapple.pinpoint);
+			}
 			Draw.setColor(C.red, C.black);
 			// origin center top
 			Draw.rect(p.x - p.mid.w, p.y, p.w, p.h);
-			Draw.stroke();
-			Draw.circle(p.x, p.y, p.grapple.range, true);
+			// Draw.stroke();
+			// Draw.circle(p.x, p.y, p.grapple.range, true);
 		}
-		for (const p of OBJ.rawTake('Point')) {
-			Draw.setColor(C.black);
-			Draw.pointCircle(p, 8, true);
-		}
+		// for (const p of OBJ.rawTake('Point')) {
+		// 	Draw.setColor(C.black);
+		// 	Draw.pointCircle(p, 8, true);
+		// }
 		for (const s of OBJ.rawTake('Stick')) {
 			Draw.setColor(C.brown);
 			Draw.pointLine(s.p[0], s.p[1]);
 		}
-		Input.testRestartOnSpace();
+		// Input.testRestartOnSpace();
 	}
 });
