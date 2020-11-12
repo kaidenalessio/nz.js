@@ -50,6 +50,7 @@ class Stick {
 	constructor(points, length, stiffness=1) {
 		this.id = Global.ID++;
 		this.p = points;
+		this.c = this.id % 2 === 0? C.dimGrey : C.black;
 		this.length = length || this.dist();
 		this.stiffness = stiffness;
 	}
@@ -93,12 +94,18 @@ class Player extends Point {
 		this.grapple = {
 			range: 600,
 			length: 50,
+			segment: 10,
 			points: [],
 			sticks: [],
 			isGrappling: false,
 			pinpoint: {
 				x: 0,
 				y: 0
+			},
+			head: {
+				x: 0,
+				y: 0,
+				length: 10
 			},
 			isCreated() {
 				return this.points.length > 0;
@@ -107,8 +114,10 @@ class Player extends Point {
 		this.acc = 0.8;
 		this.limit = 10;
 		this.jumpAcc = -3;
+		this.canJump = false;
 		this.isGrounded = false;
 		this.jumpHoldTime = 0;
+		this.canDoubleJump = false;
 		this.jumpHoldDuration = 5;
 		this.isGroundedThreshold = 20;
 	}
@@ -119,8 +128,11 @@ class Player extends Point {
 
 		if (dist > this.grapple.range) return false; // out of range
 
-		let segment = dist < this.grapple.length? 5 : 10,
+		let segment = this.grapple.segment,
 			len = Math.min(this.grapple.length, dist) / segment;
+
+		if (dist < this.grapple.length)
+			segment *= 0.5;
 
 		dx /= segment;
 		dy /= segment;
@@ -155,7 +167,12 @@ class Player extends Point {
 	}
 	update() {
 		const keyJumpPressed = Input.keyDown(KeyCode.W) || Input.keyDown(KeyCode.Up) || Input.keyDown(KeyCode.Space);
-		if (Input.mouseDown(0)/*|| keyJumpPressed*/) {
+
+		let a = Math.atan2(Input.mouseY - this.y, Input.mouseX - this.x);
+		this.grapple.head.x = this.x + Math.cos(a) *  this.grapple.head.length;
+		this.grapple.head.y = this.y + Math.sin(a) *  this.grapple.head.length;
+
+		if (Input.mouseDown(0) || Input.keyDown(KeyCode.Q)/*|| keyJumpPressed*/) {
 			if (this.grapple.isGrappling) {
 				if (this.grapple.isCreated()) {
 					this.destroyGrapple();
@@ -186,31 +203,39 @@ class Player extends Point {
 
 					let duration = dist * 0.01;
 
-					this.grapple.pinpoint.x = this.x;
-					this.grapple.pinpoint.y = this.y;
-					this.grapple.pinpoint.strokeWeight = 3;
+					this.grapple.pinpoint.x = this.grapple.head.x;
+					this.grapple.pinpoint.y = this.grapple.head.y;
 					Tween.tween(this.grapple.pinpoint, { x, y }, duration, Easing.QuintEaseOut, 0, onComplete);
-					Tween.tween(this.grapple.pinpoint, { strokeWeight: 1 }, duration, Easing.QuintEaseOut);
 					this.grapple.isGrappling = true;
 				// }
 			}
 		}
+		// accelerate
 		if (Input.keyHold(KeyCode.A) || Input.keyHold(KeyCode.Left)) {
 			this.x -= this.acc;
 		}
 		if (Input.keyHold(KeyCode.D) || Input.keyHold(KeyCode.Right)) {
 			this.x += this.acc;
 		}
+		// decelerate
 		if (this.isGrounded && !this.grapple.isGrappling) {
 			if (this.x - this.px > this.limit) {
-				this.x = this.px + this.limit;
+				this.x -= this.acc;
 			}
 			if (this.x - this.px < -this.limit) {
-				this.x = this.px - this.limit;
+				this.x += this.acc;
 			}
 		}
-		if (keyJumpPressed && this.isGrounded) {
-			this.canJump = true;
+		if (keyJumpPressed) {
+			// reset jump on ground
+			if (this.isGrounded) {
+				this.canJump = true;
+				this.canDoubleJump = true;
+			}
+			if (this.canJump) {
+				// start of jump
+				this.py = this.y;
+			}
 		}
 		if ((Input.keyHold(KeyCode.W) || Input.keyHold(KeyCode.Up)) && this.canJump) {
 			if (this.jumpHoldTime++ < this.jumpHoldDuration) {
@@ -221,7 +246,8 @@ class Player extends Point {
 			this.jumpHoldTime = 0;
 		}
 		if ((Input.keyUp(KeyCode.W) || Input.keyUp(KeyCode.Up))) {
-			this.canJump = false;
+			this.canJump = this.canDoubleJump;
+			this.canDoubleJump = false;
 		}
 		Point.update(this);
 		this.constraint();
@@ -270,10 +296,16 @@ NZ.start({
 		Global.player = OBJ.rawPush('Player', new Player(Stage.mid.w, Stage.mid.h));
 	},
 	render() {
+
+		// logic
 		Global.player.update();
+
+		// physics
 		for (const p of OBJ.rawTake('Point')) {
 			Point.update(p);
 		}
+
+		// constraint updates
 		let iter = Global.iter;
 		while (iter-- > 0) {
 			for (const s of OBJ.rawTake('Stick')) { s.update(); }
@@ -288,30 +320,43 @@ NZ.start({
 
 		Draw.setLineCap(LineCap.round);
 		Draw.setLineJoin(LineJoin.round);
+		Draw.setLineWidth(2);
 
 		let p = Global.player;
 
+		// draw grapple pinpoint (the one that gets thrown before grapple occurs)
+		Draw.setColor(C.black);
 		if (p.grapple.isGrappling && !p.grapple.isCreated()) {
-			Draw.setColor(C.brown);
-			Draw.setLineWidth(Math.abs(p.grapple.pinpoint.strokeWeight));
-			Draw.pointArrow(p, p.grapple.pinpoint, 10);
-			Draw.resetLineWidth();
+			Draw.pointArrow(p, p.grapple.pinpoint, 5);
 		}
-		Draw.setColor(C.red, C.black);
-		// origin center top
-		Draw.rect(p.x - p.mid.w, p.y, p.w, p.h);
-		Draw.stroke();
-		Draw.circle(p.x, p.y, p.grapple.range, true);
+		// draw grapple cue
+		if (!p.grapple.isGrappling) {
+			Draw.pointArrow(p, p.grapple.head, 5);
+			// draw grapple hand
+			Draw.pointCircle(p, 2);
+		}
 
+		// Draw.circle(p.x, p.y, p.grapple.range, true);
+
+		// draw all sticks
 		for (const s of OBJ.rawTake('Stick')) {
-			Draw.setColor(C.brown);
-			if (s.id === p.grapple.sticks[0].id) {
-				Draw.pointArrow(s.p[1], s.p[0], 10);
+			Draw.setStroke(s.c);
+			if (s.id === p.grapple.sticks[0].id && p.grapple.isCreated()) {
+				Draw.pointArrow(s.p[1], s.p[0], 5);
 			}
 			else {
 				Draw.pointLine(s.p[0], s.p[1]);
 			}
 		}
+
+		Draw.resetLineWidth();
+
+		// draw player
+		Draw.setColor(C.red, C.black);
+		// origin center top
+		Draw.rect(p.x - p.mid.w, p.y, p.w, p.h);
+		Draw.stroke();
+
 		// Input.testRestartOnSpace();
 	}
 });
