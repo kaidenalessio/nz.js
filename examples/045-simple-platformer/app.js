@@ -70,6 +70,7 @@ class Player {
 		this.wallonright = false;
 		this.keyA = false;
 		this.keyD = false;
+		this.keyDown = false;
 		this.keyJump = false;
 		this.keyJumpPressed = false;
 		this.keyJumpReleased = false;
@@ -94,6 +95,7 @@ class Player {
 
 		this.keyA = Input.keyHold(KeyCode.A) || Input.keyHold(KeyCode.Left);
 		this.keyD = Input.keyHold(KeyCode.D) || Input.keyHold(KeyCode.Right);
+		this.keyDown = Input.keyHold(KeyCode.S) || Input.keyHold(KeyCode.Down);
 		this.keyJump = Input.keyHold(KeyCode.W) || Input.keyHold(KeyCode.Up) || Input.keyHold(KeyCode.Space);
 		this.keyJumpPressed = Input.keyDown(KeyCode.W) || Input.keyDown(KeyCode.Up) || Input.keyDown(KeyCode.Space);
 		this.keyJumpReleased = Input.keyUp(KeyCode.W) || Input.keyUp(KeyCode.Up) || Input.keyUp(KeyCode.Space);
@@ -211,7 +213,7 @@ class Player {
 			// only check if we intersect
 			if (b.intersects(this)) {
 				// if we came from above
-				if (this.vy >= 0 && this.yp <= b.top) {
+				if (this.vy >= 0 && this.yp <= b.top && !(Global.ONE_WAY_PLATFORM && this.keyDown)) {
 					this.y = b.top;
 					if (this.vy > this.gravity) this.squishTop(this.vy);
 					this.vy = 0;
@@ -245,7 +247,7 @@ class Player {
 					}
 				}
 				// if we came from below
-				else if (this.vy < 0 && this.yp >= b.bottom + this.h) {
+				else if (this.vy < 0 && this.yp >= b.bottom + this.h && !Global.ONE_WAY_PLATFORM) {
 					this.y = b.bottom + this.h;
 					this.vy = 0;
 				}
@@ -269,8 +271,8 @@ class Player {
 
 		Draw.onTransform(this.x, this.y, this.xs, this.ys, 0, () => {
 			Draw.rect(-this.mid.wd, -this.hd, this.wd, this.hd);
-			Draw.rect(-this.mid.w, -this.h, this.w, this.h, true);
 		});
+		Draw.rect(this.x - this.mid.w, this.y - this.h, this.w, this.h, true);
 	}
 }
 
@@ -280,20 +282,28 @@ NZ.start({
 		OBJ.rawAdd('Player');
 		Global.GROUND_H = 100;
 		Global.getGroundY = () => Stage.h - Global.GROUND_H;
+		Global.ONE_WAY_PLATFORM = true;
 	},
 	start() {
 		OBJ.rawClearAll();
 		const n = OBJ.rawPush('Player', new Player(Stage.randomX, 100, 24, 48));
-		// OBJ.rawPush('Block', new Block(Stage.mid.w, Global.getGroundY() - (80 + n.h), 100, 80));
-		// OBJ.rawPush('Block', new Block(Stage.mid.w - (100 + n.w), Global.getGroundY() - 50, 100, 50));
-		// OBJ.rawPush('Block', new Block(Stage.mid.w + (100 + n.w), Global.getGroundY() - 50, 100, 50));
-		for (let i = 0, w=n.wd, h=n.hd, cols=Stage.w/w, rows=Stage.h/h; i < cols; i++) {
-			OBJ.rawPush('Block', new Block(i * w, Global.getGroundY() - h, w, h));
+		OBJ.rawPush('Block', new Block(Stage.mid.w, Global.getGroundY() - (80 + n.h), 100, 80));
+		OBJ.rawPush('Block', new Block(Stage.mid.w - (100 + n.w), Global.getGroundY() - 50, 100, 50));
+		OBJ.rawPush('Block', new Block(Stage.mid.w + (100 + n.w), Global.getGroundY() - 50, 100, 50));
+		// for (let i = 0, w=n.wd, h=n.hd, cols=Stage.w/w, rows=Stage.h/h; i < cols; i++) {
+		// 	OBJ.rawPush('Block', new Block(i * w, Global.getGroundY() - h, w, h));
+		// }
+
+		for (let i = 0; i < Stage.w / 64;) {
+			for (let j = 0; j < Stage.h / 64;) {
+				if (Mathz.randbool())
+					OBJ.rawPush('Block', new Block(i * 64, j * 64, Mathz.range(24, 64), Mathz.range(24, 64)));
+				j += Mathz.choose(1, 2);
+			}
+			i += Mathz.choose(1, 2);
 		}
 
-		for (let i = 0; i < 50; i++) {
-			OBJ.rawPush('Block', new Block(Stage.randomX, Stage.randomY, Mathz.range(32, 128), Mathz.range(32, 128)));
-		}
+		OBJ.rawTake('Block').sort((a, b) => b.y - a.y);
 	},
 	render() {
 
@@ -326,5 +336,9 @@ NZ.start({
 		Draw.textBGi(0, 3, `wall on (left|right): ${p.wallonleft}|${p.wallonright}`);
 		Draw.textBGi(0, 4, `state: ${p.state}`);
 		Draw.textBG(p.x, p.y - p.h - 10, `${p.state}`, { origin: new Vec2(0.5, 1) });
+
+		if (Input.keyDown(KeyCode.R)) {
+			Scene.restart();
+		}
 	}
 });
