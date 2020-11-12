@@ -1,3 +1,6 @@
+// TODO: if player already touch a higher ground, prevent lower ground to intersect
+// IDEA: sort blocks by y component before constraint update
+
 class Block {
 	// origin at top left
 	constructor(x, y, w, h) {
@@ -39,45 +42,74 @@ class Player {
 		this.vy = 0;
 		this.xs = 1; // image x scale
 		this.ys = 1; // image y scale
-		this.acc = 1.5;
+		this.acc = 1.2;
 		this.bounce = -0.3;
 		this.vxlimit = 8;
 		this.gravity = 0.98;
-		this.jumping = true;
+		this.jumpspd = -6;
+		this.jumpduration = 10;
+		this.jumpacc = this.jumpspd;
+		this.jumping = false;
+		this.jumpfric = 0.96;
 		this.jumptime = 0;
-		this.friction = 0.96;
+		this.friction = 0.94;
 		this.grounded = false;
-		this.jumpforce = -20;
 		this.airfriction = 0.99;
 		this.top = this.y - this.mid.h;
 		this.left = this.x - this.mid.w;
 		this.right = this.x + this.mid.w;
 		this.bottom = this.y + this.mid.h;
+		this.wallonleft = false;
+		this.wallonright = false;
+		this.keyA = false;
+		this.keyD = false;
+		this.keyJump = false;
+		this.keyJumpPressed = false;
+		this.keyJumpReleased = false;
 	}
 	update() {
 
+		this.keyA = Input.keyHold(KeyCode.A) || Input.keyHold(KeyCode.Left);
+		this.keyD = Input.keyHold(KeyCode.D) || Input.keyHold(KeyCode.Right);
+		this.keyJump = Input.keyHold(KeyCode.W) || Input.keyHold(KeyCode.Up) || Input.keyHold(KeyCode.Space);
+		this.keyJumpPressed = Input.keyDown(KeyCode.W) || Input.keyDown(KeyCode.Up) || Input.keyDown(KeyCode.Space);
+		this.keyJumpReleased = Input.keyUp(KeyCode.W) || Input.keyUp(KeyCode.Up) || Input.keyUp(KeyCode.Space);
+
 		// apply force
-		if (Input.keyHold(KeyCode.Right)) {
+		if (this.keyD) {
 			this.vx += this.acc;
 		}
 
-		if (Input.keyHold(KeyCode.Left)) {
+		if (this.keyA) {
 			this.vx -= this.acc;
 		}
 
-		if (!Input.keyHold(KeyCode.Left) && !Input.keyHold(KeyCode.Right)) {
+		if (!this.keyA && !this.keyD) {
 			this.vx *= this.friction;
 		}
 
-		if (Time.frameCount > this.jumptime) {
-			if (this.grounded) {
+		if (this.keyJump && this.jumping) {
+			if (this.jumptime < this.jumpduration) {
+				this.vy = this.jumpacc;
+				this.jumpacc *= this.jumpfric;
+				this.jumptime++;
+			}
+			else {
 				this.jumping = false;
 			}
-			if (Input.keyDown(KeyCode.Up) && !this.jumping) {
-				this.vy = this.jumpforce;
+		}
+
+		if (this.keyJumpPressed) {
+			if (this.grounded || this.wallonleft || this.wallonright) {
+				this.jumptime = 0;
 				this.jumping = true;
-				this.jumptime = Time.frameCount + 10;
 			}
+			this.squish();
+		}
+
+		if (this.keyJumpReleased) {
+			this.jumpacc = this.jumpspd;
+			this.jumping = false;
 		}
 
 		if (this.vx > this.vxlimit) {
@@ -95,8 +127,15 @@ class Player {
 
 		// apply gravity after friction
 		// to get precise at constraint
-		if (!this.grounded)
-			this.vy += this.gravity;
+		if (!this.grounded && !this.jumping) {
+			if (this.wallonleft || this.wallonright) {
+				// if we on a wall, apply smaller gravity
+				this.vy += this.gravity * 0.1;
+			}
+			else {
+				this.vy += this.gravity;
+			}
+		}
 
 		this.xp = this.x;
 		this.yp = this.y;
@@ -119,8 +158,8 @@ class Player {
 	}
 	constraint() {
 		this.grounded = false;
-		this.onleftwall = false;
-		this.onrightwall = false;
+		this.wallonleft = false;
+		this.wallonright = false;
 
 		// block collision check
 		for (const b of OBJ.rawTake('Block')) {
@@ -138,12 +177,26 @@ class Player {
 					this.x = b.left - this.mid.w;
 					this.vx *= this.bounce;
 					this.squish();
+
+					if (this.keyD) {
+						// we hit a wall to the right yet
+						// we still want to go right?
+						// yep we have wall on right
+						this.wallonright = true;
+					}
 				}
 				// if we came from right
 				else if (this.vx < 0 && this.xp >= b.right + this.mid.w) {
 					this.x = b.right + this.mid.w;
 					this.vx *= this.bounce;
 					this.squish();
+
+					if (this.keyA) {
+						// we hit a wall to the left yet
+						// we still want to go left?
+						// yep we have wall on left
+						this.wallonleft = true;
+					}
 				}
 				// if we came from below
 				else if (this.vy < 0 && this.yp >= b.bottom + this.h) {
@@ -223,7 +276,6 @@ NZ.start({
 		Draw.textBGi(0, 0, `pos: (${p.x.toFixed(4)}, ${p.y.toFixed(4)})`);
 		Draw.textBGi(0, 1, `vel: (${p.vx.toFixed(4)}, ${p.vy.toFixed(4)})`);
 		Draw.textBGi(0, 2, `grounded: ${p.grounded}`);
-
-		Input.testRestartOnSpace();
+		Draw.textBGi(0, 3, `wall on (left|right): ${p.wallonleft}|${p.wallonright}`);
 	}
 });
