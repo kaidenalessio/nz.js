@@ -14,7 +14,7 @@ class Block {
 		return (p.right >= this.left && p.left <= this.right && p.bottom >= this.top && p.top <= this.bottom);
 	}
 	render() {
-		Draw.rect(this.x, this.y, this.w, this.h);
+		Draw.rect(this.x, this.y, this.w, this.h, true);
 	}
 }
 
@@ -25,7 +25,7 @@ class Player {
 		this.y = y;
 		this.wd = w; // width draw
 		this.hd = h; // height draw
-		this.w = this.wd * 0.8; // hitbox width (can be larger or smaller)
+		this.w = this.wd * 0.9; // hitbox width (can be larger or smaller)
 		this.h = this.hd; // hitbox height (can be larger or smaller)
 		this.mid = { // half dimensions
 			wd: this.wd * 0.5,
@@ -88,12 +88,15 @@ class Player {
 			this.vx = -this.vxlimit;
 		}
 
-		this.vy += this.gravity;
-
 		// apply friction
 		const fric = this.grounded? this.friction : this.airfriction;
 		this.vx *= fric;
 		this.vy *= fric;
+
+		// apply gravity after friction
+		// to get precise at constraint
+		if (!this.grounded)
+			this.vy += this.gravity;
 
 		this.xp = this.x;
 		this.yp = this.y;
@@ -123,38 +126,38 @@ class Player {
 		for (const b of OBJ.rawTake('Block')) {
 			// only check if we intersect
 			if (b.intersects(this)) {
+				// if we came from above
+				if (this.vy >= 0 && this.yp <= b.top) {
+					this.y = b.top;
+					if (this.vy > this.gravity) this.squishTop(this.vy);
+					this.vy = 0;
+					this.grounded = true;
+				}
 				// if we came from left
-				if (this.vx > 0 && this.xp <= b.left - this.mid.w) {
+				else if (this.vx > 0 && this.xp <= b.left - this.mid.w) {
 					this.x = b.left - this.mid.w;
 					this.vx *= this.bounce;
 					this.squish();
 				}
 				// if we came from right
-				if (this.vx < 0 && this.xp >= b.right + this.mid.w) {
+				else if (this.vx < 0 && this.xp >= b.right + this.mid.w) {
 					this.x = b.right + this.mid.w;
 					this.vx *= this.bounce;
 					this.squish();
 				}
-				// if we came from above
-				if (this.vy > 0 && this.yp <= b.top) {
-					this.y = b.top;
-					if (this.vy > this.gravity) this.squishTop(this.vy);
-					this.vy *= this.bounce;
-					this.grounded = true;
-				}
 				// if we came from below
-				if (this.vy < 0 && this.yp >= b.bottom + this.h) {
+				else if (this.vy < 0 && this.yp >= b.bottom + this.h) {
 					this.y = b.bottom + this.h;
-					this.vy *= this.bounce;
+					this.vy = 0;
 				}
 			}
 		}
 
 		// ground check
-		if (this.y > Global.getGroundY()) {
+		if (this.y >= Global.getGroundY()) {
 			this.y = Global.getGroundY();
 			if (this.vy > this.gravity) this.squishTop(this.vy);
-			this.vy *= this.bounce;
+			this.vy = 0;
 			this.grounded = true;
 		}
 	}
@@ -166,6 +169,7 @@ class Player {
 
 		Draw.onTransform(this.x, this.y, this.xs, this.ys, 0, () => {
 			Draw.rect(-this.mid.wd, -this.hd, this.wd, this.hd);
+			Draw.rect(-this.mid.w, -this.h, this.w, this.h, true);
 		});
 	}
 }
@@ -179,13 +183,16 @@ NZ.start({
 	},
 	start() {
 		OBJ.rawClearAll();
-		const n = OBJ.rawPush('Player', new Player(Stage.randomX, 100, 32, 48));
-		OBJ.rawPush('Block', new Block(Stage.mid.w, Global.getGroundY() - (80 + n.h), 100, 80));
-		OBJ.rawPush('Block', new Block(Stage.mid.w - (100 + n.w), Global.getGroundY() - 50, 100, 50));
-		OBJ.rawPush('Block', new Block(Stage.mid.w + (100 + n.w), Global.getGroundY() - 50, 100, 50));
+		const n = OBJ.rawPush('Player', new Player(Stage.randomX, 100, 24, 48));
+		// OBJ.rawPush('Block', new Block(Stage.mid.w, Global.getGroundY() - (80 + n.h), 100, 80));
+		// OBJ.rawPush('Block', new Block(Stage.mid.w - (100 + n.w), Global.getGroundY() - 50, 100, 50));
+		// OBJ.rawPush('Block', new Block(Stage.mid.w + (100 + n.w), Global.getGroundY() - 50, 100, 50));
+		for (let i = 0, w=n.wd, h=n.hd, cols=Stage.w/w, rows=Stage.h/h; i < cols; i++) {
+			OBJ.rawPush('Block', new Block(i * w, Global.getGroundY() - h, w, h));
+		}
 
-		for (let i = 0, w=n.wd, h=n.hd, cols=Stage.w/w, rows=Stage.h/h; i < 50; i++) {
-			OBJ.rawPush('Block', new Block(Mathz.irange(cols) * w, Mathz.irange(rows) * h, w, h));
+		for (let i = 0; i < 50; i++) {
+			OBJ.rawPush('Block', new Block(Stage.randomX, Stage.randomY, Mathz.range(32, 128), Mathz.range(32, 128)));
 		}
 	},
 	render() {
@@ -196,22 +203,27 @@ NZ.start({
 		}
 
 		// draw blocks
-		Draw.setFill(C.black);
+		Draw.setColor(C.black);
 		for (const b of OBJ.rawTake('Block')) {
 			b.render();
 		}
 
 		// draw player
-		Draw.setFill(C.red);
+		Draw.setColor(C.red, C.black);
 		for (const p of OBJ.rawTake('Player')) {
 			p.render();
 		}
 
 		// draw ground
-		Draw.setFill(C.green);
+		Draw.setColor(C.green);
 		Draw.rect(0, Stage.h - Global.GROUND_H, Stage.w, Global.GROUND_H);
 
 		// debug
+		const p = OBJ.rawTake('Player')[0];
+		Draw.textBGi(0, 0, `pos: (${p.x.toFixed(4)}, ${p.y.toFixed(4)})`);
+		Draw.textBGi(0, 1, `vel: (${p.vx.toFixed(4)}, ${p.vy.toFixed(4)})`);
+		Draw.textBGi(0, 2, `grounded: ${p.grounded}`);
+
 		Input.testRestartOnSpace();
 	}
 });
