@@ -91,7 +91,7 @@ class Player extends Point {
 			h: this.h * 0.5
 		};
 		this.grapple = {
-			range: 2000,
+			range: 600,
 			length: 50,
 			points: [],
 			sticks: [],
@@ -117,7 +117,7 @@ class Player extends Point {
 			dy = y - this.y,
 			dist = Math.sqrt(dx*dx + dy*dy);
 
-		if (dist > this.grapple.range) return;
+		if (dist > this.grapple.range) return false; // out of range
 
 		let segment = dist < this.grapple.length? 5 : 10,
 			len = Math.min(this.grapple.length, dist) / segment;
@@ -134,12 +134,14 @@ class Player extends Point {
 
 		let stiffness = 0.1;
 
-		for (let i = this.grapple.points.length - 1; i > 0;) {
-			this.grapple.sticks.push(OBJ.rawPush('Stick', new Stick([this.grapple.points[i], this.grapple.points[--i]], len, stiffness)));
+		for (let i = 0; i < this.grapple.points.length - 1; i++) {
+			this.grapple.sticks.push(OBJ.rawPush('Stick', new Stick([this.grapple.points[i], this.grapple.points[i+1]], len, stiffness)));
 		}
 
 		this.grapple.points[0].pinned = true;
 		this.grapple.sticks.push(OBJ.rawPush('Stick', new Stick([this.grapple.points[this.grapple.points.length - 1], this]))); // connect rope
+
+		return true;
 	}
 	destroyGrapple() {
 		for (const p of this.grapple.points) {
@@ -153,7 +155,7 @@ class Player extends Point {
 	}
 	update() {
 		const keyJumpPressed = Input.keyDown(KeyCode.W) || Input.keyDown(KeyCode.Up) || Input.keyDown(KeyCode.Space);
-		if (Input.mouseDown(0) || keyJumpPressed) {
+		if (Input.mouseDown(0)/*|| keyJumpPressed*/) {
 			if (this.grapple.isGrappling) {
 				if (this.grapple.isCreated()) {
 					this.destroyGrapple();
@@ -162,18 +164,35 @@ class Player extends Point {
 			}
 			else {
 				// grapple creation only with mouse click
-				if (!keyJumpPressed) {
+				// if (!keyJumpPressed) {
 					let x = Input.mouseX,
 						y = Input.mouseY,
-						duration = 0.00001 * Utils.distanceDXYSq(x - this.x, y - this.y),
+						dist = Utils.distanceDXY(x - this.x, y - this.y),
 						onComplete = () => {
-							this.createGrapple(x, y);
+							if (!this.createGrapple(x, y)) {
+								this.grapple.isGrappling = false;
+							}
 						};
+
+					if (dist > this.grapple.range) {
+						dist = this.grapple.range;
+						let a = Math.atan2(y - this.y, x - this.x);
+						x = this.x + Math.cos(a) *  dist;
+						y = this.y + Math.sin(a) *  dist;
+						onComplete = () => {
+							this.grapple.isGrappling = false;
+						};
+					}
+
+					let duration = dist * 0.01;
+
 					this.grapple.pinpoint.x = this.x;
 					this.grapple.pinpoint.y = this.y;
-					Tween.tween(this.grapple.pinpoint, { x, y }, duration, Easing.QuadEaseOut, 0, onComplete);
+					this.grapple.pinpoint.strokeWeight = 3;
+					Tween.tween(this.grapple.pinpoint, { x, y }, duration, Easing.QuintEaseOut, 0, onComplete);
+					Tween.tween(this.grapple.pinpoint, { strokeWeight: 1 }, duration, Easing.QuintEaseOut);
 					this.grapple.isGrappling = true;
-				}
+				// }
 			}
 		}
 		if (Input.keyHold(KeyCode.A) || Input.keyHold(KeyCode.Left)) {
@@ -242,15 +261,16 @@ NZ.start({
 		OBJ.rawAdd('Player');
 		Global.ID = 0;
 		Global.iter = 10;
+		Global.player = null;
+		Stage.setPixelRatio(Stage.HIGH);
+		Stage.applyPixelRatio();
 	},
 	start() {
 		OBJ.rawClearAll();
-		OBJ.rawPush('Player', new Player(Stage.mid.w, Stage.mid.h));
+		Global.player = OBJ.rawPush('Player', new Player(Stage.mid.w, Stage.mid.h));
 	},
 	render() {
-		for (const p of OBJ.rawTake('Player')) {
-			p.update();
-		}
+		Global.player.update();
 		for (const p of OBJ.rawTake('Point')) {
 			Point.update(p);
 		}
@@ -258,26 +278,39 @@ NZ.start({
 		while (iter-- > 0) {
 			for (const s of OBJ.rawTake('Stick')) { s.update(); }
 			for (const p of OBJ.rawTake('Point')) { Point.constraint(p); }
-			for (const p of OBJ.rawTake('Player')) { p.constraint(); }
+			Global.player.constraint();
 		}
-		for (const p of OBJ.rawTake('Player')) {
-			if (p.grapple.isGrappling && !p.grapple.isCreated()) {
-				Draw.setColor(C.brown);
-				Draw.pointLine(p, p.grapple.pinpoint);
-			}
-			Draw.setColor(C.red, C.black);
-			// origin center top
-			Draw.rect(p.x - p.mid.w, p.y, p.w, p.h);
-			// Draw.stroke();
-			// Draw.circle(p.x, p.y, p.grapple.range, true);
-		}
+
 		// for (const p of OBJ.rawTake('Point')) {
 		// 	Draw.setColor(C.black);
 		// 	Draw.pointCircle(p, 8, true);
 		// }
+
+		Draw.setLineCap(LineCap.round);
+		Draw.setLineJoin(LineJoin.round);
+
+		let p = Global.player;
+
+		if (p.grapple.isGrappling && !p.grapple.isCreated()) {
+			Draw.setColor(C.brown);
+			Draw.setLineWidth(Math.abs(p.grapple.pinpoint.strokeWeight));
+			Draw.pointArrow(p, p.grapple.pinpoint, 10);
+			Draw.resetLineWidth();
+		}
+		Draw.setColor(C.red, C.black);
+		// origin center top
+		Draw.rect(p.x - p.mid.w, p.y, p.w, p.h);
+		Draw.stroke();
+		Draw.circle(p.x, p.y, p.grapple.range, true);
+
 		for (const s of OBJ.rawTake('Stick')) {
 			Draw.setColor(C.brown);
-			Draw.pointLine(s.p[0], s.p[1]);
+			if (s.id === p.grapple.sticks[0].id) {
+				Draw.pointArrow(s.p[1], s.p[0], 10);
+			}
+			else {
+				Draw.pointLine(s.p[0], s.p[1]);
+			}
 		}
 		// Input.testRestartOnSpace();
 	}
