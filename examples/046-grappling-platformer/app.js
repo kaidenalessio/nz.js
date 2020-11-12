@@ -155,8 +155,10 @@ class Player extends Point {
 		const keyJumpPressed = Input.keyDown(KeyCode.W) || Input.keyDown(KeyCode.Up) || Input.keyDown(KeyCode.Space);
 		if (Input.mouseDown(0) || keyJumpPressed) {
 			if (this.grapple.isGrappling) {
-				this.destroyGrapple();
-				this.grapple.isGrappling = false;
+				if (this.grapple.isCreated()) {
+					this.destroyGrapple();
+					this.grapple.isGrappling = false;
+				}
 			}
 			else {
 				// grapple creation only with mouse click
@@ -180,7 +182,7 @@ class Player extends Point {
 		if (Input.keyHold(KeyCode.D) || Input.keyHold(KeyCode.Right)) {
 			this.x += this.acc;
 		}
-		if (this.isGrounded) {
+		if (this.isGrounded && !this.grapple.isGrappling) {
 			if (this.x - this.px > this.limit) {
 				this.x = this.px + this.limit;
 			}
@@ -206,6 +208,9 @@ class Player extends Point {
 		this.constraint();
 	}
 	constraint() {
+		this.vx = (this.x - this.px) * this.fric;
+		this.vy = (this.y - this.py) * this.fric;
+
 		this.isGrounded = false;
 		if (this.y + this.h + this.isGroundedThreshold > Stage.h) {
 			this.isGrounded = true;
