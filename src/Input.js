@@ -293,6 +293,12 @@ NZ.Input = {
 		if (this.mouseDown(0)) {
 			console.log(`${this.mouseX}, ${this.mouseY}`);
 		}
+	},
+	// require NZ.Scene
+	testRestartOnSpace() {
+		if (this.keyDown(32)) {
+			NZ.Scene.restart();
+		}
 	}
 };
 
