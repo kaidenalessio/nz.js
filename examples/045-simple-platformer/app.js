@@ -103,6 +103,16 @@ class Player {
 			if (this.grounded || this.wallonleft || this.wallonright) {
 				this.jumptime = 0;
 				this.jumping = true;
+
+				// wall bounce
+				if (!this.grounded) {
+					if (this.wallonright) {
+						this.vx = -this.vxlimit;
+					}
+					if (this.wallonleft) {
+						this.vx = this.vxlimit;
+					}
+				}
 			}
 			this.squish();
 		}
