@@ -10,8 +10,8 @@ class Block {
 		this.right = this.x + this.w;
 		this.bottom = this.y + this.h;
 	}
-	containsCircle(p) {
-		return (p.x + p.r >= this.left && p.x - p.r <= this.right && p.y + p.r >= this.top && p.y - p.r < this.bottom);
+	intersects(p) {
+		return (p.right >= this.left && p.left <= this.right && p.bottom >= this.top && p.top < this.bottom);
 	}
 	render() {
 		Draw.rect(this.x, this.y, this.w, this.h);
@@ -20,10 +20,11 @@ class Block {
 
 class Player {
 	// origin at center bottom
-	constructor(x, y, r) {
+	constructor(x, y, w, h) {
 		this.x = x;
 		this.y = y;
-		this.r = r;
+		this.w = w;
+		this.h = h;
 		this.xp = this.x;
 		this.yp = this.y;
 		this.vx = 0;
@@ -38,6 +39,10 @@ class Player {
 		this.grounded = false;
 		this.jumpforce = -20;
 		this.airfriction = 0.99;
+		this.top = this.y - this.h * 0.5;
+		this.left = this.x - this.w * 0.5;
+		this.right = this.x + this.w * 0.5;
+		this.bottom = this.y + this.h * 0.5;
 	}
 	update() {
 
@@ -61,7 +66,7 @@ class Player {
 			if (Input.keyDown(KeyCode.Up) && !this.jumping) {
 				this.vy = this.jumpforce;
 				this.jumping = true;
-				this.jumptime = Time.frameCount + 20;
+				this.jumptime = Time.frameCount + 10;
 			}
 		}
 
@@ -84,48 +89,55 @@ class Player {
 		this.yp = this.y;
 		this.x += this.vx;
 		this.y += this.vy;
+
+		// origin center middle
+		this.top = this.y - this.h * 0.5;
+		this.left = this.x - this.w * 0.5;
+		this.right = this.x + this.w * 0.5;
+		this.bottom = this.y + this.h * 0.5;
 	}
 	constraint() {
 		this.grounded = false;
+		this.onleftwall = false;
+		this.onrightwall = false;
 
 		// block collision check
 		for (const b of OBJ.rawTake('Block')) {
 			// only check if we intersect
-			if (b.containsCircle(this)) {
+			if (b.intersects(this)) {
 				// if we came from left
-				if (this.vx < 0 && this.xp >= b.right + this.r) {
-					this.x = b.right + this.r;
+				if (this.vx > 0 && this.xp <= b.left - this.w * 0.5) {
+					this.x = b.left - this.w * 0.5;
 					this.vx *= this.bounce;
 				}
 				// if we came from right
-				if (this.vx > 0 && this.xp <= b.left - this.r) {
-					this.x = b.left - this.r;
+				if (this.vx < 0 && this.xp >= b.right + this.w * 0.5) {
+					this.x = b.right + this.w * 0.5;
 					this.vx *= this.bounce;
 				}
 				// if we came from above
-				if (this.vy > 0 && this.yp <= b.top - this.r) {
-					this.y = b.top - this.r;
+				if (this.vy > 0 && this.yp <= b.top - this.h * 0.5) {
+					this.y = b.top - this.h * 0.5;
 					this.vy *= this.bounce;
 					this.grounded = true;
 				}
 				// if we came from below
-				if (this.vy < 0 && this.yp >= b.bottom + this.r) {
-					this.y = b.bottom + this.r;
+				if (this.vy < 0 && this.yp >= b.bottom + this.h * 0.5) {
+					this.y = b.bottom + this.h * 0.5;
 					this.vy *= this.bounce;
 				}
 			}
 		}
 
 		// ground check
-		if (this.y > Stage.h - 100 - this.r) {
-			this.y = Stage.h - 100 - this.r;
+		if (this.y > Stage.h - 100 - this.h * 0.5) {
+			this.y = Stage.h - 100 - this.h * 0.5;
 			this.vy *= this.bounce;
 			this.grounded = true;
 		}
 	}
 	render() {
-		// Draw.circle(this.x, this.y, this.r);
-		Draw.rectRotated(this.x, this.y, this.r * 2, this.r * 2);
+		Draw.rectRotated(this.x, this.y, this.w, this.h);
 	}
 }
 
@@ -137,10 +149,11 @@ NZ.start({
 		Global.getGroundY = () => Stage.h - Global.GROUND_H;
 	},
 	start() {
-		OBJ.rawPush('Block', new Block(Stage.mid.w, 700, 100, 100));
-		OBJ.rawPush('Block', new Block(Stage.mid.w - 150, Global.getGroundY() - 50, 100, 50));
-		OBJ.rawPush('Block', new Block(Stage.mid.w + 150, Global.getGroundY() - 50, 100, 50));
-		OBJ.rawPush('Player', new Player(100, 100, 16));
+		OBJ.rawClearAll();
+		const n = OBJ.rawPush('Player', new Player(Stage.randomX, 100, Mathz.range(32, 128), Mathz.range(32, 128)));
+		OBJ.rawPush('Block', new Block(Stage.mid.w, Global.getGroundY() - (80 + n.h), 100, 80));
+		OBJ.rawPush('Block', new Block(Stage.mid.w - (100 + n.w), Global.getGroundY() - 50, 100, 50));
+		OBJ.rawPush('Block', new Block(Stage.mid.w + (100 + n.w), Global.getGroundY() - 50, 100, 50));
 	},
 	render() {
 
@@ -164,5 +177,8 @@ NZ.start({
 		// draw ground
 		Draw.setFill(C.green);
 		Draw.rect(0, Stage.h - Global.GROUND_H, Stage.w, Global.GROUND_H);
+
+		// debug
+		Input.testRestartOnSpace();
 	}
 });
