@@ -36,6 +36,18 @@ NZ.Utils = {
 	distance(a, b) {
 		return Math.sqrt(NZ.Utils.distanceSq(a, b));
 	},
+	distanceXYSq(x1, y1, x2, y2) {
+		return NZ.Utils.distanceSq({ x: x1, y: y1 }, { x: x2, y: y2 });
+	},
+	distanceXY(x1, y1, x2, y2) {
+		return Math.sqrt(NZ.Utils.distanceSq({ x: x1, y: y1 }, { x: x2, y: y2 }));
+	},
+	distanceDXYSq(dx, dy) {
+		return dx*dx + dy*dy;
+	},
+	distanceDXY(dx, dy) {
+		return Math.sqrt(dx*dx + dy*dy);
+	},
 	copyToClipboard(text) {
 		const t = document.createElement('textarea');
 		t.value = text;
