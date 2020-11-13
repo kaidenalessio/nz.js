@@ -110,6 +110,9 @@ class Player extends Point {
 			time: 0,
 			duration: 180, // (60 frames = 1 second)
 			isGrappling: false,
+			targetBlock: null,
+			targetBlockOffsetX: 0,
+			targetBlockOffsetY: 0,
 			pinpoint: {
 				x: 0,
 				y: 0
@@ -149,7 +152,7 @@ class Player extends Point {
 			dy = y - this.y,
 			dist = Math.sqrt(dx*dx + dy*dy);
 
-		if (dist > this.grapple.range) return false; // out of range
+		// if (dist > this.grapple.range) return false; // out of range
 
 		let len = Math.min(this.grapple.length, dist),
 			segment = this.grapple.segment,
@@ -207,9 +210,16 @@ class Player extends Point {
 	}
 	updateGrapple() {
 		if (this.grapple.isGrappling && this.grapple.isCreated()) {
+
+			if (this.grapple.targetBlock) {
+				this.grapple.points[0].x = this.grapple.targetBlock.x + this.grapple.targetBlockOffsetX;
+				this.grapple.points[0].y = this.grapple.targetBlock.y + this.grapple.targetBlockOffsetY;
+			}
+
 			const dist = Utils.distance(this, this.grapple.points[0]);
 			// if we are close enough to grapple pinned point or grapple time exceeds grapple duration
-			if (dist < this.grapple.targetDistance || this.grapple.time++ > this.grapple.duration) {
+			// new: end grapple on ground
+			if (dist < this.grapple.targetDistance || this.grapple.time++ > this.grapple.duration || (this.grapple.time > 5 && this.isGrounded)) {
 				// end of grapple
 				this.destroyGrapple();
 				// reapply gravity
@@ -230,11 +240,14 @@ class Player extends Point {
 			}
 		}
 
+		// grapple cue
 		let a = Math.atan2(Input.mouseY - this.y, Input.mouseX - this.x);
 		this.grapple.head.x = this.x + Math.cos(a) *  this.grapple.head.length;
 		this.grapple.head.y = this.y + Math.sin(a) *  this.grapple.head.length;
 
+		// grapple creation
 		if (this.keyGrapplePressed) {
+			// canceling
 			if (this.grapple.isGrappling) {
 				// you can cancel grapple early by pressing the
 				// same input button used to start grapple
@@ -247,44 +260,59 @@ class Player extends Point {
 					this.grapple.isGrappling = false;
 				}
 			}
+			// creating
 			else {
-				let x = Input.mouseX,
-					y = Input.mouseY,
+				// init
+				let x = Input.mouseX, // target x
+					y = Input.mouseY, // target y
 					dist = Utils.distanceDXY(x - this.x, y - this.y),
-					onComplete = () => {
-						// start of grapple
-						if (this.createGrapple(x, y)) {
-							this.grav = 0;
-							this.grapple.time = 0;
-						}
-						else {
-							// failed to create grapple
-							// end of graplling routine
-							this.grapple.isGrappling = false;
-						}
-					};
+					afterAnimationEnd;
 
-				// if target out of grapple range, plan ahead to fail the grapple
+				// if out of range
 				if (dist > this.grapple.range) {
 					// clamp dist to grapple range
-					dist = this.grapple.range;
-					// recalculate target, not really necessary
-					// since grapple already planned to be fail
-					// but, just to show the range to player
+					dist = Math.min(dist, this.grapple.range);
+					// recalculate target
 					let a = Math.atan2(y - this.y, x - this.x);
 					x = this.x + Math.cos(a) *  dist;
 					y = this.y + Math.sin(a) *  dist;
-					onComplete = () => {
-						this.grapple.isGrappling = false;
-					};
 				}
 
-				let duration = dist * 0.01;
+				afterAnimationEnd = () => {
+					// get block on given target
+					// grapple has to be attached to a block
+					this.grapple.targetBlock = OBJ.rawGet('Block', (b) => b.containsPoint(x, y));
+					if (this.grapple.targetBlock) {
+						// yes, we have the target inside block
+						// calculate offset
+						this.grapple.targetBlockOffsetX = x - this.grapple.targetBlock.x;
+						this.grapple.targetBlockOffsetY = y - this.grapple.targetBlock.y;
+						// start of grapple creation
+						if (this.createGrapple(x, y)) {
+							// setup
+							this.grav = this.grapple.startGrav;
+							this.grapple.time = 0;
+						}
+						else {
+							// return false means failed to create grapple
+							// end of graplling routine
+							this.grapple.isGrappling = false;
+						}
+					}
+					else {
+						// if target is not inside any block
+						// end of graplling routine
+						this.grapple.isGrappling = false;
+					}
+				};
 
+				// start animation of throwing pinpoint,
+				// after given duration, execute `afterAnimationEnd`
+				// which will be the actual creation of grapple
+				let duration = Math.max(dist * 0.02, 4);
 				this.grapple.pinpoint.x = this.grapple.head.x;
 				this.grapple.pinpoint.y = this.grapple.head.y;
-				// throw pinpoint, after given duration, execute onComplete
-				Tween.tween(this.grapple.pinpoint, { x, y }, duration, Easing.QuintEaseOut, 0, onComplete);
+				Tween.tween(this.grapple.pinpoint, { x, y }, duration, Easing.QuintEaseOut, 0, afterAnimationEnd);
 
 				// start of grappling routine
 				this.grapple.isGrappling = true;
@@ -388,15 +416,24 @@ class Block {
 		// player origin center top
 		return p.x+p.mid.w > this.left && p.x-p.mid.w < this.right && p.y+p.h > this.top && p.y < this.bottom;
 	}
+	containsPoint(x, y) {
+		return x >= this.left && x <= this.right && y >= this.top && y <= this.bottom;
+	}
+	calcBound() {
+		this.top = this.y;
+		this.left = this.x;
+		this.right = this.x + this.w;
+		this.bottom = this.y + this.h;
+	}
 	update() {
 		// call this after ground check because
 		// `player.isGrounded = false` is there
+		this.calcBound();
 		const p = OBJ.rawTake('Player')[0] || null;
 		if (p) {
 			p.wallOnLeft = false;
 			p.wallOnRight = false;
 			if (this.intersectsPlayer(p)) {
-				console.log('intersect');
 				// so player hit us huh?
 				// calculate velocity
 				p.vx = (p.x - p.px) * p.fric;
@@ -411,7 +448,7 @@ class Block {
 					p.isGrounded = true;
 				}
 				// check if player hit us from the left
-				else if (p.vx > 0 && Math.abs(p.px + p.mid.w - this.left) <= p.mid.w) {
+				else if (p.vx > 0 && (Math.abs(p.px + p.mid.w - this.left) <= p.mid.w || p.px <= this.left - p.mid.w)) {
 					// clamp to our left
 					p.x = this.left - p.mid.w;
 					// bouncy bounce
@@ -426,7 +463,7 @@ class Block {
 					}
 				}
 				// check if player hit us from the right
-				else if (p.vx < 0 && Math.abs(p.px - p.mid.w - this.right) <= p.mid.w) {
+				else if (p.vx < 0 && (Math.abs(p.px - p.mid.w - this.right) <= p.mid.w || p.px >= this.right + p.mid.w)) {
 					// clamp to our right
 					p.x = this.right + p.mid.w;
 					// bouncy bounce
@@ -455,15 +492,40 @@ NZ.start({
 		Global.ID = 0;
 		Global.iter = 10;
 		Global.player = null;
+		Global.blockStart = { x: 0, y: 0 };
 		Stage.setPixelRatio(Stage.HIGH);
 		Stage.applyPixelRatio();
 	},
 	start() {
 		OBJ.rawClearAll();
 		Global.player = OBJ.rawPush('Player', new Player(Stage.mid.w, Stage.mid.h));
-		OBJ.rawPush('Block', new Block(100, Stage.h - 100, 100, 64));
+		const n = OBJ.rawPush('Block', new Block(100, Stage.mid.h, 100, 64));
+		const loop = () => {
+			Tween.tween(n, { x: Stage.w - 100 - n.w }, 240, Easing.QuadEaseInOut)
+				 .chain(n, { x: 100 }, 240, Easing.QuadEaseInOut, 0, loop);
+		};
+		loop();
 	},
 	render() {
+
+		// block creation
+		if (Input.mouseDown(2)) {
+			Global.blockStart.x = Input.mouseX;
+			Global.blockStart.y = Input.mouseY;
+		}
+		if (Input.mouseUp(2)) {
+			let x = Global.blockStart.x,
+				y = Global.blockStart.y,
+				w = Input.mouseX - x,
+				h = Input.mouseY - y;
+			if (w < 0) x += w;
+			if (h < 0) y += h;
+			w = Math.abs(w);
+			h = Math.abs(h);
+			if (w > 4 || h > 4) {
+				OBJ.rawPush('Block', new Block(x, y, w, h));
+			}
+		}
 
 		// logic
 		Global.player.update();
@@ -535,7 +597,25 @@ NZ.start({
 			Draw.rect(p.px - p.mid.w, p.py, p.w, p.h, true);
 		}
 
+		if (Input.mouseHold(2)) {
+			let x = Global.blockStart.x,
+				y = Global.blockStart.y,
+				w = Input.mouseX - x,
+				h = Input.mouseY - y;
+			Draw.setStroke(C.black);
+			Draw.rect(x, y, w, h, true);
+		}
+
+		const options = { bgColor: C.none, textColor: C.black };
+		Draw.setFont(Font.sm);
+		Draw.textBGi(0, 0, 'Click a block to start grappling', options);
+		Draw.textBGi(0, 1, 'Move using WASD or arrow keys', options);
+		Draw.textBGi(0, 2, `Press <U> to ${Debug.mode > 0? 'disable' : 'enable'} debug mode`, options);
+		Draw.textBGi(0, 3, 'Click and drag right mouse button to create block', options);
+		Draw.textBGi(0, 4, 'You can also use <Q> to grapple and space to jump', options);
+
 		// Input.testRestartOnSpace();
 	},
-	debugModeAmount: 2
+	debugModeAmount: 2,
+	preventContextMenu: true
 });
