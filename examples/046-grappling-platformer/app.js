@@ -50,7 +50,7 @@ class Stick {
 	constructor(points, length, stiffness=1) {
 		this.id = Global.ID++;
 		this.p = points;
-		this.c = this.id % 2 === 0? C.dimGrey : C.black;
+		this.c = this.id % 2 === 0? C.red : C.blue; // for debug
 		this.length = length || this.dist();
 		this.stiffness = stiffness;
 	}
@@ -206,7 +206,7 @@ class Player extends Point {
 		this.keyJump = Input.keyHold(KeyCode.W) || Input.keyHold(KeyCode.Up) || Input.keyHold(KeyCode.Space);
 		this.keyJumpPressed = Input.keyDown(KeyCode.W) || Input.keyDown(KeyCode.Up) || Input.keyDown(KeyCode.Space);
 		this.keyJumpReleased = Input.keyUp(KeyCode.W) || Input.keyUp(KeyCode.Up) || Input.keyUp(KeyCode.Space);
-		this.keyGrapplePressed = Input.mouseDown(0) || Input.keyDown(KeyCode.Q);
+		this.keyGrapplePressed = Input.mouseDown(0) || Input.keyDown(KeyCode.Q) || Input.keyDown(KeyCode.Enter);
 	}
 	updateGrapple() {
 		if (this.grapple.isGrappling && this.grapple.isCreated()) {
@@ -550,28 +550,27 @@ NZ.start({
 			Draw.rect(b.left, b.top, b.w, b.h, true);
 		}
 
+		let p = Global.player;
+		// draw player
+		Draw.setColor(C.red, C.black);
+		// origin center top
+		Draw.rect(p.x - p.mid.w, p.y, p.w, p.h);
+		Draw.stroke();
+
+		/// DRAW BUNCH OF LINES -----------------------------
 		Draw.setLineCap(LineCap.round);
 		Draw.setLineJoin(LineJoin.round);
 		Draw.setLineWidth(2);
-
-		let p = Global.player;
 
 		// draw grapple pinpoint (the one that gets thrown before grapple occurs)
 		Draw.setColor(C.black);
 		if (p.grapple.isGrappling && !p.grapple.isCreated()) {
 			Draw.pointArrow(p, p.grapple.pinpoint, 5);
 		}
-		// draw grapple cue
-		if (!p.grapple.isGrappling) {
-			Draw.pointArrow(p, p.grapple.head, 5);
-			// draw grapple hand
-			Draw.pointCircle(p, 2);
-		}
-
 
 		// draw all sticks
 		for (const s of OBJ.rawTake('Stick')) {
-			Draw.setStroke(s.c);
+			Draw.setStroke(Debug.mode > 0? s.c : C.black);
 			if (s.id === p.grapple.sticks[0].id && p.grapple.isCreated()) {
 				Draw.pointArrow(s.p[1], s.p[0], 5 * (1 - p.grapple.timeScaled()));
 			}
@@ -580,20 +579,38 @@ NZ.start({
 			}
 		}
 
-		Draw.resetLineWidth();
+		// draw grapple cue
+		Draw.setLineWidth(2);
+		Draw.setColor(C.black);
+		if (!p.grapple.isGrappling) {
+			Draw.pointArrow(p, p.grapple.head, 5);
+		}
 
-		// draw player
-		Draw.setColor(C.red, C.black);
-		// origin center top
-		Draw.rect(p.x - p.mid.w, p.y, p.w, p.h);
-		Draw.stroke();
+		// draw grapple hand
+		Draw.pointCircle(p, 2);
+
+		Draw.resetLineWidth();
+		/// END OF DRAW BUNCH OF LINES ----------------------
+
+		// draw player crosshair
+		if (Utils.distance(p, Input.mousePosition) > p.grapple.range) {
+			Draw.setColor(C.red);
+			Draw.plus(Input.mouseX, Input.mouseY, 10);
+			Draw.circle(Input.mouseX, Input.mouseY, 8, true);
+		}
+		else {
+			Draw.setColor(C.black);
+			Draw.plus(Input.mouseX, Input.mouseY, 10);
+			Draw.circle(Input.mouseX, Input.mouseY, 4, true);
+		}
 
 		if (Debug.mode > 0) {
+			Draw.circle(p.x, p.y, p.grapple.range, true); // take color from crosshair
+			Draw.setColor(C.black);
 			for (const p of OBJ.rawTake('Point')) {
-				Draw.setColor(C.black);
 				Draw.pointCircle(p, 4, true);
 			}
-			Draw.circle(p.x, p.y, p.grapple.range, true);
+			// draw player previous position
 			Draw.rect(p.px - p.mid.w, p.py, p.w, p.h, true);
 		}
 
@@ -612,7 +629,7 @@ NZ.start({
 		Draw.textBGi(0, 1, 'Move using WASD or arrow keys', options);
 		Draw.textBGi(0, 2, `Press <U> to ${Debug.mode > 0? 'disable' : 'enable'} debug mode`, options);
 		Draw.textBGi(0, 3, 'Click and drag right mouse button to create block', options);
-		Draw.textBGi(0, 4, 'You can also use <Q> to grapple and space to jump', options);
+		Draw.textBGi(0, 4, 'You can also use <Q>/enter to grapple and space to jump', options);
 
 		// Input.testRestartOnSpace();
 	},
