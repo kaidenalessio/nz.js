@@ -131,10 +131,18 @@ class Player extends Point {
 		this.jumpAcc = -3;
 		this.canJump = false;
 		this.isGrounded = false;
+		this.wallOnLeft = false;
+		this.wallOnRight = false;
 		this.jumpHoldTime = 0;
 		this.canDoubleJump = false;
 		this.jumpHoldDuration = 5;
 		this.isGroundedThreshold = 20;
+		this.keyA = false;
+		this.keyD = false;
+		this.keyJump = false;
+		this.keyJumpPressed = false;
+		this.keyJumpReleased = false;
+		this.keyGrapplePressed = false;
 	}
 	createGrapple(x, y) {
 		let dx = x - this.x,
@@ -189,13 +197,15 @@ class Player extends Point {
 		this.grapple.points.length = 0;
 		this.grapple.sticks.length = 0;
 	}
-	update() {
-		let keyA = Input.keyHold(KeyCode.A) || Input.keyHold(KeyCode.Left),
-			keyD = Input.keyHold(KeyCode.D) || Input.keyHold(KeyCode.Right),
-			keyJump = Input.keyHold(KeyCode.W) || Input.keyHold(KeyCode.Up) || Input.keyHold(KeyCode.Space),
-			keyJumpPressed = Input.keyDown(KeyCode.W) || Input.keyDown(KeyCode.Up) || Input.keyDown(KeyCode.Space),
-			keyJumpReleased = Input.keyUp(KeyCode.W) || Input.keyUp(KeyCode.Up) || Input.keyUp(KeyCode.Space);
-
+	updateInput() {
+		this.keyA = Input.keyHold(KeyCode.A) || Input.keyHold(KeyCode.Left);
+		this.keyD = Input.keyHold(KeyCode.D) || Input.keyHold(KeyCode.Right);
+		this.keyJump = Input.keyHold(KeyCode.W) || Input.keyHold(KeyCode.Up) || Input.keyHold(KeyCode.Space);
+		this.keyJumpPressed = Input.keyDown(KeyCode.W) || Input.keyDown(KeyCode.Up) || Input.keyDown(KeyCode.Space);
+		this.keyJumpReleased = Input.keyUp(KeyCode.W) || Input.keyUp(KeyCode.Up) || Input.keyUp(KeyCode.Space);
+		this.keyGrapplePressed = Input.mouseDown(0) || Input.keyDown(KeyCode.Q);
+	}
+	updateGrapple() {
 		if (this.grapple.isGrappling && this.grapple.isCreated()) {
 			const dist = Utils.distance(this, this.grapple.points[0]);
 			// if we are close enough to grapple pinned point or grapple time exceeds grapple duration
@@ -209,7 +219,7 @@ class Player extends Point {
 			}
 			if (this.grav != this.baseGrav) {
 				// any input that start movement while grappling will apply gravity
-				if (keyA || keyD || keyJumpPressed) {
+				if (this.keyA || this.keyD || this.keyJumpPressed) {
 					// reset grapple gravity
 					for (let i = 0; i < this.grapple.points.length; i++) {
 						this.grapple.points[i].grav = this.grapple.baseGrav;
@@ -220,12 +230,11 @@ class Player extends Point {
 			}
 		}
 
-
 		let a = Math.atan2(Input.mouseY - this.y, Input.mouseX - this.x);
 		this.grapple.head.x = this.x + Math.cos(a) *  this.grapple.head.length;
 		this.grapple.head.y = this.y + Math.sin(a) *  this.grapple.head.length;
 
-		if (Input.mouseDown(0) || Input.keyDown(KeyCode.Q)/*|| keyJumpPressed*/) {
+		if (this.keyGrapplePressed) {
 			if (this.grapple.isGrappling) {
 				// you can cancel grapple early by pressing the
 				// same input button used to start grapple
@@ -239,59 +248,58 @@ class Player extends Point {
 				}
 			}
 			else {
-				// grapple creation only with mouse click
-				// if (!keyJumpPressed) {
-					let x = Input.mouseX,
-						y = Input.mouseY,
-						dist = Utils.distanceDXY(x - this.x, y - this.y),
-						onComplete = () => {
-							// start of grapple
-							if (this.createGrapple(x, y)) {
-								this.grav = 0;
-								this.grapple.time = 0;
-							}
-							else {
-								// failed to create grapple
-								// end of graplling routine
-								this.grapple.isGrappling = false;
-							}
-						};
-
-					// if target out of grapple range, plan ahead to fail the grapple
-					if (dist > this.grapple.range) {
-						// clamp dist to grapple range
-						dist = this.grapple.range;
-						// recalculate target, not really necessary
-						// since grapple already planned to be fail
-						// but, just to show the range to player
-						let a = Math.atan2(y - this.y, x - this.x);
-						x = this.x + Math.cos(a) *  dist;
-						y = this.y + Math.sin(a) *  dist;
-						onComplete = () => {
+				let x = Input.mouseX,
+					y = Input.mouseY,
+					dist = Utils.distanceDXY(x - this.x, y - this.y),
+					onComplete = () => {
+						// start of grapple
+						if (this.createGrapple(x, y)) {
+							this.grav = 0;
+							this.grapple.time = 0;
+						}
+						else {
+							// failed to create grapple
+							// end of graplling routine
 							this.grapple.isGrappling = false;
-						};
-					}
+						}
+					};
 
-					let duration = dist * 0.01;
+				// if target out of grapple range, plan ahead to fail the grapple
+				if (dist > this.grapple.range) {
+					// clamp dist to grapple range
+					dist = this.grapple.range;
+					// recalculate target, not really necessary
+					// since grapple already planned to be fail
+					// but, just to show the range to player
+					let a = Math.atan2(y - this.y, x - this.x);
+					x = this.x + Math.cos(a) *  dist;
+					y = this.y + Math.sin(a) *  dist;
+					onComplete = () => {
+						this.grapple.isGrappling = false;
+					};
+				}
 
-					this.grapple.pinpoint.x = this.grapple.head.x;
-					this.grapple.pinpoint.y = this.grapple.head.y;
-					// throw pinpoint, after given duration, execute onComplete
-					Tween.tween(this.grapple.pinpoint, { x, y }, duration, Easing.QuintEaseOut, 0, onComplete);
+				let duration = dist * 0.01;
 
-					// start of grappling routine
-					this.grapple.isGrappling = true;
-				// }
+				this.grapple.pinpoint.x = this.grapple.head.x;
+				this.grapple.pinpoint.y = this.grapple.head.y;
+				// throw pinpoint, after given duration, execute onComplete
+				Tween.tween(this.grapple.pinpoint, { x, y }, duration, Easing.QuintEaseOut, 0, onComplete);
+
+				// start of grappling routine
+				this.grapple.isGrappling = true;
 			}
 		}
+	}
+	updateMovement() {
 		// accelerate
-		if (keyA) {
+		if (this.keyA && !this.wallOnLeft) {
 			this.x -= this.acc;
 		}
-		if (keyD) {
+		if (this.keyD && !this.wallOnRight) {
 			this.x += this.acc;
 		}
-		// decelerate
+		// decelerate to limit
 		if (this.isGrounded && !this.grapple.isGrappling) {
 			if (this.x - this.px > this.limit) {
 				this.x -= this.acc;
@@ -300,7 +308,9 @@ class Player extends Point {
 				this.x += this.acc;
 			}
 		}
-		if (keyJumpPressed) {
+	}
+	updateRoutine() {
+		if (this.keyJumpPressed) {
 			// reset jump on ground
 			if (this.isGrounded) {
 				this.canJump = true;
@@ -311,7 +321,7 @@ class Player extends Point {
 				this.py = this.y;
 			}
 		}
-		if (keyJump && this.canJump) {
+		if (this.keyJump && this.canJump) {
 			if (this.jumpHoldTime++ < this.jumpHoldDuration) {
 				this.y += this.jumpAcc;
 			}
@@ -319,12 +329,21 @@ class Player extends Point {
 		else {
 			this.jumpHoldTime = 0;
 		}
-		if (keyJumpReleased) {
+		if (this.keyJumpReleased) {
 			this.canJump = this.canDoubleJump;
 			this.canDoubleJump = false;
 		}
+	}
+	updatePhysics() {
 		Point.update(this);
 		this.constraint();
+	}
+	update() {
+		this.updateInput();
+		this.updateGrapple();
+		this.updateMovement();
+		this.updateRoutine();
+		this.updatePhysics();
 	}
 	constraint() {
 		this.vx = (this.x - this.px) * this.fric;
@@ -353,6 +372,80 @@ class Player extends Point {
 	}
 }
 
+class Block {
+	// origin left top
+	constructor(x, y, w, h) {
+		this.x = x;
+		this.y = y;
+		this.w = w;
+		this.h = h;
+		this.top = this.y;
+		this.left = this.x;
+		this.right = this.x + this.w;
+		this.bottom = this.y + this.h;
+	}
+	intersectsPlayer(p) {
+		// player origin center top
+		return p.x+p.mid.w > this.left && p.x-p.mid.w < this.right && p.y+p.h > this.top && p.y < this.bottom;
+	}
+	update() {
+		// call this after ground check because
+		// `player.isGrounded = false` is there
+		const p = OBJ.rawTake('Player')[0] || null;
+		if (p) {
+			p.wallOnLeft = false;
+			p.wallOnRight = false;
+			if (this.intersectsPlayer(p)) {
+				console.log('intersect');
+				// so player hit us huh?
+				// calculate velocity
+				p.vx = (p.x - p.px) * p.fric;
+				p.vy = (p.y - p.py) * p.fric;
+				// check if player hit us from above
+				if (p.vy > 0 && (p.py + p.h - this.top) <= p.mid.h) {
+					// clamp to our top
+					p.y = this.top - p.h;
+					// no bouncy bounce
+					p.py = p.y;
+					// make player grounded
+					p.isGrounded = true;
+				}
+				// check if player hit us from the left
+				else if (p.vx > 0 && Math.abs(p.px + p.mid.w - this.left) <= p.mid.w) {
+					// clamp to our left
+					p.x = this.left - p.mid.w;
+					// bouncy bounce
+					p.px = p.x + p.vx * p.bounce;
+					// player hit wall on its right yet
+					// still want to go to the right?
+					if (p.keyD) {
+						// make player walled
+						p.wallOnRight = true;
+						// no bouncy bounce :(
+						p.px = p.x;
+					}
+				}
+				// check if player hit us from the right
+				else if (p.vx < 0 && Math.abs(p.px - p.mid.w - this.right) <= p.mid.w) {
+					// clamp to our right
+					p.x = this.right + p.mid.w;
+					// bouncy bounce
+					p.px = p.x + p.vx * p.bounce;
+					// player hit wall on its left yet
+					// still want to go to the left?
+					if (p.keyA) {
+						// make player walled
+						p.wallOnLeft = true;
+						// no bouncy bounce :(
+						p.px = p.x;
+					}
+				}
+				// no bottom check, one way platform
+			}
+		}
+	}
+}
+
 NZ.start({
 	init() {
 		OBJ.rawAdd('Point');
@@ -368,6 +461,7 @@ NZ.start({
 	start() {
 		OBJ.rawClearAll();
 		Global.player = OBJ.rawPush('Player', new Player(Stage.mid.w, Stage.mid.h));
+		OBJ.rawPush('Block', new Block(100, Stage.h - 100, 100, 64));
 	},
 	render() {
 
@@ -385,6 +479,13 @@ NZ.start({
 			for (const s of OBJ.rawTake('Stick')) { s.update(); }
 			for (const p of OBJ.rawTake('Point')) { Point.constraint(p); }
 			Global.player.constraint();
+		}
+		for (const b of OBJ.rawTake('Block')) { b.update(); }
+
+		// draw blocks
+		Draw.setColor(C.black);
+		for (const b of OBJ.rawTake('Block')) {
+			Draw.rect(b.left, b.top, b.w, b.h, true);
 		}
 
 		Draw.setLineCap(LineCap.round);
@@ -431,6 +532,7 @@ NZ.start({
 				Draw.pointCircle(p, 4, true);
 			}
 			Draw.circle(p.x, p.y, p.grapple.range, true);
+			Draw.rect(p.px - p.mid.w, p.py, p.w, p.h, true);
 		}
 
 		// Input.testRestartOnSpace();
