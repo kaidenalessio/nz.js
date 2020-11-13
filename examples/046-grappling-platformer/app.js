@@ -83,7 +83,8 @@ class Player extends Point {
 	// origin center top
 	constructor(x, y) {
 		super(x, y);
-		this.grav = 0.7;
+		this.baseGrav = 0.7;
+		this.grav = this.baseGrav;
 		this.fric = 0.98;
 		this.w = 16;
 		this.h = 32;
@@ -92,11 +93,22 @@ class Player extends Point {
 			h: this.h * 0.5
 		};
 		this.grapple = {
+			// amount of gravity on each point at start
+			startGrav: 0,
+			// amount of gravity to apply when player move while grappling
+			// see: `// reset grapple gravity` comment
+			baseGrav: 0.5,
 			range: 600,
 			length: 50,
 			segment: 10,
 			points: [],
 			sticks: [],
+			// if distance between player and grapple pinned point
+			// smaller than targetDistance, destroy grapple
+			targetDistance: 20,
+			// of if grapple time > grapple duration, destroy grapple
+			time: 0,
+			duration: 180, // (60 frames = 1 second)
 			isGrappling: false,
 			pinpoint: {
 				x: 0,
@@ -109,6 +121,9 @@ class Player extends Point {
 			},
 			isCreated() {
 				return this.points.length > 0;
+			},
+			timeScaled() {
+				return this.time / this.duration;
 			}
 		};
 		this.acc = 0.8;
@@ -128,11 +143,18 @@ class Player extends Point {
 
 		if (dist > this.grapple.range) return false; // out of range
 
-		let segment = this.grapple.segment,
-			len = Math.min(this.grapple.length, dist) / segment;
+		let len = Math.min(this.grapple.length, dist),
+			segment = this.grapple.segment,
+			segmentScalar = 1;
 
-		if (dist < this.grapple.length)
-			segment *= 0.5;
+		// decrease the segment if distance is short
+		if (dist < this.grapple.length * 1.5) segmentScalar *= 0.5;
+		else if (dist < this.grapple.length * 3) segmentScalar *= 0.7;
+
+		len /= segment;
+		len *= segmentScalar;
+
+		segment *= segmentScalar;
 
 		dx /= segment;
 		dy /= segment;
@@ -140,8 +162,10 @@ class Player extends Point {
 		this.grapple.points.length = 0;
 		this.grapple.sticks.length = 0;
 
-		for (let i = segment; i >= 0; i--) {
-			this.grapple.points.push(OBJ.rawPush('Point', new Point(this.x + dx * i, this.y + dy * i)));
+		for (let i = segment, n; i >= 0; i--) {
+			n = OBJ.rawPush('Point', new Point(this.x + dx * i, this.y + dy * i));
+			n.grav = this.grapple.startGrav;
+			this.grapple.points.push(n);
 		}
 
 		let stiffness = 0.1;
@@ -166,7 +190,36 @@ class Player extends Point {
 		this.grapple.sticks.length = 0;
 	}
 	update() {
-		const keyJumpPressed = Input.keyDown(KeyCode.W) || Input.keyDown(KeyCode.Up) || Input.keyDown(KeyCode.Space);
+		let keyA = Input.keyHold(KeyCode.A) || Input.keyHold(KeyCode.Left),
+			keyD = Input.keyHold(KeyCode.D) || Input.keyHold(KeyCode.Right),
+			keyJump = Input.keyHold(KeyCode.W) || Input.keyHold(KeyCode.Up) || Input.keyHold(KeyCode.Space),
+			keyJumpPressed = Input.keyDown(KeyCode.W) || Input.keyDown(KeyCode.Up) || Input.keyDown(KeyCode.Space),
+			keyJumpReleased = Input.keyUp(KeyCode.W) || Input.keyUp(KeyCode.Up) || Input.keyUp(KeyCode.Space);
+
+		if (this.grapple.isGrappling && this.grapple.isCreated()) {
+			const dist = Utils.distance(this, this.grapple.points[0]);
+			// if we are close enough to grapple pinned point or grapple time exceeds grapple duration
+			if (dist < this.grapple.targetDistance || this.grapple.time++ > this.grapple.duration) {
+				// end of grapple
+				this.destroyGrapple();
+				// reapply gravity
+				this.grav = this.baseGrav;
+				// end of graplling routine
+				this.grapple.isGrappling = false;
+			}
+			if (this.grav != this.baseGrav) {
+				// any input that start movement while grappling will apply gravity
+				if (keyA || keyD || keyJumpPressed) {
+					// reset grapple gravity
+					for (let i = 0; i < this.grapple.points.length; i++) {
+						this.grapple.points[i].grav = this.grapple.baseGrav;
+					}
+					// reset gravity
+					this.grav = this.baseGrav;
+				}
+			}
+		}
+
 
 		let a = Math.atan2(Input.mouseY - this.y, Input.mouseX - this.x);
 		this.grapple.head.x = this.x + Math.cos(a) *  this.grapple.head.length;
@@ -174,8 +227,14 @@ class Player extends Point {
 
 		if (Input.mouseDown(0) || Input.keyDown(KeyCode.Q)/*|| keyJumpPressed*/) {
 			if (this.grapple.isGrappling) {
+				// you can cancel grapple early by pressing the
+				// same input button used to start grapple
 				if (this.grapple.isCreated()) {
+					// end of grapple
 					this.destroyGrapple();
+					// reapply gravity
+					this.grav = this.baseGrav;
+					// end of graplling routine
 					this.grapple.isGrappling = false;
 				}
 			}
@@ -186,13 +245,25 @@ class Player extends Point {
 						y = Input.mouseY,
 						dist = Utils.distanceDXY(x - this.x, y - this.y),
 						onComplete = () => {
-							if (!this.createGrapple(x, y)) {
+							// start of grapple
+							if (this.createGrapple(x, y)) {
+								this.grav = 0;
+								this.grapple.time = 0;
+							}
+							else {
+								// failed to create grapple
+								// end of graplling routine
 								this.grapple.isGrappling = false;
 							}
 						};
 
+					// if target out of grapple range, plan ahead to fail the grapple
 					if (dist > this.grapple.range) {
+						// clamp dist to grapple range
 						dist = this.grapple.range;
+						// recalculate target, not really necessary
+						// since grapple already planned to be fail
+						// but, just to show the range to player
 						let a = Math.atan2(y - this.y, x - this.x);
 						x = this.x + Math.cos(a) *  dist;
 						y = this.y + Math.sin(a) *  dist;
@@ -205,16 +276,19 @@ class Player extends Point {
 
 					this.grapple.pinpoint.x = this.grapple.head.x;
 					this.grapple.pinpoint.y = this.grapple.head.y;
+					// throw pinpoint, after given duration, execute onComplete
 					Tween.tween(this.grapple.pinpoint, { x, y }, duration, Easing.QuintEaseOut, 0, onComplete);
+
+					// start of grappling routine
 					this.grapple.isGrappling = true;
 				// }
 			}
 		}
 		// accelerate
-		if (Input.keyHold(KeyCode.A) || Input.keyHold(KeyCode.Left)) {
+		if (keyA) {
 			this.x -= this.acc;
 		}
-		if (Input.keyHold(KeyCode.D) || Input.keyHold(KeyCode.Right)) {
+		if (keyD) {
 			this.x += this.acc;
 		}
 		// decelerate
@@ -237,7 +311,7 @@ class Player extends Point {
 				this.py = this.y;
 			}
 		}
-		if ((Input.keyHold(KeyCode.W) || Input.keyHold(KeyCode.Up)) && this.canJump) {
+		if (keyJump && this.canJump) {
 			if (this.jumpHoldTime++ < this.jumpHoldDuration) {
 				this.y += this.jumpAcc;
 			}
@@ -245,7 +319,7 @@ class Player extends Point {
 		else {
 			this.jumpHoldTime = 0;
 		}
-		if ((Input.keyUp(KeyCode.W) || Input.keyUp(KeyCode.Up))) {
+		if (keyJumpReleased) {
 			this.canJump = this.canDoubleJump;
 			this.canDoubleJump = false;
 		}
@@ -313,11 +387,6 @@ NZ.start({
 			Global.player.constraint();
 		}
 
-		// for (const p of OBJ.rawTake('Point')) {
-		// 	Draw.setColor(C.black);
-		// 	Draw.pointCircle(p, 8, true);
-		// }
-
 		Draw.setLineCap(LineCap.round);
 		Draw.setLineJoin(LineJoin.round);
 		Draw.setLineWidth(2);
@@ -336,13 +405,12 @@ NZ.start({
 			Draw.pointCircle(p, 2);
 		}
 
-		// Draw.circle(p.x, p.y, p.grapple.range, true);
 
 		// draw all sticks
 		for (const s of OBJ.rawTake('Stick')) {
 			Draw.setStroke(s.c);
 			if (s.id === p.grapple.sticks[0].id && p.grapple.isCreated()) {
-				Draw.pointArrow(s.p[1], s.p[0], 5);
+				Draw.pointArrow(s.p[1], s.p[0], 5 * (1 - p.grapple.timeScaled()));
 			}
 			else {
 				Draw.pointLine(s.p[0], s.p[1]);
@@ -357,6 +425,15 @@ NZ.start({
 		Draw.rect(p.x - p.mid.w, p.y, p.w, p.h);
 		Draw.stroke();
 
+		if (Debug.mode > 0) {
+			for (const p of OBJ.rawTake('Point')) {
+				Draw.setColor(C.black);
+				Draw.pointCircle(p, 4, true);
+			}
+			Draw.circle(p.x, p.y, p.grapple.range, true);
+		}
+
 		// Input.testRestartOnSpace();
-	}
+	},
+	debugModeAmount: 2
 });
