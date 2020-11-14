@@ -94,15 +94,16 @@ class Player extends Point {
 		};
 		this.grapple = {
 			// amount of gravity on each point at start
-			startGrav: 0,
+			startGrav: 0.5,
 			// amount of gravity to apply when player move while grappling
 			// see: `// reset grapple gravity` comment
 			baseGrav: 0.5,
 			range: 600,
-			length: 50,
-			segment: 10,
+			length: 60,
+			segment: 20,
 			points: [],
 			sticks: [],
+			stiffness: 0.7,
 			// if distance between player and grapple pinned point
 			// smaller than targetDistance, destroy grapple
 			targetDistance: 20,
@@ -179,10 +180,8 @@ class Player extends Point {
 			this.grapple.points.push(n);
 		}
 
-		let stiffness = 0.1;
-
 		for (let i = 0; i < this.grapple.points.length - 1; i++) {
-			this.grapple.sticks.push(OBJ.rawPush('Stick', new Stick([this.grapple.points[i], this.grapple.points[i+1]], len, stiffness)));
+			this.grapple.sticks.push(OBJ.rawPush('Stick', new Stick([this.grapple.points[i], this.grapple.points[i+1]], len, this.grapple.stiffness)));
 		}
 
 		this.grapple.points[0].pinned = true;
@@ -337,7 +336,7 @@ class Player extends Point {
 			}
 		}
 	}
-	updateRoutine() {
+	updateJump() {
 		if (this.keyJumpPressed) {
 			// reset jump on ground
 			if (this.isGrounded) {
@@ -370,7 +369,7 @@ class Player extends Point {
 		this.updateInput();
 		this.updateGrapple();
 		this.updateMovement();
-		this.updateRoutine();
+		this.updateJump();
 		this.updatePhysics();
 	}
 	constraint() {
