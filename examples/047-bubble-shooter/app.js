@@ -17,6 +17,31 @@ class Shooter {
 	}
 }
 
+class BubbleGrid {
+	constructor(w, h) {
+		this.w = w;
+		this.h = h;
+		this.cells = [];
+	}
+	getIndex(i, j) {
+		return i + j * this.w;
+	}
+	generateRandom() {
+		let xOff = Stage.mid.w - ((this.w - 1) * Global.bubbleRadius),
+			yOff = Global.bubbleRadius,
+			r = Global.bubbleRadius,
+			x, y, c;
+		for (let j = 0; j < this.h; j++) {
+			for (let i = 0; i < this.w; i++) {
+				x = xOff + (j % 2 === 0? i : i - 0.5) * Global.bubbleRadius * 2;
+				y = yOff + j * Global.bubbleRadius * 2;
+				c = Global.getRandomBubbleColor();
+				this.cells.push({ x, y, c, r });
+			}
+		}
+	}
+}
+
 NZ.start({
 	w: 360,
 	h: 640,
@@ -29,17 +54,18 @@ NZ.start({
 		// Global variables
 		Global.ID = 0;
 		Global.bubbleSpeed = 10;
-		Global.bubbleRadius = 10;
+		Global.bubbleRadius = 16;
 		Global.bubbleColors = [C.red, C.yellow, C.blue, C.green];
-		Global.getNextColor = () => Utils.pick(Global.bubbleColors);
-		Global.currentColor = Global.getNextColor();
-		Global.nextColor = Global.getNextColor();
+		Global.getRandomBubbleColor = () => Utils.pick(Global.bubbleColors);
+		Global.currentColor = Global.getRandomBubbleColor();
+		Global.nextColor = Global.getRandomBubbleColor();
 		Global.GROUND_H = 50;
 		// click/release below ground y will not start/cancel aiming
 		Global.GROUND_Y = Stage.h - Global.GROUND_H;
 		Global.aiming = false;
 		Global.bubble = null; // bubble that will be fired
 		Global.shooter = null;
+		Global.bubbleGrid = new BubbleGrid(8, 4);
 		Global.getAimDirection = () => Math.atan2(Input.mouseY - Global.shooter.y, Input.mouseX - Global.shooter.x);
 	},
 	start() {
@@ -47,11 +73,16 @@ NZ.start({
 		OBJ.rawClearAll();
 		// create shooter
 		Global.shooter = new Shooter(Stage.mid.w, Global.GROUND_Y + Global.GROUND_H * 0.5);
+		// create level
+		Global.bubbleGrid.generateRandom();
 	},
 	render() {
 		/// ---- LOGIC -----------------------
 
 		// -- Input
+
+
+		// - Aiming and shooting
 		if (Input.mouseDown(0)) {
 			if (!Global.isShooting) {
 				// start of aiming
@@ -79,8 +110,17 @@ NZ.start({
 
 				// get color
 				Global.currentColor = Global.nextColor;
-				Global.nextColor = Global.getNextColor();
+				Global.nextColor = Global.getRandomBubbleColor();
 				// todo: check if current color and next color exists in scene
+			}
+		}
+
+		// - Swap colors
+		if (Input.mouseDown(0)) {
+			// if shooter is hovered
+			if (Utils.distance(Input.mousePosition, Global.shooter) < 32) {
+				// swap
+				[Global.currentColor, Global.nextColor] = [Global.nextColor, Global.currentColor];
 			}
 		}
 
@@ -114,13 +154,22 @@ NZ.start({
 		}
 
 		// ---- RENDER ----------------------
-		
+
+		// Draw ground
+		Draw.setFill(C.sienna);
+		Draw.rect(0, Global.GROUND_Y, Stage.w, Global.GROUND_H);
+	
+		// Draw bubble grid
+		for (const b of Global.bubbleGrid.cells) {
+			Draw.setFill(b.c);
+			Draw.circle(b.x, b.y, b.r);
+		}
+
 		// Draw bubbles
 		for (const b of OBJ.rawTake('Bubble')) {
 			Draw.setFill(b.c);
 			Draw.circle(b.x, b.y, b.r);
 		}
-
 
 		// Draw shooter
 		// draw bubble inside shooter with current color
