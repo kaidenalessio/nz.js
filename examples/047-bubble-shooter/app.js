@@ -17,6 +17,23 @@ class Shooter {
 	}
 }
 
+class BubblePop {
+	constructor(x, y, c, delay=0) {
+		this.id = Global.ID++;
+		this.x = x;
+		this.y = y;
+		this.c = c;
+		this.scale = 1;
+		Tween.tween(this, { scale: 1.5 }, 10, Easing.QuadEaseOut, delay)
+			 .chain(this, { scale: 0 }, 40, Easing.ElasticEaseOut, 0, () => {
+			OBJ.rawRemove('Pop', (x) => x.id === this.id);
+		});
+	}
+	render() {
+		Global.drawBubbleExt(this.x, this.y, Math.max(0, Global.bubbleRadius * this.scale), this.c);
+	}
+}
+
 class BubbleGrid {
 	static toWorld(grid, i, j) {
 		const w = Global.bubbleRadius * 2;
@@ -174,9 +191,11 @@ class BubbleGrid {
 			}
 
 			if (connected.length > 2) {
+				let delay = 0;
 				this.remove(i, j);
 				for (const c of connected) {
-					this.remove(c.i, c.j);
+					this.remove(c.i, c.j, delay);
+					delay += 2;
 				}
 			}
 		}
@@ -199,9 +218,15 @@ class BubbleGrid {
 
 		return this.cells[id];
 	}
-	remove(i, j) {
+	// delay = pop animation delay
+	remove(i, j, delay=0) {
 		const id = this.getIndex(i, j);
 		if (this.cells[id]) {
+			// pop anim
+			const p = BubbleGrid.toWorld(this, i, j);
+			OBJ.rawPush('Pop', new BubblePop(p.x, p.y, this.cells[id].c, delay));
+
+			// remove bubble
 			this.cells[id] = null;
 		}
 	}
@@ -214,6 +239,7 @@ NZ.start({
 	stylePreset: StylePreset.noGapCenter,
 	init() {
 		// Object list
+		OBJ.rawAdd('Pop');
 		OBJ.rawAdd('Bubble');
 
 		// Global variables
@@ -429,6 +455,11 @@ NZ.start({
 
 		// Draw next bubble next to shooter
 		Global.drawBubbleExt(Global.shooter.x - 100, Global.shooter.y, Global.bubbleRadius, Global.nextColor);
+
+		// Draw bubble pop
+		for (const b of OBJ.rawTake('Pop')) {
+			b.render();
+		}
 
 		/// ---- UI ----------------------------------
 
