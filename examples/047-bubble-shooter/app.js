@@ -41,7 +41,7 @@ class BubbleGrid {
 		 *
 		 */
 
-		if (i < 0 || i >= grid.w || j < 0) return;
+		if (i < 0 || i >= grid.w || j < 0) return [];
 
 		let neighbours = [],
 			A, B, C, D, E, F;
@@ -101,6 +101,31 @@ class BubbleGrid {
 			}
 		}
 	}
+	intersects(b) {
+		for (let i = 0; i < this.cells.length; i++) {
+			const c = this.cells[i];
+			if (c) {
+				const rr = b.r + c.r;
+				if (Utils.distanceDXYSq(c.x-b.x, c.y-b.y) < rr*rr) {
+					// intersects
+					return c;
+				}
+			}
+		}
+		return false;
+	}
+	add(i, j, c) {
+		if (j >= this.h) {
+			this.h = j + 1;
+		}
+		const b = BubbleGrid.toWorld(this, i, j);
+		this.cells[this.getIndex(i, j)] = {
+			x: b.x,
+			y: b.y,
+			c: c,
+			r: Global.bubbleRadius
+		};
+	}
 }
 
 NZ.start({
@@ -114,7 +139,7 @@ NZ.start({
 
 		// Global variables
 		Global.ID = 0;
-		Global.bubbleSpeed = 1;
+		Global.bubbleSpeed = 10;
 		Global.bubbleRadius = 16;
 		Global.bubbleColors = [C.red, C.yellow, C.blue, C.green];
 		Global.getRandomBubbleColor = () => Utils.pick(Global.bubbleColors);
@@ -193,26 +218,44 @@ NZ.start({
 			b.x += b.vx * Math.min(Time.scaledDeltaTime, Time.fixedDeltaTime);
 			b.y += b.vy * Math.min(Time.scaledDeltaTime, Time.fixedDeltaTime);
 
-			b.x = Input.mouseX;
-			b.y = Input.mouseY;
+			// b.x = Input.mouseX;
+			// b.y = Input.mouseY;
 
 			// Arrive check
-			const gridPos = BubbleGrid.toGrid(Global.bubbleGrid, b.x, b.y);
-			gridPos.j = Math.ceil(gridPos.j);
-			// even
-			if (gridPos.j % 2 === 0) {
-				gridPos.i = Math.floor(gridPos.i);
-			}
-			// odd
-			else {
-				gridPos.i = Math.round(gridPos.i);
-			}
+			if (Global.bubbleGrid.intersects(Global.bubble)) {
+				const gridPos = BubbleGrid.toGrid(Global.bubbleGrid, b.x, b.y);
+				gridPos.j = Math.ceil(gridPos.j);
+				// even
+				if (gridPos.j % 2 === 0) {
+					gridPos.i = Math.floor(gridPos.i);
+				}
+				// odd
+				else {
+					gridPos.i = Math.round(gridPos.i);
+				}
 
-			Global.neighbours = BubbleGrid.getNeighbours(Global.bubbleGrid, gridPos.i, gridPos.j);
+				Global.neighbours = BubbleGrid.getNeighbours(Global.bubbleGrid, gridPos.i, gridPos.j);
+
+				if (Global.neighbours.length) {
+					Global.bubbleGrid.add(gridPos.i, gridPos.j, Global.bubble.c);
+					for (const b of Global.neighbours) {
+						// push effect
+					}
+					// arrived
+					// end of shooting
+					Global.neighbours.length = 0;
+					OBJ.rawRemove('Bubble', (b) => b.id === Global.bubble.id);
+					Global.bubble = null;
+					Global.isShooting = false;
+				}
+			}
 
 			// Constraint
 			// if bubble touches top
-			if (b.y <= b.r && b.vy < 0) {
+			if (!Global.bubble) {
+				// bubble arrived
+			}
+			else if (b.y <= b.r && b.vy < 0) {
 				b.y = b.r;
 				// end of shooting
 				OBJ.rawRemove('Bubble', (b) => b.id === Global.bubble.id);
@@ -244,11 +287,13 @@ NZ.start({
 
 		// Draw bubble grid
 		for (const b of Global.bubbleGrid.cells) {
-			Draw.setFill(b.c);
-			Draw.circle(b.x, b.y, b.r);
-			let debug = BubbleGrid.toGrid(Global.bubbleGrid, b.x, b.y);
-			Draw.setFill(C.black);
-			Draw.text(b.x, b.y, `${debug.i}, ${debug.j}`);
+			if (b) {
+				Draw.setFill(b.c);
+				Draw.circle(b.x, b.y, b.r);
+				let debug = BubbleGrid.toGrid(Global.bubbleGrid, b.x, b.y);
+				Draw.setFill(C.black);
+				Draw.text(b.x, b.y, `${debug.i}, ${debug.j}`);
+			}
 		}
 
 		// Draw bubbles
@@ -260,12 +305,12 @@ NZ.start({
 			Draw.text(b.x, b.y, `${Math.round(debug.i)}, ${Math.round(debug.j)}`);
 		}
 
-		if (Global.isShooting && Global.neighbours) {
-			for (const b of Global.neighbours) {
-				Draw.setFill(C.white);
-				Draw.circle(b.x, b.y, b.r);
-			}
-		}
+		// if (Global.isShooting && Global.neighbours) {
+		// 	for (const b of Global.neighbours) {
+		// 		Draw.setFill(C.white);
+		// 		Draw.circle(b.x, b.y, b.r);
+		// 	}
+		// }
 
 		// Draw shooter
 		// draw bubble inside shooter with current color
