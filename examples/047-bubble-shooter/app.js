@@ -43,8 +43,7 @@ class BubbleGrid {
 
 		if (i < 0 || i >= grid.w || j < 0) return [];
 
-		let neighbours = [],
-			A, B, C, D, E, F;
+		let neighbours = [], A, B, C, D, E, F;
 
 		C = grid.getCell(i-1, j);
 		D = grid.getCell(i+1, j);
@@ -74,6 +73,33 @@ class BubbleGrid {
 		return neighbours;
 
 	}
+	// return position only
+	static getRawNeighbours(grid, i, j) {
+		let neighbours = [], A, B, C, D, E, F;
+		C = BubbleGrid.toWorld(grid, i-1, j);
+		D = BubbleGrid.toWorld(grid, i+1, j);
+		// even
+		if (j % 2 === 0) {
+			A = BubbleGrid.toWorld(grid, i,   j-1);
+			B = BubbleGrid.toWorld(grid, i+1, j-1);
+			E = BubbleGrid.toWorld(grid, i,   j+1);
+			F = BubbleGrid.toWorld(grid, i+1, j+1);
+		}
+		// odd
+		else {
+			A = BubbleGrid.toWorld(grid, i-1, j-1);
+			B = BubbleGrid.toWorld(grid, i,   j-1);
+			E = BubbleGrid.toWorld(grid, i-1, j+1);
+			F = BubbleGrid.toWorld(grid, i,   j+1);
+		}
+		neighbours.push(A);
+		neighbours.push(B);
+		neighbours.push(C);
+		neighbours.push(D);
+		neighbours.push(E);
+		neighbours.push(F);
+		return neighbours;
+	}
 	constructor(w, h) {
 		this.w = w;
 		this.h = h;
@@ -97,7 +123,7 @@ class BubbleGrid {
 					y = b.y,
 					c = Global.getRandomBubbleColor(),
 					r = Global.bubbleRadius;
-				this.cells.push({ x, y, c, r });
+				this.cells.push({ i, j, x, y, c, r });
 			}
 		}
 	}
@@ -114,18 +140,70 @@ class BubbleGrid {
 		}
 		return false;
 	}
+	// check if bubble on given grid pos
+	// should be popped!
+	popCheck(i, j) {
+		const b = this.getCell(i, j);
+		const connected = [];
+		if (b) {
+			let neighbours = BubbleGrid.getNeighbours(this, i, j),
+				ii = 0,
+				maxiter = 100;
+
+			const includes = (set, n) => {
+				for (let i = 0; i < set.length; i++) {
+					const b = set[i];
+					if (b.i === n.i && b.j === n.j) {
+						return true;
+					}
+				}
+				return false;
+			};
+
+			while (neighbours.length && maxiter-- > 0) {
+				for (const n of neighbours) {
+					if (b.c === n.c && !includes(connected, n)) {
+						connected.push(n);
+					}
+				}
+				neighbours.length = 0;
+				if (ii < connected.length) {
+					neighbours = BubbleGrid.getNeighbours(this, connected[ii].i, connected[ii].j);
+					ii++;
+				}
+			}
+
+			if (connected.length > 2) {
+				this.remove(i, j);
+				for (const c of connected) {
+					this.remove(c.i, c.j);
+				}
+			}
+		}
+	}
 	add(i, j, c) {
 		if (j >= this.h) {
 			this.h = j + 1;
 		}
 		const b = BubbleGrid.toWorld(this, i, j), id = this.getIndex(i, j);
 		this.cells[id] = {
+			i: i,
+			j: j,
 			x: b.x,
 			y: b.y,
 			c: c,
 			r: Global.bubbleRadius
 		};
+
+		this.popCheck(i, j);
+
 		return this.cells[id];
+	}
+	remove(i, j) {
+		const id = this.getIndex(i, j);
+		if (this.cells[id]) {
+			this.cells[id] = null;
+		}
 	}
 }
 
@@ -207,6 +285,9 @@ NZ.start({
 					Global.getAimDirection()
 				));
 
+				Global.bubble.i = 0; // for debug
+				Global.bubble.j = 0; // for debug
+
 				// get color
 				Global.currentColor = Global.nextColor;
 				Global.nextColor = Global.getRandomBubbleColor();
@@ -234,36 +315,37 @@ NZ.start({
 			// b.y = Input.mouseY;
 
 			// Arrive check
+			const gridPos = BubbleGrid.toGrid(Global.bubbleGrid, b.x, b.y);
+			gridPos.j = Math.ceil(gridPos.j);
+			// even
+			if (gridPos.j % 2 === 0) {
+				gridPos.i = Math.floor(gridPos.i);
+			}
+			// odd
+			else {
+				gridPos.i = Math.round(gridPos.i);
+			}
+
+			Global.bubble.i = gridPos.i; // for debug
+			Global.bubble.j = gridPos.j; // for debug
+
 			if (Global.bubbleGrid.intersects(Global.bubble)) {
-				const gridPos = BubbleGrid.toGrid(Global.bubbleGrid, b.x, b.y);
-				gridPos.j = Math.ceil(gridPos.j);
-				// even
-				if (gridPos.j % 2 === 0) {
-					gridPos.i = Math.floor(gridPos.i);
-				}
-				// odd
-				else {
-					gridPos.i = Math.round(gridPos.i);
-				}
 
 				Global.neighbours = BubbleGrid.getNeighbours(Global.bubbleGrid, gridPos.i, gridPos.j);
 
 				if (Global.neighbours.length) {
 					const newBubble = Global.bubbleGrid.add(gridPos.i, gridPos.j, Global.bubble.c);
-					for (const b of Global.neighbours) {
-
-						const p = Vec2.polar(Vec2.direction(Global.bubble, b), 10).add(b);
-
-						// TODO: tween cancel
-						// push effect
-						Tween.tween(b, { x: p.x, y: p.y }, 10, Easing.QuadEaseOut)
-						// reset
-							 .chain(b, { x: b.x, y: b.y }, 60, Easing.ElasticEaseOut);
-
-						let xx = newBubble.x, yy = newBubble.y;
+					if (newBubble) {
+						let xx = newBubble.x,
+							yy = newBubble.y;
 						newBubble.x = Global.bubble.x;
 						newBubble.y = Global.bubble.y;
 						Tween.tween(newBubble, { x: xx, y: yy }, 30, Easing.BackEaseOut);
+					}
+					for (const b of Global.neighbours) {
+						const p = Vec2.polar(Vec2.direction(Global.bubble, b), 10).add(b);
+						Tween.tween(b, { x: p.x, y: p.y }, 10, Easing.QuadEaseOut)
+							 .chain(b, { x: b.x, y: b.y }, 60, Easing.ElasticEaseOut);
 					}
 					// arrived
 					// end of shooting
@@ -327,12 +409,15 @@ NZ.start({
 			// Draw.text(b.x, b.y, `${Math.round(debug.i)}, ${Math.round(debug.j)}`);
 		}
 
-		// if (Global.isShooting && Global.neighbours) {
-		// 	for (const b of Global.neighbours) {
-		// 		Draw.setFill(C.white);
-		// 		Draw.circle(b.x, b.y, b.r);
-		// 	}
-		// }
+		// debug
+		if (Debug.mode > 0 && Global.isShooting && Global.bubble && Global.neighbours) {
+			let p = BubbleGrid.toWorld(Global.bubbleGrid, Global.bubble.i, Global.bubble.j);
+			Draw.setColor(C.white);
+			Draw.circle(p.x, p.y, Global.bubble.r, true);
+			for (const b of BubbleGrid.getRawNeighbours(Global.bubbleGrid, Global.bubble.i, Global.bubble.j)) {
+				Draw.circle(b.x, b.y, Global.bubble.r, true);
+			}
+		}
 
 		// Draw shooter
 		// draw bubble inside shooter with current color
@@ -353,5 +438,8 @@ NZ.start({
 			Draw.plus(Input.mouseX, Input.mouseY, 16);
 			Draw.circle(Input.mouseX, Input.mouseY, 8, true);
 		}
-	}
+	},
+	debugModeAmount: 2
 });
+
+// TODO: if shooting buuble overlao, find nearest neighbours that are empty
