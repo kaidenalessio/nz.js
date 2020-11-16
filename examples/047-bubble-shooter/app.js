@@ -78,7 +78,7 @@ class BubbleGrid {
 		this.w = w;
 		this.h = h;
 		this.cells = [];
-		this.xOff = Stage.mid.w - ((this.w - 1) * Global.bubbleRadius);
+		this.xOff = Stage.mid.w - ((this.w - 1.5) * Global.bubbleRadius);
 		this.yOff = Global.bubbleRadius;
 	}
 	getCell(i, j) {
@@ -118,13 +118,14 @@ class BubbleGrid {
 		if (j >= this.h) {
 			this.h = j + 1;
 		}
-		const b = BubbleGrid.toWorld(this, i, j);
-		this.cells[this.getIndex(i, j)] = {
+		const b = BubbleGrid.toWorld(this, i, j), id = this.getIndex(i, j);
+		this.cells[id] = {
 			x: b.x,
 			y: b.y,
 			c: c,
 			r: Global.bubbleRadius
 		};
+		return this.cells[id];
 	}
 }
 
@@ -151,7 +152,7 @@ NZ.start({
 		Global.aiming = false;
 		Global.bubble = null; // bubble that will be fired
 		Global.shooter = null;
-		Global.bubbleGrid = new BubbleGrid(8, 4);
+		Global.bubbleGrid = new BubbleGrid(10, 7);
 		Global.neighbours = [];
 		Global.getAimDirection = () => Math.atan2(Input.mouseY - Global.shooter.y, Input.mouseX - Global.shooter.x);
 	},
@@ -237,9 +238,21 @@ NZ.start({
 				Global.neighbours = BubbleGrid.getNeighbours(Global.bubbleGrid, gridPos.i, gridPos.j);
 
 				if (Global.neighbours.length) {
-					Global.bubbleGrid.add(gridPos.i, gridPos.j, Global.bubble.c);
+					const newBubble = Global.bubbleGrid.add(gridPos.i, gridPos.j, Global.bubble.c);
 					for (const b of Global.neighbours) {
+
+						const p = Vec2.polar(Vec2.direction(Global.bubble, b), 10).add(b);
+
+						// TODO: tween cancel
 						// push effect
+						Tween.tween(b, { x: p.x, y: p.y }, 10, Easing.QuadEaseOut)
+						// reset
+							 .chain(b, { x: b.x, y: b.y }, 60, Easing.ElasticEaseOut);
+
+						let xx = newBubble.x, yy = newBubble.y;
+						newBubble.x = Global.bubble.x;
+						newBubble.y = Global.bubble.y;
+						Tween.tween(newBubble, { x: xx, y: yy }, 30, Easing.BackEaseOut);
 					}
 					// arrived
 					// end of shooting
@@ -290,9 +303,9 @@ NZ.start({
 			if (b) {
 				Draw.setFill(b.c);
 				Draw.circle(b.x, b.y, b.r);
-				let debug = BubbleGrid.toGrid(Global.bubbleGrid, b.x, b.y);
-				Draw.setFill(C.black);
-				Draw.text(b.x, b.y, `${debug.i}, ${debug.j}`);
+				// let debug = BubbleGrid.toGrid(Global.bubbleGrid, b.x, b.y);
+				// Draw.setFill(C.black);
+				// Draw.text(b.x, b.y, `${debug.i}, ${debug.j}`);
 			}
 		}
 
@@ -300,9 +313,9 @@ NZ.start({
 		for (const b of OBJ.rawTake('Bubble')) {
 			Draw.setFill(b.c);
 			Draw.circle(b.x, b.y, b.r);
-			let debug = BubbleGrid.toGrid(Global.bubbleGrid, b.x, b.y);
-			Draw.setFill(C.black);
-			Draw.text(b.x, b.y, `${Math.round(debug.i)}, ${Math.round(debug.j)}`);
+			// let debug = BubbleGrid.toGrid(Global.bubbleGrid, b.x, b.y);
+			// Draw.setFill(C.black);
+			// Draw.text(b.x, b.y, `${Math.round(debug.i)}, ${Math.round(debug.j)}`);
 		}
 
 		// if (Global.isShooting && Global.neighbours) {
