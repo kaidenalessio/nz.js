@@ -326,8 +326,10 @@ NZ.start({
 		// Global variables
 		Global.ID = 0;
 		Global.score = 0;
+		Global.timer = 0;
 		Global.gameOverText = '';
 		Global.gameOver = false;
+		Global.gameOverTime = 0;
 		Global.doGameOver = () => {
 			Global.gameOver = true;
 		};
@@ -367,10 +369,21 @@ NZ.start({
 		Global.bubbleGrid.generateRandom(Mathz.choose(5, 7, 9, 11), Mathz.irange(3, 7));
 		// reset
 		Global.score = 0;
+		Global.timer = Mathz.range(60, 90) * 1000;
 		Global.gameOver = false;
+		Global.gameOverTime = 0;
 	},
 	update() {
 		if (Global.gameOver) return;
+
+		Global.timer -= Math.min(Time.deltaTime, Time.fixedDeltaTime);
+		// game over check
+		if (Global.timer <= 0) {
+			Global.timer = 0;
+			Global.gameOverText = 'Out of time!';
+			Global.doGameOver();
+		}
+
 		/// ---- LOGIC -----------------------
 		// -- Input
 		// - Aiming and shooting
@@ -422,8 +435,8 @@ NZ.start({
 		if (Global.bubble) {
 			// Motion
 			const b = Global.bubble;
-			b.x += b.vx * Math.min(Time.scaledDeltaTime, Time.fixedDeltaTime);
-			b.y += b.vy * Math.min(Time.scaledDeltaTime, Time.fixedDeltaTime);
+			b.x += b.vx * Math.min(Time.scaledDeltaTime, 1);
+			b.y += b.vy * Math.min(Time.scaledDeltaTime, 1);
 
 			// b.x = Input.mouseX;
 			// b.y = Input.mouseY;
@@ -455,18 +468,17 @@ NZ.start({
 					gridPos.j++;
 				}
 
-				// game over check
-				if (Global.bubble.y > Global.GROUND_Y - Global.bubbleRadius) {
-					// game over
-					Global.gameOverText = 'A bubble hit\nthe ground!';
-					Global.doGameOver();
-				}
-
 				Global.neighbours = BubbleGrid.getNeighbours(Global.bubbleGrid, gridPos.i, gridPos.j);
 
 				if (Global.neighbours.length) {
 					const newBubble = Global.bubbleGrid.add(gridPos.i, gridPos.j, Global.bubble.c);
 					if (newBubble) {
+						// game over check
+						if (newBubble.y > Global.GROUND_Y - Global.bubbleRadius) {
+							// game over
+							Global.gameOverText = 'A bubble hit\nthe ground!';
+							Global.doGameOver();
+						}
 						let xx = newBubble.x,
 							yy = newBubble.y;
 						newBubble.x = Global.bubble.x;
@@ -622,14 +634,15 @@ NZ.start({
 			Draw.circle(Input.mouseX, Input.mouseY, 8, true);
 		}
 
-		// draw score
+		// draw score and timer
 		if (!Global.gameOver) {
 			Draw.setFill(C.black);
-			Draw.setFont(Font.l);
+			Draw.setFont(Font.m);
 			Draw.setHVAlign(Align.r, Align.b);
-			// draw score
-			Draw.text(Stage.w - 10, Stage.h - 10, `Score: ${Global.score}`);
+			// draw score and timer
+			Draw.text(Stage.w - 10, Stage.h - 10, `Score: ${Global.score}\n${Time.toStopwatch(Global.timer)}`);
 		}
+
 
 		// Draw on game over state
 		if (Global.gameOver) {
@@ -655,7 +668,8 @@ NZ.start({
 			// draw info
 			Draw.text(Stage.mid.w, Stage.h - 100, 'Tap anywhere to restart');
 
-			if (Input.mouseDown(0)) {
+			Global.gameOverTime += Time.deltaTime;
+			if (Input.mouseDown(0) && Global.gameOverTime > 1000) {
 				Scene.restart();
 			}
 		}
