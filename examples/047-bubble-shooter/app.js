@@ -18,16 +18,26 @@ class Shooter {
 }
 
 class BubblePop {
-	constructor(x, y, c, delay=0) {
+	static TYPE_POP = 0;
+	static TYPE_FALL = 1;
+	constructor(x, y, c, delay=0, type=0) {
 		this.id = Global.ID++;
 		this.x = x;
 		this.y = y;
 		this.c = c;
 		this.scale = 1;
-		Tween.tween(this, { scale: 1.5 }, 10, Easing.QuadEaseOut, delay)
-			 .chain(this, { scale: 0 }, 40, Easing.ElasticEaseOut, 0, () => {
-			OBJ.rawRemove('Pop', (x) => x.id === this.id);
-		});
+		if (type === BubblePop.TYPE_POP) {
+			Tween.tween(this, { scale: 1.5 }, 10, Easing.QuadEaseOut, delay)
+				 .chain(this, { scale: 0 }, 40, Easing.ElasticEaseOut, 0, () => {
+				OBJ.rawRemove('Pop', (x) => x.id === this.id);
+			});
+		}
+		else if (type === BubblePop.TYPE_FALL) {
+			Tween.tween(this, { y: this.y - 10 }, 10, Easing.QuadEaseOut, delay)
+				 .chain(this, { y: Stage.h * 2 }, 40, Easing.QuadEaseInOut, 0, () => {
+				OBJ.rawRemove('Pop', (x) => x.id === this.id);
+			});
+		}
 	}
 	render() {
 		Global.drawBubbleExt(this.x, this.y, Math.max(0, Global.bubbleRadius * this.scale), this.c);
@@ -48,7 +58,7 @@ class BubbleGrid {
 			i = (x - grid.xOff) / w + (j % 2 === 0? 0 : 0.5);
 		return { i, j };
 	}
-	static getNeighbours(grid, i, j) {
+	static getNeighbours(grid, i, j, getAll=false) {
 		/**
 		 * there are 6 neighbours
 		 *
@@ -80,12 +90,12 @@ class BubbleGrid {
 			F = grid.getCell(i,   j+1);
 		}
 
-		if (A) neighbours.push(A);
-		if (B) neighbours.push(B);
-		if (C) neighbours.push(C);
-		if (D) neighbours.push(D);
-		if (E) neighbours.push(E);
-		if (F) neighbours.push(F);
+		if (A || getAll) neighbours.push(A);
+		if (B || getAll) neighbours.push(B);
+		if (C || getAll) neighbours.push(C);
+		if (D || getAll) neighbours.push(D);
+		if (E || getAll) neighbours.push(E);
+		if (F || getAll) neighbours.push(F);
 
 		return neighbours;
 
@@ -131,10 +141,12 @@ class BubbleGrid {
 	getIndex(i, j) {
 		return i + j * this.w;
 	}
-	generateRandom() {
+	generateRandom(w, h) {
+		w = w || this.w;
+		h = h || this.h;
 		this.cells.length = 0;
-		for (let j = 0; j < this.h; j++) {
-			for (let i = 0; i < this.w; i++) {
+		for (let j = 0; j < h; j++) {
+			for (let i = 0; i < w; i++) {
 				let b = BubbleGrid.toWorld(this, i, j),
 					x = b.x,
 					y = b.y,
@@ -156,6 +168,36 @@ class BubbleGrid {
 			}
 		}
 		return false;
+	}
+	evaluate(callCount=0) {
+		// prevent maximum call stack
+		if (callCount > 20) return;
+		// scan each bubble and see if it's hanging or not
+		// hanging bubbles will get removed
+		let hangingBubbles = [],
+			A, B, C, D, E, F, b;
+		for (let i = 0; i < this.cells.length; i++) {
+			b = this.cells[i];
+			if (b) {
+				// dont check the most top bubbles
+				if (b.j > 0) {
+					[A, B, C, D, E, F] = BubbleGrid.getNeighbours(this, b.i, b.j, true);
+					/**
+					 *    A B
+					 *   C X D
+					 *    E F
+					 */
+					// no connections above and aside means hanging (for now)
+					if (!A && !B && !C && !D) {
+						hangingBubbles.push(this.cells[i]);
+					}
+				}
+			}
+		}
+		for (const b of hangingBubbles) {
+			this.remove(b.i, b.j, 20, BubblePop.TYPE_FALL);
+			this.evaluate(++callCount);
+		}
 	}
 	// check if bubble on given grid pos
 	// should be popped!
@@ -199,6 +241,8 @@ class BubbleGrid {
 				}
 			}
 		}
+
+		this.evaluate();
 	}
 	add(i, j, c) {
 		if (j >= this.h) {
@@ -219,15 +263,25 @@ class BubbleGrid {
 		return this.cells[id];
 	}
 	// delay = pop animation delay
-	remove(i, j, delay=0) {
+	// type, 0=scale down, 1=fall down
+	remove(i, j, delay=0, type=0) {
 		const id = this.getIndex(i, j);
 		if (this.cells[id]) {
 			// pop anim
 			const p = BubbleGrid.toWorld(this, i, j);
-			OBJ.rawPush('Pop', new BubblePop(p.x, p.y, this.cells[id].c, delay));
+			OBJ.rawPush('Pop', new BubblePop(p.x, p.y, this.cells[id].c, delay, type));
 
 			// remove bubble
 			this.cells[id] = null;
+		}
+
+		let count = 0;
+		for (const b of Global.bubbleGrid.cells) {
+			if (!b) count++;
+		}
+		// game over check
+		if (count === Global.bubbleGrid.cells.length) {
+			// game over
 		}
 	}
 }
@@ -256,7 +310,7 @@ NZ.start({
 		Global.aiming = false;
 		Global.bubble = null; // bubble that will be fired
 		Global.shooter = null;
-		Global.bubbleGrid = new BubbleGrid(10, 7);
+		Global.bubbleGrid = new BubbleGrid(10, 18);
 		Global.neighbours = [];
 		Global.drawBubble = (b) => {
 			Draw.setColor(b.c, C.black);
@@ -277,7 +331,7 @@ NZ.start({
 		// create shooter
 		Global.shooter = new Shooter(Stage.mid.w, Global.GROUND_Y + Global.GROUND_H * 0.5);
 		// create level
-		Global.bubbleGrid.generateRandom();
+		Global.bubbleGrid.generateRandom(10, 5);
 	},
 	render() {
 		/// ---- LOGIC -----------------------
@@ -390,6 +444,7 @@ NZ.start({
 			else if (b.y <= b.r && b.vy < 0) {
 				b.y = b.r;
 				// end of shooting
+				OBJ.rawPush('Pop', new BubblePop(b.x, b.y, b.c));
 				OBJ.rawRemove('Bubble', (b) => b.id === Global.bubble.id);
 				Global.bubble = null;
 				Global.isShooting = false;
@@ -485,6 +540,9 @@ NZ.start({
 				// simulate physics motion and constraint
 				vb.x += vb.vx;
 				vb.y += vb.vy;
+
+				if (Global.bubbleGrid.intersects(vb)) break;
+
 				if (vb.y <= vb.r && vb.vy < 0) {
 					vb.y = vb.r;
 					vb.vx = -vb.vx;
@@ -509,7 +567,7 @@ NZ.start({
 
 			Draw.setFill(C.white);
 			for (let i = 0; i < dots.length; i++) {
-				Draw.circle(dots[i].x, dots[i].y, 6 * Mathz.map(i, 0, dots.length - 1, 1, 0));
+				Draw.circle(dots[i].x, dots[i].y, 2 + 4 * Mathz.map(i, 0, dots.length - 1, 1, 0));
 			}
 
 			// Draw crosshair
@@ -522,3 +580,4 @@ NZ.start({
 });
 
 // TODO: if shooting buuble overlao, find nearest neighbours that are empty
+// TODO: remove hanging bubbles
