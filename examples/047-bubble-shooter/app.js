@@ -418,9 +418,11 @@ NZ.start({
 		Draw.setHVAlign(Align.c, Align.m);
 
 		// Draw bubble grid
+		let ii = 0;
 		for (const b of Global.bubbleGrid.cells) {
 			if (b) {
-				Global.drawBubble(b);
+				ii++;
+				Global.drawBubbleExt(b.x, b.y + Math.sin((ii*ii + Time.time + (b.j % 2 === 0? b.x : -b.x)) * 0.01), b.r, b.c);
 				// let debug = BubbleGrid.toGrid(Global.bubbleGrid, b.x, b.y);
 				// Draw.setFill(C.black);
 				// Draw.text(b.x, b.y, `${debug.i}, ${debug.j}`);
@@ -463,8 +465,54 @@ NZ.start({
 
 		/// ---- UI ----------------------------------
 
-		// Draw crosshair
 		if (Global.aiming) {
+			// Draw aim dots
+			let dots = [],
+				numDots = 150,
+				spd = 4,
+				dir = Global.getAimDirection(),
+				// virtual bubble
+				vb = {
+					x: Global.shooter.x,
+					y: Global.shooter.y,
+					r: 6,
+					vx: Math.cos(dir) * spd,
+					vy: Math.sin(dir) * spd
+				},
+				t = Time.frameCount;
+
+			while (numDots-- > 0) {
+				// simulate physics motion and constraint
+				vb.x += vb.vx;
+				vb.y += vb.vy;
+				if (vb.y <= vb.r && vb.vy < 0) {
+					vb.y = vb.r;
+					vb.vx = -vb.vx;
+				}
+				else if (vb.x >= Stage.w - vb.r && vb.vx > 0) {
+					vb.x = Stage.w - vb.r;
+					vb.vx = -vb.vx;
+				}
+				else if (vb.x <= vb.r && vb.vx < 0) {
+					vb.x = vb.r;
+					vb.vx = -vb.vx;
+				}
+				else if (vb.y >= Stage.h - vb.r && vb.vy > 0) {
+					vb.y = Stage.h - vb.r;
+					vb.vy = -vb.vy;
+				}
+				// record vb
+				if ((numDots + t) % 10 === 0) {
+					dots.push({ x: vb.x, y: vb.y });
+				}
+			}
+
+			Draw.setFill(C.white);
+			for (let i = 0; i < dots.length; i++) {
+				Draw.circle(dots[i].x, dots[i].y, 6 * Mathz.map(i, 0, dots.length - 1, 1, 0));
+			}
+
+			// Draw crosshair
 			Draw.setStroke(C.white);
 			Draw.plus(Input.mouseX, Input.mouseY, 16);
 			Draw.circle(Input.mouseX, Input.mouseY, 8, true);
