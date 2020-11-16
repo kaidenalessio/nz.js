@@ -58,6 +58,12 @@ class BubbleGrid {
 			i = (x - grid.xOff) / w + (j % 2 === 0? 0 : 0.5);
 		return { i, j };
 	}
+	static toGridRounded(grid, x, y) {
+		const b = BubbleGrid.toGrid(grid, x, y);
+		b.j = Math.ceil(b.j);
+		b.i = b.j % 2 === 0? Math.floor(b.i) : Math.round(b.i);
+		return b;
+	}
 	static getNeighbours(grid, i, j, getAll=false) {
 		/**
 		 * there are 6 neighbours
@@ -198,6 +204,9 @@ class BubbleGrid {
 			this.remove(b.i, b.j, 20, BubblePop.TYPE_FALL);
 			this.evaluate(++callCount);
 		}
+		// adding score
+		// hanging bubbles worth length squared = n^2
+		Global.score += hangingBubbles.length * hangingBubbles.length;
 	}
 	// check if bubble on given grid pos
 	// should be popped!
@@ -239,6 +248,9 @@ class BubbleGrid {
 					this.remove(c.i, c.j, delay);
 					delay += 2;
 				}
+				// adding score
+				// normal pop worth length times 3 = n*3
+				Global.score += connected.length * 3;
 			}
 		}
 
@@ -282,6 +294,8 @@ class BubbleGrid {
 		// game over check
 		if (count === Global.bubbleGrid.cells.length) {
 			// game over
+			Global.gameOverText = 'Level cleared!';
+			Global.doGameOver();
 		}
 	}
 }
@@ -298,7 +312,13 @@ NZ.start({
 
 		// Global variables
 		Global.ID = 0;
-		Global.bubbleSpeed = 10;
+		Global.score = 0;
+		Global.gameOverText = '';
+		Global.gameOver = false;
+		Global.doGameOver = () => {
+			Global.gameOver = true;
+		};
+		Global.bubbleSpeed = 15;
 		Global.bubbleRadius = 16;
 		Global.bubbleColors = [C.red, C.yellow, C.blue, C.green];
 		Global.getRandomBubbleColor = () => Utils.pick(Global.bubbleColors);
@@ -332,13 +352,14 @@ NZ.start({
 		Global.shooter = new Shooter(Stage.mid.w, Global.GROUND_Y + Global.GROUND_H * 0.5);
 		// create level
 		Global.bubbleGrid.generateRandom(10, 5);
+		// reset
+		Global.score = 0;
+		Global.gameOver = false;
 	},
-	render() {
+	update() {
+		if (Global.gameOver) return;
 		/// ---- LOGIC -----------------------
-
 		// -- Input
-
-
 		// - Aiming and shooting
 		if (Input.mouseDown(0)) {
 			if (!Global.isShooting) {
@@ -395,21 +416,38 @@ NZ.start({
 			// b.y = Input.mouseY;
 
 			// Arrive check
-			const gridPos = BubbleGrid.toGrid(Global.bubbleGrid, b.x, b.y);
-			gridPos.j = Math.ceil(gridPos.j);
-			// even
-			if (gridPos.j % 2 === 0) {
-				gridPos.i = Math.floor(gridPos.i);
-			}
-			// odd
-			else {
-				gridPos.i = Math.round(gridPos.i);
-			}
-
+			let gridPos = BubbleGrid.toGridRounded(Global.bubbleGrid, b.x, b.y);
 			Global.bubble.i = gridPos.i; // for debug
 			Global.bubble.j = gridPos.j; // for debug
 
-			if (Global.bubbleGrid.intersects(Global.bubble)) {
+			const intersectedBubble = Global.bubbleGrid.intersects(Global.bubble);
+
+			if (intersectedBubble) {
+
+				// if overlap, displace bubble
+				const existingBubble = Global.bubbleGrid.getCell(gridPos.i, gridPos.j);
+				if (existingBubble || (gridPos.i === intersectedBubble.i && gridPos.j === intersectedBubble.j)) {
+					// let a = Global.bubble,
+					// 	b = intersectedBubble,
+					// 	dx = b.x - a.x,
+					// 	dy = b.y - a.y,
+					// 	dist = Math.sqrt(dx*dx + dy*dy),
+					// 	diff = (a.r + b.r) - dist,
+					// 	percent = diff / dist * 0.5,
+					// 	offsetX = dx * percent,
+					// 	offsetY = dy * percent;
+
+					// a.x -= offsetX * 2;
+					// a.y -= offsetY * 2;
+					gridPos.j++;
+				}
+
+				// game over check
+				if (Global.bubble.y > Global.GROUND_Y - Global.bubbleRadius) {
+					// game over
+					Global.gameOverText = 'A bubble hit the ground!';
+					Global.doGameOver();
+				}
 
 				Global.neighbours = BubbleGrid.getNeighbours(Global.bubbleGrid, gridPos.i, gridPos.j);
 
@@ -462,9 +500,9 @@ NZ.start({
 				b.vy = -b.vy;
 			}
 		}
-
+	},
+	render() {
 		// ---- RENDER ----------------------
-
 		// Draw ground
 		Draw.setFill(C.sienna);
 		Draw.rect(0, Global.GROUND_Y, Stage.w, Global.GROUND_H);
@@ -478,18 +516,12 @@ NZ.start({
 			if (b) {
 				ii++;
 				Global.drawBubbleExt(b.x, b.y + Math.sin((ii*ii + Time.time + (b.j % 2 === 0? b.x : -b.x)) * 0.01), b.r, b.c);
-				// let debug = BubbleGrid.toGrid(Global.bubbleGrid, b.x, b.y);
-				// Draw.setFill(C.black);
-				// Draw.text(b.x, b.y, `${debug.i}, ${debug.j}`);
 			}
 		}
 
 		// Draw bubbles
 		for (const b of OBJ.rawTake('Bubble')) {
 			Global.drawBubble(b);
-			// let debug = BubbleGrid.toGrid(Global.bubbleGrid, b.x, b.y);
-			// Draw.setFill(C.black);
-			// Draw.text(b.x, b.y, `${Math.round(debug.i)}, ${Math.round(debug.j)}`);
 		}
 
 		// debug
@@ -517,7 +549,8 @@ NZ.start({
 		for (const b of OBJ.rawTake('Pop')) {
 			b.render();
 		}
-
+	},
+	renderUI() {
 		/// ---- UI ----------------------------------
 
 		if (Global.aiming) {
@@ -575,9 +608,42 @@ NZ.start({
 			Draw.plus(Input.mouseX, Input.mouseY, 16);
 			Draw.circle(Input.mouseX, Input.mouseY, 8, true);
 		}
+
+		// draw score
+		if (!Global.gameOver) {
+			Draw.setFill(C.black);
+			Draw.setFont(Font.l);
+			Draw.setHVAlign(Align.r, Align.b);
+			// draw score
+			Draw.text(Stage.w - 10, Stage.h - 10, `Score: ${Global.score}`);
+		}
+
+		// Draw on game over state
+		if (Global.gameOver) {
+
+			Draw.setFill(C.black);
+			Draw.setAlpha(0.5);
+			// Draw bg
+			Draw.rect(0, 0, Stage.w, Stage.h);
+			Draw.resetAlpha();
+
+			Draw.setFill(C.white);
+			Draw.setFont(Font.xxl);
+			Draw.setHVAlign(Align.c, Align.t);
+			// draw title
+			Draw.text(Stage.mid.w, 100, Global.gameOverText);
+
+			Draw.setHVAlign(Align.m);
+			// draw score
+			Draw.text(Stage.mid.w, Stage.mid.h, Global.score);
+
+			Draw.setFont(Font.m);
+			Draw.setVAlign(Align.b);
+			// draw info
+			Draw.text(Stage.mid.w, Stage.h - 100, 'Tap anywhere to restart');
+		}
 	},
 	debugModeAmount: 2
 });
 
-// TODO: if shooting buuble overlao, find nearest neighbours that are empty
 // TODO: remove hanging bubbles
