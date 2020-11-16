@@ -154,6 +154,17 @@ NZ.start({
 		Global.shooter = null;
 		Global.bubbleGrid = new BubbleGrid(10, 7);
 		Global.neighbours = [];
+		Global.drawBubble = (b) => {
+			Draw.setColor(b.c, C.black);
+			Draw.circle(b.x, b.y, b.r);
+			Draw.stroke();
+			Draw.setFill(C.white);
+			Draw.circle(b.x - b.r * 0.3, b.y - b.r * 0.3, b.r * 0.2);
+			Draw.stroke();
+		};
+		Global.drawBubbleExt = (x, y, r, c) => {
+			Global.drawBubble({ x, y, r, c });
+		};
 		Global.getAimDirection = () => Math.atan2(Input.mouseY - Global.shooter.y, Input.mouseX - Global.shooter.x);
 	},
 	start() {
@@ -301,8 +312,7 @@ NZ.start({
 		// Draw bubble grid
 		for (const b of Global.bubbleGrid.cells) {
 			if (b) {
-				Draw.setFill(b.c);
-				Draw.circle(b.x, b.y, b.r);
+				Global.drawBubble(b);
 				// let debug = BubbleGrid.toGrid(Global.bubbleGrid, b.x, b.y);
 				// Draw.setFill(C.black);
 				// Draw.text(b.x, b.y, `${debug.i}, ${debug.j}`);
@@ -311,8 +321,7 @@ NZ.start({
 
 		// Draw bubbles
 		for (const b of OBJ.rawTake('Bubble')) {
-			Draw.setFill(b.c);
-			Draw.circle(b.x, b.y, b.r);
+			Global.drawBubble(b);
 			// let debug = BubbleGrid.toGrid(Global.bubbleGrid, b.x, b.y);
 			// Draw.setFill(C.black);
 			// Draw.text(b.x, b.y, `${Math.round(debug.i)}, ${Math.round(debug.j)}`);
@@ -327,14 +336,14 @@ NZ.start({
 
 		// Draw shooter
 		// draw bubble inside shooter with current color
-		Draw.setFill(Global.currentColor);
-		Draw.circle(Global.shooter.x, Global.shooter.y, Global.bubbleRadius);
+		Global.drawBubbleExt(Global.shooter.x, Global.shooter.y, Global.bubbleRadius, Global.currentColor);
+
+		// shooter container
 		Draw.setFill(C.black);
 		Draw.circle(Global.shooter.x, Global.shooter.y, Global.bubbleRadius + 4, true);
 
 		// Draw next bubble next to shooter
-		Draw.setFill(Global.nextColor);
-		Draw.circle(Global.shooter.x - 100, Global.shooter.y, Global.bubbleRadius);
+		Global.drawBubbleExt(Global.shooter.x - 100, Global.shooter.y, Global.bubbleRadius, Global.nextColor);
 
 		/// ---- UI ----------------------------------
 
