@@ -147,18 +147,31 @@ class BubbleGrid {
 	getIndex(i, j) {
 		return i + j * this.w;
 	}
+	generateCells() {
+		this.cells.length = 0;
+		for (let j = 0; j < this.h; j++) {
+			for (let i = 0; i < this.w; i++) {
+				this.cells.push(null);
+			}
+		}
+	}
 	generateRandom(w, h) {
 		w = w || this.w;
 		h = h || this.h;
-		this.cells.length = 0;
+		let ioff = 0;
+		if (w < this.w) {
+			ioff = Mathz.clamp(Math.ceil((this.w - w) * 0.5), 0, this.w - w);
+			w += ioff;
+		}
+		this.generateCells();
 		for (let j = 0; j < h; j++) {
-			for (let i = 0; i < w; i++) {
+			for (let i = ioff; i < w; i++) {
 				let b = BubbleGrid.toWorld(this, i, j),
 					x = b.x,
 					y = b.y,
 					c = Global.getRandomBubbleColor(),
 					r = Global.bubbleRadius;
-				this.cells.push({ i, j, x, y, c, r });
+				this.cells[this.getIndex(i, j)] = { i, j, x, y, c, r };
 			}
 		}
 	}
@@ -301,7 +314,7 @@ class BubbleGrid {
 }
 
 NZ.start({
-	w: 360,
+	w: 400,
 	h: 640,
 	bgColor: BGColor.sea,
 	stylePreset: StylePreset.noGapCenter,
@@ -330,7 +343,7 @@ NZ.start({
 		Global.aiming = false;
 		Global.bubble = null; // bubble that will be fired
 		Global.shooter = null;
-		Global.bubbleGrid = new BubbleGrid(10, 18);
+		Global.bubbleGrid = new BubbleGrid(11, 18);
 		Global.neighbours = [];
 		Global.drawBubble = (b) => {
 			Draw.setColor(b.c, C.black);
@@ -351,7 +364,7 @@ NZ.start({
 		// create shooter
 		Global.shooter = new Shooter(Stage.mid.w, Global.GROUND_Y + Global.GROUND_H * 0.5);
 		// create level
-		Global.bubbleGrid.generateRandom(10, 5);
+		Global.bubbleGrid.generateRandom(Mathz.choose(5, 7, 9, 11), Mathz.irange(3, 7));
 		// reset
 		Global.score = 0;
 		Global.gameOver = false;
@@ -380,7 +393,7 @@ NZ.start({
 				Global.bubble = OBJ.rawPush('Bubble', new Bubble(
 					Global.shooter.x,
 					Global.shooter.y,
-					Global.bubbleRadius,
+					Global.bubbleRadius * 0.5,
 					Global.currentColor,
 					Global.bubbleSpeed,
 					Global.getAimDirection()
@@ -445,7 +458,7 @@ NZ.start({
 				// game over check
 				if (Global.bubble.y > Global.GROUND_Y - Global.bubbleRadius) {
 					// game over
-					Global.gameOverText = 'A bubble hit the ground!';
+					Global.gameOverText = 'A bubble hit\nthe ground!';
 					Global.doGameOver();
 				}
 
@@ -521,7 +534,7 @@ NZ.start({
 
 		// Draw bubbles
 		for (const b of OBJ.rawTake('Bubble')) {
-			Global.drawBubble(b);
+			Global.drawBubbleExt(b.x, b.y, Global.bubbleRadius, b.c);
 		}
 
 		// debug
@@ -641,6 +654,10 @@ NZ.start({
 			Draw.setVAlign(Align.b);
 			// draw info
 			Draw.text(Stage.mid.w, Stage.h - 100, 'Tap anywhere to restart');
+
+			if (Input.mouseDown(0)) {
+				Scene.restart();
+			}
 		}
 	},
 	debugModeAmount: 2
