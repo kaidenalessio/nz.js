@@ -40,7 +40,7 @@ NZ.Tween = {
 
 		_update(0);
 
-		NZ.Tween.lastDuration = durationInFrames;
+		NZ.Tween.lastDuration = durationInFrames + delay;
 		if (resetChain) NZ.Tween.chainedDuration = 0;
 
 		return NZ.Tween;
