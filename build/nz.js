@@ -3150,16 +3150,23 @@ NZ.Tween = {
 	tween(object, targetProperties, durationInFrames, easingFunction, delay=0, onComplete=()=>{}, onProgress=()=>{}, resetChain=true) {
 		let count = -delay-1,
 			starts = {},
-			changes = {};
+			changes = {},
+			currTime = 0;
 
-		const _update = () => {
-			count++;
+		const _update = (t) => {
+			let deltaTime = t - currTime;
+			currTime = t;
 
-			if (count === 0) {
+			if (Math.floor(count) === -1) {
+				// start of tween
 				for (const prop in targetProperties) {
 					starts[prop] = object[prop];
 					changes[prop] = targetProperties[prop] - starts[prop];
 				}
+				count++;
+			}
+			else {
+				count += Math.min(1, deltaTime * 0.06); // scaled delta time (clamped)
 			}
 
 			count < durationInFrames? window.requestAnimationFrame(_update) : count = durationInFrames;
@@ -3175,7 +3182,7 @@ NZ.Tween = {
 			count < durationInFrames? onProgress() : onComplete();
 		};
 
-		_update();
+		_update(0);
 
 		NZ.Tween.lastDuration = durationInFrames;
 		if (resetChain) NZ.Tween.chainedDuration = 0;
