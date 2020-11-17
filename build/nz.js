@@ -3146,8 +3146,53 @@ NZ.Tri.prototype.calculateDepth = function() {
 
 NZ.Tween = {
 	lastDuration: 0,
-	chainedDuration: 0,
-	tween(object, targetProperties, durationInFrames, easingFunction, delay=0, onComplete=()=>{}, onProgress=()=>{}, resetChain=true) {
+	tween(obj, keys, duration, easingFn, delay=0, onComplete, onProgress) {
+		if (!onComplete) onComplete = () => {};
+		if (!onProgress) onProgress = () => {};
+		let ii = -1 - delay,
+			st = {},
+			ch = {},
+			time = window.performance.now();
+		const update = () => {
+			const t = window.performance.now();
+			if (Math.floor(ii) === -1) {
+				for (const key in keys) {
+					st[key] = obj[key];
+					ch[key] = keys[key] - st[key];
+				}
+				ii = 0;
+			}
+			else ii += Math.min(1, (t - time) * 0.06);
+			time = t;
+			ii < duration? window.requestAnimationFrame(update) : ii = duration;
+			if (ii >= 0) {
+				for (const key in keys) {
+					if (ch[key]) {
+						obj[key] = easingFn(ii/duration, st[key], ch[key]);
+					}
+				}
+			}
+			ii < duration? onProgress() : onComplete();
+		};
+		update();
+		NZ.Tween.lastDuration = duration + delay;
+		return NZ.Tween;
+	},
+	chain(obj, keys, duration, easingFn, delay=0, onComplete, onProgress) {
+		NZ.Tween.tween(obj, keys, duration, easingFn, delay + NZ.Tween.lastDuration, onComplete, onProgress);
+		return NZ.Tween;
+	},
+	lerp(obj, keys, interpolationValue) {
+		for (const key in keys) {
+			obj[key] = obj[key] + interpolationValue * (keys[key] - obj[key]);
+		}
+	}
+};
+
+/* OLD
+NZ.Tween = {
+	lastDuration: 0,
+	tween(object, targetProperties, durationInFrames, easingFunction, delay=0, onComplete=()=>{}, onProgress=()=>{}) {
 		let count = -delay-1,
 			starts = {},
 			changes = {},
@@ -3166,7 +3211,7 @@ NZ.Tween = {
 				count++;
 			}
 			else {
-				count += Math.min(1, deltaTime * 0.06); // scaled delta time (clamped)
+				count += Math.min(2, deltaTime * 0.06); // scaled delta time (clamped) (2 = 30fps)
 			}
 
 			count < durationInFrames? window.requestAnimationFrame(_update) : count = durationInFrames;
@@ -3185,13 +3230,11 @@ NZ.Tween = {
 		_update(0);
 
 		NZ.Tween.lastDuration = durationInFrames + delay;
-		if (resetChain) NZ.Tween.chainedDuration = 0;
 
 		return NZ.Tween;
 	},
 	chain(object, targetProperties, durationInFrames, easingFunction, delay=0, onComplete, onProgress) {
-		NZ.Tween.chainedDuration += NZ.Tween.lastDuration;
-		NZ.Tween.tween(object, targetProperties, durationInFrames, easingFunction, delay+NZ.Tween.chainedDuration, onComplete, onProgress, false);
+		NZ.Tween.tween(object, targetProperties, durationInFrames, easingFunction, delay + NZ.Tween.lastDuration, onComplete, onProgress);
 		return NZ.Tween;
 	},
 	// automatically assign interpolated number between
@@ -3201,7 +3244,8 @@ NZ.Tween = {
 			object[key] = object[key] + interpolationValue * (targetProperties[key] - object[key]);
 		}
 	}
-};var NZ = NZ || {};
+};
+*/var NZ = NZ || {};
 
 NZ.UI = {
 	autoReset: true, // use in NZ.Runner.run
