@@ -87,6 +87,9 @@ class M3Grid {
 		j = this.getCell(ii, jj);
 		[i.data, j.data] = [j.data, i.data];
 	}
+	check() {
+		// check for win
+	}
 	render() {
 		for (let i = 0; i < this.cells.length; i++) {
 			this.cells[i].render();
@@ -115,11 +118,15 @@ NZ.start({
 			const b = Global.grid.getCell(Global.mouseGrid.i, Global.mouseGrid.j);
 			if (b) {
 				if (Global.selected) {
-					let di = Math.abs(b.i - Global.selected.i),
-						dj = Math.abs(b.j - Global.selected.j);
+					const a = Global.selected;
+					let di = Math.abs(b.i - a.i),
+						dj = Math.abs(b.j - a.j);
 
 					if (di + dj === 1) {
-						Global.grid.swap(Global.selected.i, Global.selected.j, b.i, b.j);
+						Global.grid.swap(a.i, a.j, b.i, b.j);
+						[a.x, a.y, b.x, b.y] = [b.x, b.y, a.x, a.y];
+						Tween.tween(a, { x: b.x, y: b.y }, 20, Easing.BackEaseInOut);
+						Tween.tween(b, { x: a.x, y: a.y }, 20, Easing.BackEaseInOut);
 					}
 
 					Global.selected = null;
@@ -128,6 +135,9 @@ NZ.start({
 					Global.selected = b;
 				}
 			}
+		}
+		if (!Input.mouseHold(0)) {
+			Global.selected = null;
 		}
 	},
 	render() {
