@@ -12,9 +12,8 @@ class M3Cell {
 	}
 	render() {
 		Draw.setColor(this.data.color, C.black);
-		Draw.circle(this.x + this.grid.midSize, this.y + this.grid.midSize, this.grid.midSize - 1);
+		Draw.circle(this.x + this.grid.midSize, this.y + this.grid.midSize, this.grid.midSize - 2);
 		Draw.stroke();
-		// Draw.rect(this.x, this.y, this.grid.size, this.grid.size, true);
 	}
 }
 
@@ -80,6 +79,9 @@ class M3Grid {
 		const b = Global.grid.toWorld(c.i, c.j);
 		Draw.rect(b.x, b.y, this.size, this.size, isStroke);
 	}
+	containsPoint(x, y) {
+		return x >= this.xOffset && x < this.xOffset + this.w && y >= this.yOffset && y < this.yOffset + this.h;
+	}
 	swap(i, j, ii, jj) {
 		// make sure both are exists
 		// cuz there is no check here
@@ -103,6 +105,8 @@ NZ.start({
 	bgColor: BGColor.cream,
 	stylePreset: StylePreset.noGapCenter,
 	init() {
+		Stage.setPixelRatio(Stage.HIGH);
+		Stage.applyPixelRatio();
 		Global.grid = new M3Grid(Stage.w, Stage.h, 40);
 		Global.selected = null;
 		Global.mouseGrid = null;
@@ -115,24 +119,34 @@ NZ.start({
 	update() {
 		Global.mouseGrid = Global.grid.toGridFloor(Input.mouseX, Input.mouseY);
 		if (Input.mouseDown(0) || Input.mouseUp(0)) {
-			const b = Global.grid.getCell(Global.mouseGrid.i, Global.mouseGrid.j);
-			if (b) {
-				if (Global.selected) {
-					const a = Global.selected;
-					let di = Math.abs(b.i - a.i),
-						dj = Math.abs(b.j - a.j);
-
-					if (di + dj === 1) {
-						Global.grid.swap(a.i, a.j, b.i, b.j);
-						[a.x, a.y, b.x, b.y] = [b.x, b.y, a.x, a.y];
-						Tween.tween(a, { x: b.x, y: b.y }, 20, Easing.BackEaseInOut);
-						Tween.tween(b, { x: a.x, y: a.y }, 20, Easing.BackEaseInOut);
+			if (Global.grid.containsPoint(Input.mouseX, Input.mouseY)) {
+				const b = Global.grid.getCell(Global.mouseGrid.i, Global.mouseGrid.j);
+				if (b) {
+					if (Global.selected) {
+						const a = Global.selected;
+						let di = Math.abs(b.i - a.i),
+							dj = Math.abs(b.j - a.j);
+						if (di + dj === 1) {
+							if (a.data.color === b.data.color) {
+								let dx = (b.x - a.x) * 0.5,
+									dy = (b.y - a.y) * 0.5;
+								Tween.tween(a, { x: a.x + dx, y: a.y + dy }, 10, Easing.QuadEaseOut)
+									 .chain(a, { x: a.x, y: a.y }, 10, Easing.BackEaseOut);
+								Tween.tween(b, { x: b.x - dx, y: b.y - dy }, 10, Easing.QuadEaseOut)
+									 .chain(b, { x: b.x, y: b.y }, 10, Easing.BackEaseOut);
+							}
+							else {
+								Global.grid.swap(a.i, a.j, b.i, b.j);
+								[a.x, a.y, b.x, b.y] = [b.x, b.y, a.x, a.y];
+								Tween.tween(a, { x: b.x, y: b.y }, 20, Easing.BackEaseInOut);
+								Tween.tween(b, { x: a.x, y: a.y }, 20, Easing.BackEaseInOut);
+							}
+						}
+						Global.selected = null;
 					}
-
-					Global.selected = null;
-				}
-				else {
-					Global.selected = b;
+					else {
+						Global.selected = b;
+					}
 				}
 			}
 		}
