@@ -89,8 +89,72 @@ class M3Grid {
 		j = this.getCell(ii, jj);
 		[i.data, j.data] = [j.data, i.data];
 	}
+	getConnectH(i, j, callbackFn) {
+		// retrieve horizontal connections
+		if (j < 0 || j >= this.rows) return [];
+		let h = [], ii = i, b;
+		while (ii-- > 0) {
+			b = this.getCell(ii, j);
+			if (b) {
+				if (callbackFn(b)) h.push(b);
+				else break; // disconnect
+			}
+		}
+		ii = i;
+		while (++ii < this.cols) {
+			b = this.getCell(ii, j);
+			if (b) {
+				if (callbackFn(b)) h.push(b);
+				else break; // disconnect
+			}
+		}
+		return h;
+	}
+	getConnectV(i, j, callbackFn) {
+		// retrieve horizontal connections
+		if (j < 0 || j >= this.rows) return [];
+		let v = [], jj = j, b;
+		while (jj-- > 0) {
+			b = this.getCell(i, jj);
+			if (b) {
+				if (callbackFn(b)) v.push(b);
+				else break; // disconnect
+			}
+		}
+		jj = j;
+		while (++jj < this.cols) {
+			b = this.getCell(i, jj);
+			if (b) {
+				if (callbackFn(b)) v.push(b);
+				else break; // disconnect
+			}
+		}
+		return v;
+	}
 	check() {
 		// check for win
+		for (let j = 0; j < this.rows; j++) {
+			for (let i = 0; i < this.cols; i++) {
+				const b = this.getCell(i, j);
+				if (b) {
+					const h = this.getConnectH(i, j, (x) => x.data.color === b.data.color);
+					const v = this.getConnectV(i, j, (x) => x.data.color === b.data.color);
+					if (h.length > 1) {
+						for (const n of h) {
+							n.data.color = C.white;
+						}
+						b.data.color = C.white;
+					}
+					if (v.length > 1) {
+						for (const n of v) {
+							n.data.color = C.white;
+						}
+						b.data.color = C.white;
+					}
+				}
+			}
+		}
+		console.log('check');
 	}
 	render() {
 		for (let i = 0; i < this.cells.length; i++) {
@@ -114,9 +178,11 @@ NZ.start({
 	start() {
 		Global.grid.init();
 		Global.grid.fill();
+		// Global.grid.check();
 		Global.mouseGrid = Global.grid.toGridFloor(Input.mouseX, Input.mouseY);
 	},
 	update() {
+		if (Input.keyDown(KeyCode.Space)) Global.grid.check();
 		Global.mouseGrid = Global.grid.toGridFloor(Input.mouseX, Input.mouseY);
 		if (Input.mouseDown(0) || Input.mouseUp(0)) {
 			if (Global.grid.containsPoint(Input.mouseX, Input.mouseY)) {
@@ -146,6 +212,9 @@ NZ.start({
 					}
 					else {
 						Global.selected = b;
+						console.log(b.i, b.j);
+						console.log('H', Global.grid.getConnectH(b.i, b.j, (x) => x.data.color === b.data.color));
+						console.log('V', Global.grid.getConnectV(b.i, b.j, (x) => x.data.color === b.data.color));
 					}
 				}
 			}
