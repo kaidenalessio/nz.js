@@ -1,17 +1,21 @@
 class M3Cell {
 	static COLORS = [C.orangeRed, C.gold, C.limeGreen, C.dodgerBlue];
+	static getRandomData() {
+		return {
+			color: Utils.pick(M3Cell.COLORS)
+		};
+	}
 	constructor(grid, i, j, x, y) {
 		this.grid = grid;
 		this.i = i;
 		this.j = j;
 		this.x = x;
 		this.y = y;
-		this.data = {
-			color: Utils.pick(M3Cell.COLORS)
-		};
+		this.data = M3Cell.getRandomData();
 	}
 	render() {
 		Draw.setColor(this.data.color, C.black);
+		if (this.removed) Draw.setFill(C.white);
 		Draw.circle(this.x + this.grid.midSize, this.y + this.grid.midSize, this.grid.midSize - 2);
 		Draw.stroke();
 	}
@@ -132,7 +136,7 @@ class M3Grid {
 		return v;
 	}
 	check() {
-		// check for win
+		// check for matches
 		for (let j = 0; j < this.rows; j++) {
 			for (let i = 0; i < this.cols; i++) {
 				const b = this.getCell(i, j);
@@ -140,21 +144,49 @@ class M3Grid {
 					const h = this.getConnectH(i, j, (x) => x.data.color === b.data.color);
 					const v = this.getConnectV(i, j, (x) => x.data.color === b.data.color);
 					if (h.length > 1) {
-						for (const n of h) {
-							n.data.color = C.white;
-						}
-						b.data.color = C.white;
+						for (const n of h) { this.flagRemove(n); }
+						this.flagRemove(b);
 					}
 					if (v.length > 1) {
-						for (const n of v) {
-							n.data.color = C.white;
-						}
-						b.data.color = C.white;
+						for (const n of v) { this.flagRemove(n); }
+						this.flagRemove(b);
 					}
 				}
 			}
 		}
+		this.restructure();
 		console.log('check');
+	}
+	flagRemove(n) {
+		const x = this.getCell(n.i, n.j);
+		if (x) x.removed = true;
+	}
+	restructure() {
+		let a, b;
+		for (let i = 0; i < this.cells.length; i++) {
+			a = this.cells[i];
+			if (a.removed) {
+				b = this.cells[i - this.cols];
+				if (b) {
+					// shift cell down one
+					// failed attempt
+					// let jj
+					// while ()
+					this.swap(a.i, a.j, b.i, b.j);
+					a.removed = false;
+					b.removed = true;
+					// a.y -= this.size;
+					// Tween.tween(a, { y: a.y + this.size }, 20, Easing.QuadEaseOut);
+				}
+				else {
+					// supposed to be removed but no cell above? fill with new cell
+					a.data = M3Cell.getRandomData();
+					a.removed = false;
+					a.y -= this.size;
+					Tween.tween(a, { y: a.y + this.size }, 20, Easing.QuadEaseOut);
+				}
+			}
+		}
 	}
 	render() {
 		for (let i = 0; i < this.cells.length; i++) {
@@ -206,6 +238,7 @@ NZ.start({
 								[a.x, a.y, b.x, b.y] = [b.x, b.y, a.x, a.y];
 								Tween.tween(a, { x: b.x, y: b.y }, 20, Easing.BackEaseInOut);
 								Tween.tween(b, { x: a.x, y: a.y }, 20, Easing.BackEaseInOut);
+								Global.grid.check();
 							}
 						}
 						Global.selected = null;
