@@ -343,6 +343,7 @@ NZ.start({
 		// click/release below ground y will not start/cancel aiming
 		Global.GROUND_Y = Stage.h - Global.GROUND_H;
 		Global.aiming = false;
+		Global.isShooting = false;
 		Global.bubble = null; // bubble that will be fired
 		Global.shooter = null;
 		Global.bubbleGrid = new BubbleGrid(11, 18);
@@ -363,6 +364,9 @@ NZ.start({
 	start() {
 		// reset object list
 		OBJ.rawClearAll();
+		Global.bubble = null;
+		Global.aiming = false;
+		Global.isShooting = false;
 		// create shooter
 		Global.shooter = new Shooter(Stage.mid.w, Global.GROUND_Y + Global.GROUND_H * 0.5);
 		// create level
@@ -417,8 +421,39 @@ NZ.start({
 
 				// get color
 				Global.currentColor = Global.nextColor;
-				Global.nextColor = Global.getRandomBubbleColor();
-				// todo: check if current color and next color exists in scene
+				
+				const colors = {};
+				for (let i = 0; i < Global.bubbleGrid.cells.length; i++) {
+					const b = Global.bubbleGrid.cells[i];
+					if (b) {
+						if (!colors[b.c]) colors[b.c] = 0;
+						colors[b.c]++;
+					}
+				}
+				let max = 0, color;
+				for (const key in colors) {
+					if (colors[key] > max) {
+						max = colors[key];
+						color = key;
+					}
+				}
+				if (color && color !== Global.currentColor) {
+					Global.nextColor = color;
+				}
+				else {
+					Global.nextColor = Global.getRandomBubbleColor();
+					// keep randomize color if the picked one is not exists
+					let maxiter = 25;
+					while (!colors[Global.nextColor] && maxiter-- > 0) {
+						Global.nextColor = Global.getRandomBubbleColor();
+					}
+				}
+
+				// if current color doesnt exists
+				if (!colors[Global.currentColor]) {
+					// simply refer to next color
+					Global.currentColor = Global.nextColor;
+				}
 			}
 		}
 
