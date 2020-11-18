@@ -206,6 +206,26 @@ NZ.start({
 		Global.grid = new M3Grid(Stage.w, Stage.h, 40);
 		Global.selected = null;
 		Global.mouseGrid = null;
+		Global.swap = (a, b) => {
+			let di = Math.abs(b.i - a.i), dj = Math.abs(b.j - a.j);
+			if (di + dj === 1) {
+				if (a.data.color === b.data.color) {
+					let dx = (b.x - a.x) * 0.5,
+						dy = (b.y - a.y) * 0.5;
+					Tween.tween(a, { x: a.x + dx, y: a.y + dy }, 10, Easing.QuadEaseOut)
+						 .chain(a, { x: a.x, y: a.y }, 10, Easing.BackEaseOut);
+					Tween.tween(b, { x: b.x - dx, y: b.y - dy }, 10, Easing.QuadEaseOut)
+						 .chain(b, { x: b.x, y: b.y }, 10, Easing.BackEaseOut);
+				}
+				else {
+					Global.grid.swap(a.i, a.j, b.i, b.j);
+					[a.x, a.y, b.x, b.y] = [b.x, b.y, a.x, a.y];
+					Tween.tween(a, { x: b.x, y: b.y }, 20, Easing.BackEaseInOut);
+					Tween.tween(b, { x: a.x, y: a.y }, 20, Easing.BackEaseInOut);
+					// Global.grid.check();
+				}
+			}
+		};
 	},
 	start() {
 		Global.grid.init();
@@ -214,46 +234,33 @@ NZ.start({
 		Global.mouseGrid = Global.grid.toGridFloor(Input.mouseX, Input.mouseY);
 	},
 	update() {
-		if (Input.keyDown(KeyCode.Space)) Global.grid.check();
+		// if (Input.keyDown(KeyCode.Space)) Global.grid.check();
 		Global.mouseGrid = Global.grid.toGridFloor(Input.mouseX, Input.mouseY);
-		if (Input.mouseDown(0) || Input.mouseUp(0)) {
-			if (Global.grid.containsPoint(Input.mouseX, Input.mouseY)) {
-				const b = Global.grid.getCell(Global.mouseGrid.i, Global.mouseGrid.j);
-				if (b) {
-					if (Global.selected) {
-						const a = Global.selected;
-						let di = Math.abs(b.i - a.i),
-							dj = Math.abs(b.j - a.j);
-						if (di + dj === 1) {
-							if (a.data.color === b.data.color) {
-								let dx = (b.x - a.x) * 0.5,
-									dy = (b.y - a.y) * 0.5;
-								Tween.tween(a, { x: a.x + dx, y: a.y + dy }, 10, Easing.QuadEaseOut)
-									 .chain(a, { x: a.x, y: a.y }, 10, Easing.BackEaseOut);
-								Tween.tween(b, { x: b.x - dx, y: b.y - dy }, 10, Easing.QuadEaseOut)
-									 .chain(b, { x: b.x, y: b.y }, 10, Easing.BackEaseOut);
-							}
-							else {
-								Global.grid.swap(a.i, a.j, b.i, b.j);
-								[a.x, a.y, b.x, b.y] = [b.x, b.y, a.x, a.y];
-								Tween.tween(a, { x: b.x, y: b.y }, 20, Easing.BackEaseInOut);
-								Tween.tween(b, { x: a.x, y: a.y }, 20, Easing.BackEaseInOut);
-								Global.grid.check();
-							}
-						}
-						Global.selected = null;
-					}
-					else {
-						Global.selected = b;
-						console.log(b.i, b.j);
-						console.log('H', Global.grid.getConnectH(b.i, b.j, (x) => x.data.color === b.data.color));
-						console.log('V', Global.grid.getConnectV(b.i, b.j, (x) => x.data.color === b.data.color));
+		if (Input.mouseDown(0)) {
+			if (Global.selected) {
+				if (Global.grid.containsPoint(Input.mouseX, Input.mouseY)) {
+					const a = Global.selected;
+					const b = Global.grid.getCell(Global.mouseGrid.i, Global.mouseGrid.j);
+					if (b && a !== b) {
+						Global.swap(a, b);
 					}
 				}
+				Global.selected = null;
+			}
+			else if (Global.grid.containsPoint(Input.mouseX, Input.mouseY)) {
+				const b = Global.grid.getCell(Global.mouseGrid.i, Global.mouseGrid.j);
+				Global.selected = b? b : null;
 			}
 		}
-		if (!Input.mouseHold(0)) {
-			Global.selected = null;
+		if (Input.mouseHold(0)) {
+			if (Global.selected && Global.grid.containsPoint(Input.mouseX, Input.mouseY)) {
+				const a = Global.selected;
+				const b = Global.grid.getCell(Global.mouseGrid.i, Global.mouseGrid.j);
+				if (b && a !== b) {
+					Global.swap(a, b);
+					Global.selected = null;
+				}
+			}
 		}
 	},
 	render() {
