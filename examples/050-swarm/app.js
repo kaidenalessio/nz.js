@@ -7,9 +7,10 @@ NZ.start({
 		Global.particles = [];
 		Global.numParticle = 100;
 		Global.bestParticle = null;
-		Global.vMult = 0.99;
-		Global.pMult = 0.03;
-		Global.gMult = 0.01;
+		Global.vMult = 0.99; // inertia weight parameter, how much previous velocity affects
+		Global.pMult = 0.03; // individual-cognition parameter, how much local best position attracts*
+		Global.gMult = 0.01; // social learning parameter, how much global best position attracts*
+		// * and will be multiplied by a random value ranged 0-1
 		Global.learningRate = 1;
 		Global.targetRadius = 6;
 		Global.allowDead = false;
@@ -61,8 +62,24 @@ NZ.start({
 
 				const p = Global.particles[i];
 
+				if (Input.keyDown(KeyCode.Space)) {
+					p.vx = Mathz.range(-Global.velocity, Global.velocity);
+					p.vy = Mathz.range(-Global.velocity, Global.velocity);
+				}
+
+				// Algorithm used:
+				// nv = pv + pm*r*best + gm*r*gbest
 				p.vx = Global.vMult * p.vx + Global.pMult * Math.random() * (p.best.x - p.x) + Global.gMult * Math.random() * (Global.bestParticle.x - p.x);
 				p.vy = Global.vMult * p.vy + Global.pMult * Math.random() * (p.best.y - p.y) + Global.gMult * Math.random() * (Global.bestParticle.y - p.y);
+				// nv = new velocity
+				// pv = product between parameter 'inertia weight' and particle's previous velocity
+				// r = random value between 0-1
+				// best = difference between the particle’s own best position and its current position
+				// gbest = difference between the swarm/global best position and its current position
+				// pm = parameter 'individual-cognition'
+				// gm = parameter 'social learning'
+				//
+				// Note: x and y have different random value
 
 				const length = Math.sqrt(p.vx*p.vx + p.vy*p.vy);
 
@@ -103,9 +120,11 @@ NZ.start({
 		Draw.setFill(C.blue);
 		Draw.circle(Global.bestParticle.x, Global.bestParticle.y, Global.bestParticle.r);
 		Draw.stroke();
-		Draw.textBGi(0, 0, `Iteration: ${Global.i}/${Global.iteration}`);
-		Draw.textBGi(0, 1, `Best Cost: ${Math.round(Math.sqrt(Global.cost(Global.bestParticle)))}`);
-		Draw.textBGi(0, 2, `FPS: ${Time.FPS}`);
-		if (Input.keyDown(KeyCode.Space)) Scene.restart();
+		Draw.textBGi(0, 0, `Press space to separate particles.`);
+		Draw.textBGi(0, 1, `Press enter to restart.`);
+		Draw.textBGi(0, 2, `Iteration: ${Global.i}/${Global.iteration}`);
+		Draw.textBGi(0, 3, `Best Cost: ${Math.round(Math.sqrt(Global.cost(Global.bestParticle)))}`);
+		Draw.textBGi(0, 4, `FPS: ${Time.FPS}`);
+		if (Input.keyDown(KeyCode.Enter)) Scene.restart();
 	}
 });
