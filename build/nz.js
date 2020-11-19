@@ -3874,7 +3874,7 @@ Object.defineProperty(NZ.Vec3, 'zero', {
 	get: function() {
 		return new NZ.Vec3(0, 0, 0);
 	}
-});// required: NZ.Vec2, NZ.Draw, NZ.Stage
+});// required: NZ.Vec2, NZ.Draw, NZ.Stage, NZ.Time
 class NZGameObject extends NZObject {
 	static makeRect(x, y, w, h, speed, direction, gravity) {
 		const n = new NZGameObject(x, y, speed, direction, gravity);
@@ -3965,7 +3965,7 @@ class NZGameObject extends NZObject {
 	alarmUpdate() {
 		for (let i = this.alarm.length - 1; i >= 0; --i) {
 			if (this.alarm[i] !== -1) {
-				this.alarm[i] -= 1;
+				this.alarm[i] -= NZ.Time.scaledDeltaTime;
 				if (this.alarm[i] < 0) {
 					switch (i) {
 						case 0: this.alarm0(); break;
