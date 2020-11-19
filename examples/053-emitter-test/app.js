@@ -3,6 +3,9 @@ NZ.ParticleSystem = {
 	createEmitter() {
 		return {
 			list: [],
+			get count() {
+				return this.list.length;
+			},
 			life: { // uses milliseconds (1000 = one second)
 				min: 4000,
 				max: 5000
@@ -43,7 +46,9 @@ NZ.ParticleSystem = {
 						life: this.random(this.life.min, this.life.max),
 						x: this.random(this.area.x, this.area.x + this.area.w),
 						y: this.random(this.area.y, this.area.y + this.area.h),
-						grav: this.grav,
+						vx: 0,
+						vy: 0,
+						grav: 0,
 						speed: this.random(this.speed.min, this.speed.max),
 						direction: this.random(this.direction.min, this.direction.max),
 						size: this.random(this.size.min, this.size.max),
@@ -55,7 +60,7 @@ NZ.ParticleSystem = {
 				}
 			},
 			update() {
-				let p, vx, vy;
+				let p;
 				for (let i = this.list.length - 1; i >= 0; --i) {
 					p = this.list[i];
 					p.life -= p.lifeStep * NZ.Time.scaledDeltaTime;
@@ -63,11 +68,11 @@ NZ.ParticleSystem = {
 						this.list.splice(i, 1);
 						continue;
 					}
-					vx = Math.cos(p.direction) * p.speed;
-					vy = Math.sin(p.direction) * p.speed + p.grav;
+					p.vx = Math.cos(p.direction) * p.speed;
+					p.vy = Math.sin(p.direction) * p.speed;
 					p.grav += this.grav;
-					p.x += vx;
-					p.y += vy;
+					p.x += p.vx;
+					p.y += p.vy + p.grav;
 				}
 			},
 			render() {
@@ -78,6 +83,31 @@ NZ.ParticleSystem = {
 					NZ.Draw.ctx.globalAlpha = p.life;
 					NZ.Draw.circle(p.x, p.y, p.size * 0.5);
 					NZ.Draw.ctx.globalAlpha = 1;
+				}
+			},
+			constraint() {
+				let p;
+				for (let i = this.list.length - 1; i >= 0; --i) {
+					p = this.list[i];
+					if (p.x > NZ.Stage.w) {
+						p.x = NZ.Stage.w;
+						p.vx = -p.vx;
+					}
+					else if (p.x < 0) {
+						p.x = 0;
+						p.vx = -p.vx;
+					}
+					else if (p.y > NZ.Stage.h) {
+						p.y = NZ.Stage.h;
+						p.vy = -p.vy;
+						p.grav = 0;
+					}
+					else if (p.y < 0) {
+						p.y = 0;
+						p.vy = -p.vy;
+						p.grav = 0;
+					}
+					p.direction = Math.atan2(p.vy, p.vx);
 				}
 			},
 			setLife(min, max) {
@@ -122,22 +152,21 @@ const Emitter = ParticleSystem.createEmitter();
 
 NZ.start({
 	init() {
-		Global.bubbleEmitter = ParticleSystem.createEmitter();
-		Global.bubbleEmitter.setGrav(0.1);
-		Global.bubbleEmitter.setSpeed(5);
-		Global.bubbleEmitter.setDirectionDeg(0, 360);
-		Global.bubbleEmitter.setSize(5);
-		Global.bubbleEmitter.setColor(C.mediumSlateBlue, C.royalBlue, C.rebeccaPurple);
+		Emitter.setLife(5000);
+		Emitter.setGrav(0.1);
+		Emitter.setSpeed(5, 10);
+		Emitter.setDirectionDeg(0, 360);
+		Emitter.setSize(5, 10);
+		Emitter.setColor(C.mediumSlateBlue, C.royalBlue, C.rebeccaPurple);
 	},
 	render() {
+		Emitter.setArea(Input.mouseX - 32, Input.mouseY - 32, 64, 64);
 		Emitter.emit(1);
-		Global.bubbleEmitter.setArea(Input.mouseX, Input.mouseY);
-		Global.bubbleEmitter.emit(5);
 		Emitter.render();
 		Emitter.update();
-		Global.bubbleEmitter.render();
-		Global.bubbleEmitter.update();
+		Emitter.constraint();
 		Draw.textBGi(0, 0, Time.FPS);
+		Draw.textBGi(0, 1, Emitter.count);
 	},
 	bgColor: [C.lavenderBlush, C.pink]
 });
