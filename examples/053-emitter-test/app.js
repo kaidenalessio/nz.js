@@ -81,15 +81,37 @@ NZ.ParticleSystem = {
 				}
 			},
 			setLife(min, max) {
-				if (max === undefined) max = min;
 				this.life.min = min;
-				this.life.max = max;
+				this.life.max = max || min;
 			},
 			setArea(x, y, w=0, h=0) {
 				this.area.x = x;
 				this.area.y = y;
 				this.area.w = w;
 				this.area.h = h;
+			},
+			setGrav(grav) {
+				this.grav = grav;
+			},
+			setSpeed(min, max) {
+				this.speed.min = min;
+				this.speed.max = max || min;
+			},
+			setDirection(min, max) {
+				this.direction.min = min;
+				this.direction.max = max || min;
+			},
+			setDirectionDeg(min, max) {
+				if (max === undefined) max = min;
+				this.direction.min = min * Math.PI / 180;
+				this.direction.max = max * Math.PI / 180;
+			},
+			setSize(min, max) {
+				this.size.min = min;
+				this.size.max = max || min;
+			},
+			setColor(...colors) {
+				this.color = colors;
 			}
 		};
 	},
@@ -101,6 +123,11 @@ const Emitter = ParticleSystem.createEmitter();
 NZ.start({
 	init() {
 		Global.bubbleEmitter = ParticleSystem.createEmitter();
+		Global.bubbleEmitter.setGrav(0.1);
+		Global.bubbleEmitter.setSpeed(5);
+		Global.bubbleEmitter.setDirectionDeg(0, 360);
+		Global.bubbleEmitter.setSize(5);
+		Global.bubbleEmitter.setColor(C.mediumSlateBlue, C.royalBlue, C.rebeccaPurple);
 	},
 	render() {
 		Emitter.emit(1);
