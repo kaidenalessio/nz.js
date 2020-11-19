@@ -100,7 +100,7 @@ class Mouse extends CellObject {
 		// movement input
 		this.keyW = this.keyA = this.keyS = this.keyD = false;
 
-		if (Time.frameCount > this.moveTime) {
+		if (Time.fixedFrameCount > this.moveTime) {
 			if (Input.keyHold(KeyCode.Up)) {
 				this.keyW = true;
 			}
@@ -113,7 +113,7 @@ class Mouse extends CellObject {
 			else if (Input.keyHold(KeyCode.Right)) {
 				this.keyD = true;
 			}
-			this.moveTime = Time.frameCount + 3;
+			this.moveTime = Time.fixedFrameCount + 3;
 		}
 
 		// movement update
@@ -177,9 +177,9 @@ class Mouse extends CellObject {
 		}
 		else {
 			// move forward by imageangle
-			if (Time.frameCount > this.moveTime) {
+			if (Time.fixedFrameCount > this.moveTime) {
 				this.miceMove();
-				this.moveTime = Time.frameCount + 20;
+				this.moveTime = Time.fixedFrameCount + 20;
 			}
 		}
 

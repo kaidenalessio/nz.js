@@ -11,6 +11,7 @@ NZ.Time = {
 	_fpsCount: 0,
 	frameRate: 0,
 	frameCount: 0,
+	fixedFrameCount: 0,
 	update(t) {
 		this.lastTime = this.time;
 		this.time = t || 0;
@@ -22,6 +23,7 @@ NZ.Time = {
 			this._fpsCount = this.frameCount + 6;
 		}
 		this.frameCount++;
+		this.fixedFrameCount += this.scaledDeltaTime;
 	},
 	sin(amplitude=1, frequency=0.01) {
 		return Math.sin(this.time * frequency) * amplitude;

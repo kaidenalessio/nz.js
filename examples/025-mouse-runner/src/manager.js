@@ -89,7 +89,7 @@ class Manager {
 		this.miceTarget = options.miceTarget;
 		this.miceToSpawn = options.miceToSpawn;
 		this.miceSpawnInterval = options.miceSpawnInterval;
-		this.miceSpawnTime = Time.frameCount + this.miceSpawnInterval;
+		this.miceSpawnTime = Time.fixedFrameCount + this.miceSpawnInterval;
 		this.miceSpawned = 0;
 
 		this.cheese = new Cheese(this.grid, options.cheesePos.i, options.cheesePos.j);
@@ -188,11 +188,11 @@ class Manager {
 		}
 
 		// mice spawn manager update
-		if (Time.frameCount > this.miceSpawnTime) {
+		if (Time.fixedFrameCount > this.miceSpawnTime) {
 			if (this.miceSpawned < this.miceToSpawn) {
 				this.spawnMice();
 			}
-			this.miceSpawnTime = Time.frameCount + this.miceSpawnInterval;
+			this.miceSpawnTime = Time.fixedFrameCount + this.miceSpawnInterval;
 		}
 
 		let miceAvailable = this.mice.length + (this.miceToSpawn - this.miceSpawned);
@@ -212,7 +212,7 @@ class Manager {
 					if (this.mice[i].direction !== this.pads[j].direction) {
 						// change our direction to follow pad
 						this.mice[i].direction = this.pads[j].direction;
-						this.mice[i].moveTime = Time.frameCount + Mathz.irange(20, 60);
+						this.mice[i].moveTime = Time.fixedFrameCount + Mathz.irange(20, 60);
 					}
 				}
 			}

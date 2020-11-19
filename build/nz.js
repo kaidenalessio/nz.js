@@ -3019,6 +3019,7 @@ NZ.Time = {
 	_fpsCount: 0,
 	frameRate: 0,
 	frameCount: 0,
+	fixedFrameCount: 0,
 	update(t) {
 		this.lastTime = this.time;
 		this.time = t || 0;
@@ -3030,6 +3031,7 @@ NZ.Time = {
 			this._fpsCount = this.frameCount + 6;
 		}
 		this.frameCount++;
+		this.fixedFrameCount += this.scaledDeltaTime;
 	},
 	sin(amplitude=1, frequency=0.01) {
 		return Math.sin(this.time * frequency) * amplitude;
@@ -3187,65 +3189,7 @@ NZ.Tween = {
 			obj[key] = obj[key] + interpolationValue * (keys[key] - obj[key]);
 		}
 	}
-};
-
-/* OLD
-NZ.Tween = {
-	lastDuration: 0,
-	tween(object, targetProperties, durationInFrames, easingFunction, delay=0, onComplete=()=>{}, onProgress=()=>{}) {
-		let count = -delay-1,
-			starts = {},
-			changes = {},
-			currTime = 0;
-
-		const _update = (t) => {
-			let deltaTime = t - currTime;
-			currTime = t;
-
-			if (Math.floor(count) === -1) {
-				// start of tween
-				for (const prop in targetProperties) {
-					starts[prop] = object[prop];
-					changes[prop] = targetProperties[prop] - starts[prop];
-				}
-				count++;
-			}
-			else {
-				count += Math.min(2, deltaTime * 0.06); // scaled delta time (clamped) (2 = 30fps)
-			}
-
-			count < durationInFrames? window.requestAnimationFrame(_update) : count = durationInFrames;
-
-			if (count >= 0) {
-				for (const prop in targetProperties) {
-					if (changes[prop]) {
-						object[prop] = easingFunction(count/durationInFrames, starts[prop], changes[prop]);
-					}
-				}
-			}
-
-			count < durationInFrames? onProgress() : onComplete();
-		};
-
-		_update(0);
-
-		NZ.Tween.lastDuration = durationInFrames + delay;
-
-		return NZ.Tween;
-	},
-	chain(object, targetProperties, durationInFrames, easingFunction, delay=0, onComplete, onProgress) {
-		NZ.Tween.tween(object, targetProperties, durationInFrames, easingFunction, delay + NZ.Tween.lastDuration, onComplete, onProgress);
-		return NZ.Tween;
-	},
-	// automatically assign interpolated number between
-	// object and given targetProperties to object
-	lerp(object, targetProperties, interpolationValue) {
-		for (const key in targetProperties) {
-			object[key] = object[key] + interpolationValue * (targetProperties[key] - object[key]);
-		}
-	}
-};
-*/var NZ = NZ || {};
+};var NZ = NZ || {};
 
 NZ.UI = {
 	autoReset: true, // use in NZ.Runner.run
