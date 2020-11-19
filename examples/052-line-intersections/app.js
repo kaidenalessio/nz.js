@@ -18,8 +18,9 @@ class Line {
 			crossB = (B.o.x * dy - B.o.y * dx) / cross;
 		if (crossA >= 0 && crossA <= 1 && crossB >= 0 && crossB <= 1) {
 			return {
-				x: B.p[0].x + B.o.x * crossA,
-				y: B.p[0].y + B.o.y * crossA,
+				x: A.p[0].x + A.o.x * crossB,
+				y: A.p[0].y + A.o.y * crossB,
+				// debug purpose
 				dx: dx,
 				dy: dy,
 				cross: cross,
@@ -89,26 +90,42 @@ NZ.start({
 				y = Stage.mid.h,
 				A = Global.lines[0],
 				B = Global.lines[1],
-				cross = intersect.cross / Stage.w;
+				w = 200,
+				cross = intersect.cross / intersect.cross * w,
+				crossA = intersect.crossA * w,
+				crossB = intersect.crossB * w;
 
 			Draw.setColor(C.orange);
 			// intersect point
 			Draw.pointCircle(intersect, 5);
+			Draw.pointLine(A.p[0], intersect);
 			Draw.pointLine(B.p[0], intersect);
 
-			let w = 32;
+			Draw.setLineWidth(4);
+
+			w *= 0.5;
 
 			Draw.setColor(C.red);
-			// length of B cross A
-			Draw.line(x, y + w*1, x + cross, y + w*1);
-
+			Draw.line(x - w, y + 48, x + w, y + 48);
 			Draw.setColor(C.orange);
 			// length of A cross difference vector
-			Draw.line(x, y + w*2, x + intersect.crossA * cross, y + w*2);
+			Draw.line(x - w, y + 48, x - w + crossA, y + 48);
+			Draw.setColor(C.black);
+			Draw.circle(x - w, y + 48, 4);
+			Draw.setColor(C.red);
+			Draw.circle(x + w, y + 48, 4);
 
 			Draw.setColor(C.blueViolet);
+			Draw.line(x - w, y + 96, x + w, y + 96);
+			Draw.setColor(C.orange);
 			// length of B cross difference vector
-			Draw.line(x, y + w*3, x + intersect.crossB * cross, y + w*3);
+			Draw.line(x - w, y + 96, x - w + crossB, y + 96);
+			Draw.setColor(C.black);
+			Draw.circle(x - w, y + 96, 4);
+			Draw.setColor(C.blueViolet);
+			Draw.circle(x + w, y + 96, 4);
+
+			Draw.resetLineWidth();
 
 			let Ao = Global.setMag(A.o.x, A.o.y, Stage.w),
 				Bo = Global.setMag(B.o.x, B.o.y, Stage.w);
