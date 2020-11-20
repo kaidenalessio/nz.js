@@ -1,4 +1,4 @@
-// Uses NZ.Time, NZ.Draw
+// Uses NZ.Time, NZ.Draw, NZ.Stage
 NZ.ParticleSystem = {
 	createEmitter() {
 		return {
@@ -8,31 +8,48 @@ NZ.ParticleSystem = {
 				return this.list.length;
 			},
 			life: { // uses milliseconds
-				min: 3000,
-				max: 4000
+				min: 2000,
+				max: 3000
 			},
 			area: {
-				x: 200,
-				y: 200,
-				w: 100,
-				h: 120
+				x: 0,
+				y: 0,
+				w: NZ.Stage.w,
+				h: 0
 			},
 			grav: 0.5,
 			speed: {
 				min: 15,
 				max: 18
 			},
+			speedInc: { // speed increment
+				min: -0.5,
+				max: 0.5
+			},
 			direction: { // uses radians
-				min: 240 * Math.PI / 180,
-				max: 300 * Math.PI / 180
+				min: 0,
+				max: Math.PI
+			},
+			directionInc: { // direction increment (in radians as well)
+				min: -0.1,
+				max: 0.1
 			},
 			bounce: 0.9, // 0=no bounce, 1=full bounce
-			friction: 0.98, // 0=no velocity, 1=no friction
+			friction: 0.99, // 0=no velocity, 1=no friction
 			size: {
-				min: 20,
-				max: 40
+				min: 10,
+				max: 25
 			},
-			color: ['orange', 'orangered', 'gold'], // will be choosed randomly
+			sizeEnd: {
+				min: 0.1, // size scalar at the end of life (begin from 1)
+				max: 0.2
+			},
+			color: ['skyblue', 'royalblue', 'gold'], // will be choosed randomly
+			// 0-1 start of fade out (0.5=fade out at half of life, 0=no fade out)
+			fadeOut: {
+				min: 0.2,
+				max: 0.4
+			},
 			random(min, max) {
 				return min + Math.random() * (max - min);
 			},
@@ -43,9 +60,13 @@ NZ.ParticleSystem = {
 						x: this.random(this.area.x, this.area.x + this.area.w),
 						y: this.random(this.area.y, this.area.y + this.area.h),
 						speed: this.random(this.speed.min, this.speed.max),
+						speedInc: this.random(this.speedInc.min, this.speedInc.max),
 						direction: this.random(this.direction.min, this.direction.max),
+						directionInc: this.random(this.directionInc.min, this.directionInc.max),
 						size: this.random(this.size.min, this.size.max),
-						color: this.color[Math.floor(Math.random() * this.color.length)]
+						sizeEnd: this.random(this.sizeEnd.min, this.sizeEnd.max),
+						color: this.color[Math.floor(Math.random() * this.color.length)],
+						fadeOut: this.random(this.fadeOut.min, this.fadeOut.max)
 					};
 					p.lifeStep = NZ.Time.fixedDeltaTime / p.life;
 					p.life = 1;
@@ -62,6 +83,12 @@ NZ.ParticleSystem = {
 						this.list.splice(i, 1);
 						continue;
 					}
+					p.speed = Math.sqrt(p.vx*p.vx + p.vy*p.vy);
+					p.direction = Math.atan2(p.vy, p.vx);
+					p.speed += p.speedInc;
+					p.direction += p.directionInc;
+					p.vx = Math.cos(p.direction) * p.speed;
+					p.vy = Math.sin(p.direction) * p.speed;
 					p.vy += this.grav;
 					p.vx *= this.friction;
 					p.vy *= this.friction;
@@ -70,18 +97,13 @@ NZ.ParticleSystem = {
 				}
 			},
 			render() {
-				this.canvas.width = Stage.w;
-				this.canvas.height = Stage.h;
-				NZ.Draw.onCtx(this.canvas.getContext('2d'), () => {
-					for (let i = 0; i < this.list.length; i++) {
-						const p = this.list[i];
-						NZ.Draw.setFill(p.color);
-						NZ.Draw.circle(p.x, p.y, p.size * 0.5);
-					}
-				});
-				NZ.Draw.ctx.globalAlpha = 0.2;
-				NZ.Draw.ctx.drawImage(this.canvas, 0, 0, Stage.w, Stage.h);
-				NZ.Draw.ctx.globalAlpha = 1;
+				for (let i = 0; i < this.list.length; i++) {
+					const p = this.list[i];
+					NZ.Draw.setFill(p.color);
+					NZ.Draw.ctx.globalAlpha = p.fadeOut === 0? 1 : Math.min(1, p.life / p.fadeOut);
+					NZ.Draw.circle(p.x, p.y, p.size * 0.5 * (1 - (1 - p.sizeEnd) * (1 - p.life)));
+					NZ.Draw.ctx.globalAlpha = 1;
+				}
 			},
 			constraint() {
 				for (let i = 0; i < this.list.length; i++) {
@@ -171,61 +193,64 @@ NZ.ParticleSystem = {
 				this.speed.min = min;
 				this.speed.max = max || min;
 			},
+			setSpeedInc(min, max) {
+				this.speedInc.min = min;
+				this.speedInc.max = max || min;
+			},
 			setDirection(min, max) {
 				this.direction.min = min;
 				this.direction.max = max || min;
+			},
+			setDirectionInc(min, max) {
+				this.directionInc.min = min;
+				this.directionInc.max = max || min;
 			},
 			setDirectionDeg(min, max) {
 				if (max === undefined) max = min;
 				this.direction.min = min * Math.PI / 180;
 				this.direction.max = max * Math.PI / 180;
 			},
-			setSize(min, max) {
-				this.size.min = min;
-				this.size.max = max || min;
-			},
-			setColor(...colors) {
-				this.color = colors;
+			setDirectionIncDeg(min, max) {
+				if (max === undefined) max = min;
+				this.directionInc.min = min * Math.PI / 180;
+				this.directionInc.max = max * Math.PI / 180;
 			},
 			setBounce(bounce) {
 				this.bounce = bounce;
 			},
 			setFriction(friction) {
 				this.friction = friction;
+			},
+			setSize(min, max) {
+				this.size.min = min;
+				this.size.max = max || min;
+			},
+			setSizeEnd(min, max) {
+				this.sizeEnd.min = min;
+				this.sizeEnd.max = max || min;
+			},
+			setColor(...colors) {
+				this.color = colors;
+			},
+			setFadeOut(min, max) {
+				this.fadeOut.min = min;
+				this.fadeOut.max = max || min;
 			}
 		};
 	},
 };
 
-const ParticleSystem = NZ.ParticleSystem;
-const Emitter = ParticleSystem.createEmitter();
-const rects = [];
+let Emitter;
 
 NZ.start({
 	init() {
-		Emitter.setColor(C.blue);
-		for (let i = 0; i < 100; i++) {
-			rects.push({
-				x: Stage.randomX,
-				y: Stage.randomY,
-				w: Mathz.range(20, 200),
-				h: Mathz.range(20, 200),
-				c: C.random()
-			});
-		}
+		Emitter = NZ.ParticleSystem.createEmitter();
 	},
 	render() {
-		for (let i = 0; i < rects.length; i++) {
-			const r = rects[i];
-			Draw.setColor(r.c);
-			Draw.rect(r.x, r.y, r.w, r.h);
-		}
-		Emitter.setArea(Input.mouseX, Input.mouseY);
 		Emitter.emit(1);
 		Emitter.render();
 		Emitter.update();
-		// Emitter.dynamicCollision();
-		Emitter.constraint();
+		Emitter.dynamicCollision();
 		Draw.textBGi(0, 0, Time.FPS);
 		Draw.textBGi(0, 1, Emitter.count);
 	},
