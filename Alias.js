@@ -27,6 +27,7 @@ const {
 	Global,
 	Loader,
 	BGColor,
+	Emitter,
 	KeyCode,
 	LineCap,
 	LineDash,
@@ -34,5 +35,6 @@ const {
 	BoundRect,
 	Primitive,
 	Transform,
-	StylePreset
+	StylePreset,
+	ParticleSystem
 } = NZ;
