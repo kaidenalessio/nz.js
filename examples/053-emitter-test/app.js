@@ -2,6 +2,7 @@
 NZ.ParticleSystem = {
 	createEmitter() {
 		return {
+			canvas: document.createElement('canvas'),
 			list: [],
 			get count() {
 				return this.list.length;
@@ -54,9 +55,8 @@ NZ.ParticleSystem = {
 				}
 			},
 			update() {
-				let p;
 				for (let i = this.list.length - 1; i >= 0; --i) {
-					p = this.list[i];
+					const p = this.list[i];
 					p.life -= p.lifeStep * NZ.Time.scaledDeltaTime;
 					if (p.life <= 0) {
 						this.list.splice(i, 1);
@@ -70,19 +70,22 @@ NZ.ParticleSystem = {
 				}
 			},
 			render() {
-				let p;
-				for (let i = 0; i < this.list.length; i++) {
-					p = this.list[i];
-					NZ.Draw.setFill(p.color);
-					NZ.Draw.ctx.globalAlpha = p.life;
-					NZ.Draw.circle(p.x, p.y, p.size * 0.5);
-					NZ.Draw.ctx.globalAlpha = 1;
-				}
+				this.canvas.width = Stage.w;
+				this.canvas.height = Stage.h;
+				NZ.Draw.onCtx(this.canvas.getContext('2d'), () => {
+					for (let i = 0; i < this.list.length; i++) {
+						const p = this.list[i];
+						NZ.Draw.setFill(p.color);
+						NZ.Draw.circle(p.x, p.y, p.size * 0.5);
+					}
+				});
+				NZ.Draw.ctx.globalAlpha = 0.2;
+				NZ.Draw.ctx.drawImage(this.canvas, 0, 0, Stage.w, Stage.h);
+				NZ.Draw.ctx.globalAlpha = 1;
 			},
 			constraint() {
-				let p;
 				for (let i = 0; i < this.list.length; i++) {
-					p = this.list[i];
+					const p = this.list[i];
 					if (p.x > NZ.Stage.w) {
 						p.x = NZ.Stage.w;
 						p.vx = -p.vx * this.bounce;
@@ -196,19 +199,35 @@ NZ.ParticleSystem = {
 
 const ParticleSystem = NZ.ParticleSystem;
 const Emitter = ParticleSystem.createEmitter();
+const rects = [];
 
 NZ.start({
 	init() {
+		Emitter.setColor(C.blue);
+		for (let i = 0; i < 100; i++) {
+			rects.push({
+				x: Stage.randomX,
+				y: Stage.randomY,
+				w: Mathz.range(20, 200),
+				h: Mathz.range(20, 200),
+				c: C.random()
+			});
+		}
 	},
 	render() {
+		for (let i = 0; i < rects.length; i++) {
+			const r = rects[i];
+			Draw.setColor(r.c);
+			Draw.rect(r.x, r.y, r.w, r.h);
+		}
 		Emitter.setArea(Input.mouseX, Input.mouseY);
 		Emitter.emit(1);
 		Emitter.render();
 		Emitter.update();
-		Emitter.dynamicCollision();
+		// Emitter.dynamicCollision();
 		Emitter.constraint();
 		Draw.textBGi(0, 0, Time.FPS);
 		Draw.textBGi(0, 1, Emitter.count);
 	},
-	bgColor: [C.lavenderBlush, C.pink]
+	bgColor: C.white
 });
