@@ -7,8 +7,8 @@ NZ.ParticleSystem = {
 				return this.list.length;
 			},
 			life: { // uses milliseconds
-				min: 4000,
-				max: 5000
+				min: 3000,
+				max: 4000
 			},
 			area: {
 				x: 200,
@@ -16,15 +16,17 @@ NZ.ParticleSystem = {
 				w: 100,
 				h: 120
 			},
-			grav: 0.1,
+			grav: 0.5,
 			speed: {
-				min: 7,
-				max: 10
+				min: 15,
+				max: 18
 			},
 			direction: { // uses radians
 				min: 240 * Math.PI / 180,
 				max: 300 * Math.PI / 180
 			},
+			bounce: 0.9, // 0=no bounce, 1=full bounce
+			friction: 0.98, // 0=no velocity, 1=no friction
 			size: {
 				min: 20,
 				max: 40
@@ -39,7 +41,6 @@ NZ.ParticleSystem = {
 						life: this.random(this.life.min, this.life.max),
 						x: this.random(this.area.x, this.area.x + this.area.w),
 						y: this.random(this.area.y, this.area.y + this.area.h),
-						grav: this.grav,
 						speed: this.random(this.speed.min, this.speed.max),
 						direction: this.random(this.direction.min, this.direction.max),
 						size: this.random(this.size.min, this.size.max),
@@ -61,7 +62,9 @@ NZ.ParticleSystem = {
 						this.list.splice(i, 1);
 						continue;
 					}
-					p.vy += p.grav;
+					p.vy += this.grav;
+					p.vx *= this.friction;
+					p.vy *= this.friction;
 					p.x += p.vx;
 					p.y += p.vy;
 				}
@@ -82,19 +85,19 @@ NZ.ParticleSystem = {
 					p = this.list[i];
 					if (p.x > NZ.Stage.w) {
 						p.x = NZ.Stage.w;
-						p.vx = -p.vx;
+						p.vx = -p.vx * this.bounce;
 					}
 					else if (p.x < 0) {
 						p.x = 0;
-						p.vx = -p.vx;
+						p.vx = -p.vx * this.bounce;
 					}
 					else if (p.y > NZ.Stage.h) {
 						p.y = NZ.Stage.h;
-						p.vy = -p.vy;
+						p.vy = -p.vy * this.bounce;
 					}
 					else if (p.y < 0) {
 						p.y = 0;
-						p.vy = -p.vy;
+						p.vy = -p.vy * this.bounce;
 					}
 				}
 			},
@@ -180,6 +183,12 @@ NZ.ParticleSystem = {
 			},
 			setColor(...colors) {
 				this.color = colors;
+			},
+			setBounce(bounce) {
+				this.bounce = bounce;
+			},
+			setFriction(friction) {
+				this.friction = friction;
 			}
 		};
 	},
@@ -190,22 +199,14 @@ const Emitter = ParticleSystem.createEmitter();
 
 NZ.start({
 	init() {
-		Emitter.setLife(3000, 4000);
-		Emitter.setGrav(0.5);
-		Emitter.setSpeed(10, 15);
-		Emitter.setDirectionDeg(240, 300);
-		Emitter.setSize(50, 100);
-		Emitter.setColor(C.red, C.mediumSlateBlue, C.royalBlue, C.rebeccaPurple);
 	},
 	render() {
-		if (Time.frameCount % 5 === 0) {
-			Emitter.setArea(Input.mouseX, Input.mouseY);
-			Emitter.emit(1);
-		}
+		Emitter.setArea(Input.mouseX, Input.mouseY);
+		Emitter.emit(1);
+		Emitter.render();
 		Emitter.update();
 		Emitter.dynamicCollision();
 		Emitter.constraint();
-		Emitter.render();
 		Draw.textBGi(0, 0, Time.FPS);
 		Draw.textBGi(0, 1, Emitter.count);
 	},
