@@ -6,7 +6,7 @@ NZ.ParticleSystem = {
 			get count() {
 				return this.list.length;
 			},
-			life: { // uses milliseconds (1000 = one second)
+			life: { // uses milliseconds
 				min: 4000,
 				max: 5000
 			},
@@ -21,14 +21,7 @@ NZ.ParticleSystem = {
 				min: 7,
 				max: 10
 			},
-			direction: {
-				// uses radians (2 * (Math.PI=3.141592653589793) = 360 degrees)
-				// counter clockwise
-				// 0.00000 = 0 * Math.PI / 180 (right)
-				// 1.57079 = 90 * Math.PI / 180 (down)
-				// 3.14159 = 180 * Math.PI / 180 (left)
-				// 4.71239 = 270 * Math.PI / 180 (up)
-				// 6.28318 = 360 * Math.PI / 180 (right)
+			direction: { // uses radians
 				min: 240 * Math.PI / 180,
 				max: 300 * Math.PI / 180
 			},
@@ -46,9 +39,7 @@ NZ.ParticleSystem = {
 						life: this.random(this.life.min, this.life.max),
 						x: this.random(this.area.x, this.area.x + this.area.w),
 						y: this.random(this.area.y, this.area.y + this.area.h),
-						vx: 0,
-						vy: 0,
-						grav: 0,
+						grav: this.grav,
 						speed: this.random(this.speed.min, this.speed.max),
 						direction: this.random(this.direction.min, this.direction.max),
 						size: this.random(this.size.min, this.size.max),
@@ -56,6 +47,8 @@ NZ.ParticleSystem = {
 					};
 					p.lifeStep = NZ.Time.fixedDeltaTime / p.life;
 					p.life = 1;
+					p.vx = Math.cos(p.direction) * p.speed;
+					p.vy = Math.sin(p.direction) * p.speed;
 					this.list.push(p);
 				}
 			},
@@ -68,11 +61,9 @@ NZ.ParticleSystem = {
 						this.list.splice(i, 1);
 						continue;
 					}
-					p.vx = Math.cos(p.direction) * p.speed;
-					p.vy = Math.sin(p.direction) * p.speed;
-					p.grav += this.grav;
+					p.vy += p.grav;
 					p.x += p.vx;
-					p.y += p.vy + p.grav;
+					p.y += p.vy;
 				}
 			},
 			render() {
@@ -87,7 +78,7 @@ NZ.ParticleSystem = {
 			},
 			constraint() {
 				let p;
-				for (let i = this.list.length - 1; i >= 0; --i) {
+				for (let i = 0; i < this.list.length; i++) {
 					p = this.list[i];
 					if (p.x > NZ.Stage.w) {
 						p.x = NZ.Stage.w;
@@ -100,14 +91,61 @@ NZ.ParticleSystem = {
 					else if (p.y > NZ.Stage.h) {
 						p.y = NZ.Stage.h;
 						p.vy = -p.vy;
-						p.grav = 0;
 					}
 					else if (p.y < 0) {
 						p.y = 0;
 						p.vy = -p.vy;
-						p.grav = 0;
 					}
-					p.direction = Math.atan2(p.vy, p.vx);
+				}
+			},
+			dynamicCollision() {
+				let a, b, dx, dy, dist, diff, percent, intersects = [];
+				for (let i = 0; i < this.list.length; i++) {
+					a = this.list[i];
+					for (let j = 0; j < this.list.length; j++) {
+						if (j === i) continue;
+						b = this.list[j];
+						dx = b.x - a.x;
+						dy = b.y - a.y;
+						dist = Math.sqrt(dx*dx + dy*dy);
+						size = (a.size + b.size) * 0.5;
+						if (dist < size) {
+							intersects.push([a, b]);
+							diff = size - dist;
+							percent = diff / dist * 0.5;
+							offsetX = dx * percent;
+							offsetY = dy * percent;
+							a.x -= offsetX;
+							a.y -= offsetY;
+							b.x += offsetX;
+							b.y += offsetY;
+						}
+					}
+				}
+				for (const pair of intersects) {
+					a = pair[0];
+					b = pair[1];
+					dx = b.x - a.x;
+					dy = b.y - a.y;
+					dist = Math.sqrt(dx*dx + dy*dy);
+					let nx = dx / dist,
+						ny = dy / dist,
+						tx = -ny,
+						ty = nx,
+						dpta = a.vx * tx + a.vy * ty,
+						dptb = b.vx * tx + b.vy * ty,
+						ua = a.vx * nx + a.vy * ny,
+						ub = b.vx * nx + b.vy * ny,
+						ma = a.size * 10,
+						mb = b.size * 10,
+						mm = ma + mb,
+						va = ((ma - mb) * ua + 2*mb * ub) / mm,
+						vb = ((mb - ma) * ub + 2*ma * ua) / mm;
+
+					a.vx = tx * dpta + nx * va;
+					a.vy = ty * dpta + ny * va;
+					b.vx = tx * dptb + nx * vb;
+					b.vy = ty * dptb + ny * vb;
 				}
 			},
 			setLife(min, max) {
@@ -152,19 +190,22 @@ const Emitter = ParticleSystem.createEmitter();
 
 NZ.start({
 	init() {
-		Emitter.setLife(5000);
-		Emitter.setGrav(0.1);
-		Emitter.setSpeed(5, 10);
-		Emitter.setDirectionDeg(0, 360);
-		Emitter.setSize(5, 10);
-		Emitter.setColor(C.mediumSlateBlue, C.royalBlue, C.rebeccaPurple);
+		Emitter.setLife(3000, 4000);
+		Emitter.setGrav(0.5);
+		Emitter.setSpeed(10, 15);
+		Emitter.setDirectionDeg(240, 300);
+		Emitter.setSize(50, 100);
+		Emitter.setColor(C.red, C.mediumSlateBlue, C.royalBlue, C.rebeccaPurple);
 	},
 	render() {
-		Emitter.setArea(Input.mouseX - 32, Input.mouseY - 32, 64, 64);
-		Emitter.emit(1);
-		Emitter.render();
+		if (Time.frameCount % 5 === 0) {
+			Emitter.setArea(Input.mouseX, Input.mouseY);
+			Emitter.emit(1);
+		}
 		Emitter.update();
+		Emitter.dynamicCollision();
 		Emitter.constraint();
+		Emitter.render();
 		Draw.textBGi(0, 0, Time.FPS);
 		Draw.textBGi(0, 1, Emitter.count);
 	},
