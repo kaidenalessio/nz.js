@@ -14,6 +14,7 @@ class Population {
 			min: 1,
 			max: 10
 		};
+		this.generation = 0;
 		this.initialize();
 	}
 	initialize() {
@@ -100,6 +101,7 @@ class Population {
 				newCells.push(this.makeCell(childDNA));
 			}
 			this.cells = newCells;
+			this.generation++;
 			this.reset();
 		}
 	}

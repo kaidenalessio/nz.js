@@ -47,6 +47,13 @@ class Cell {
 		}
 	}
 	constraint() {
+		for (const block of OBJ.rawTake('block')) {
+			if (block.contains(this)) {
+				this.energy = 0;
+				this.isExhausted = true;
+				break;
+			}
+		}
 		if (this.x > Stage.w) {
 			this.x = Stage.w;
 			this.vx *= this.bounce;
