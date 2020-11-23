@@ -36,7 +36,6 @@ class Population {
 		if (this.completed) return;
 		for (const cell of this.cells) {
 			cell.update();
-			cell.constraint();
 			cell.calcFitness();
 			if (cell.fitness > this.best.fitness) {
 				this.best = cell;
@@ -47,26 +46,26 @@ class Population {
 			this.completed = true;
 	}
 	draw() {
+		Draw.setFill(C.blueViolet);
+		Draw.circle(this.start.x, this.start.y, 10);
+		Draw.setFill(C.sienna);
+		Draw.circle(this.target.x, this.target.y, this.target.radius);
 		const x1 = -5,
 			  y1 = -5,
 			  x2 = -5,
 			  y2 = 5,
 			  x3 = 5,
 			  y3 = 0;
-		Draw.setStroke(C.black);
 		for (const cell of this.cells) {
 			const angle = Math.atan(cell.vy / cell.vx);
 			Draw.onTransform(cell.x, cell.y, 1, 1, Mathz.radtodeg(angle), () => {
-				let c = C.none;
+				let c = C.blueViolet;
 				if (cell.isCompleted) c = C.green;
 				else if (cell.isExhausted) c = C.red;
 				Draw.setFill(c);
 				Draw.triangle(x1, y1, x2, y2, x3, y3);
-				Draw.stroke();
 			});
 		}
-		Draw.circle(this.start.x, this.start.y, 5, true);
-		Draw.circle(this.target.x, this.target.y, this.target.radius, true);
 	}
 	drawDebug() {
 		Draw.pointLine(this.best, this.target);

@@ -6,10 +6,12 @@ class Cell {
 		this.vx = 0;
 		this.vy = 0;
 		this.dna = dna;
+		this.xprev = this.x;
+		this.yprev = this.y;
 		this.energy = this.population.energy;
 		this.bounce = -0.9;
 		this.fitness = 0;
-		this.friction = 0.98;
+		this.friction = 0.96;
 		this.distance = Infinity;
 		this.isExhausted = false;
 		this.isCompleted = false;
@@ -21,8 +23,8 @@ class Cell {
 		this.distance = Math.sqrt(dx*dx + dy*dy);
 	}
 	calcFitness() {
-		this.fitness = 1 / this.distance;
-		if (this.isCompleted) this.fitness *= 2;
+		this.fitness = 1 / Math.max(1, this.distance - this.population.target.radius);
+		if (this.isCompleted) this.fitness *= 10;
 		else if (this.isExhausted) this.fitness *= 0.1;
 	}
 	update() {
@@ -34,6 +36,8 @@ class Cell {
 		this.vx *= this.friction;
 		this.vy *= this.friction;
 		const energy = this.energy / this.population.energy;
+		this.xprev = this.x;
+		this.yprev = this.y;
 		this.x += this.vx * energy;
 		this.y += this.vy * energy;
 		this.energy -= this.cost;
@@ -41,6 +45,7 @@ class Cell {
 			this.energy = 0;
 			this.isExhausted = true;
 		}
+		this.constraint();
 		this.calcDistance();
 		if (this.distance < this.population.target.radius) {
 			this.isCompleted = true;
@@ -49,8 +54,11 @@ class Cell {
 	constraint() {
 		for (const block of OBJ.rawTake('block')) {
 			if (block.contains(this)) {
-				this.energy = 0;
-				this.isExhausted = true;
+				this.x = this.xprev;
+				this.y = this.yprev;
+				this.vx = 0;
+				this.vy = 0;
+				this.energy *= 0.99;
 				break;
 			}
 		}

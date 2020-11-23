@@ -1,22 +1,23 @@
 NZ.start({
 	init() {
 		Global.population = null;
+		Global.makeBlock = () => {
+			return {
+				x: Stage.randomX,
+				y: Stage.randomY,
+				w: Mathz.range(10, 400),
+				h: Mathz.range(10, 400),
+				contains(p) {
+					return p.x > this.x && p.x < this.x + this.w
+						&& p.y > this.y && p.y < this.y + this.h;
+				}
+			};
+		};
 		OBJ.rawAdd('block');
 	},
 	start() {
-		OBJ.rawClearAll();
-		OBJ.rawPush('block', {
-			x: Stage.mid.w,
-			y: 100,
-			w: 60,
-			h: Stage.h - 200,
-			contains(p) {
-				return p.x > this.x && p.x < this.x + this.w
-					&& p.y > this.y && p.y < this.y + this.h;
-			}
-		});
 		Global.population = new Population({
-			size: 300,
+			size: 500,
 			lifetime: 300,
 			mutationRate: 0.01,
 			start: {
@@ -29,18 +30,27 @@ NZ.start({
 				radius: 20
 			}
 		});
+		OBJ.rawClearAll();
+		for (let i = 0; i < 20; i++) {
+			const b = Global.makeBlock();
+			if (!b.contains(Global.population.start) && !b.contains(Global.population.target)) {
+				OBJ.rawPush('block', b);
+			}
+		}
 	},
 	render() {
-		let i = 1 + 9 * Input.keyHold(KeyCode.Space);
+		let i = 1 + 9 * Input.keyHold(KeyCode.Space) + Global.population.lifetime * Input.keyHold(KeyCode.Enter);
 		while (i-- > 0) {
 			Global.population.run();
+			if (Global.population.completed) break;
 		}
+		Draw.setFill(C.plum);
 		for (const block of OBJ.rawTake('block')) {
-			Draw.rect(block.x, block.y, block.w, block.h, true);
+			Draw.rect(block.x, block.y, block.w, block.h);
 		}
 		Global.population.draw();
-		Global.population.drawDebug();
-		if (Input.keyDown(KeyCode.Enter))
+		// Global.population.drawDebug();
+		if (Input.keyDown(KeyCode.M) || Input.keyHold(KeyCode.Enter))
 			Global.population.evaluate();
 		Draw.textBGi(0, 0, `${Global.population.time}/${Global.population.lifetime}`);
 		Draw.textBGi(0, 1, `best.distance: ${Global.population.best.distance.toFixed(2)}`);
@@ -48,6 +58,7 @@ NZ.start({
 		Draw.textBGi(0, 3, `Population size: ${Global.population.size}`);
 		Draw.textBGi(0, 4, `Success rate: ${(Global.population.cells.filter((x) => x.isCompleted).length / Global.population.cells.length * 100).toFixed(2)}%`);
 		Draw.textBGi(0, 5, `Generation: ${Global.population.generation + 1}`);
-		if (Input.keyDown(KeyCode.R)) Scene.restart();
+		Draw.textBGi(0, 6, `Mutation rate: ${Global.population.mutationRate}`);
+		if (Input.keyDown(KeyCode.Shift)) Scene.restart();
 	}
 });
