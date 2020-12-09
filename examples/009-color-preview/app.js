@@ -1,6 +1,7 @@
 let scrollY = 0;
 let scrollVel = 0;
 let selectAll = false;
+let myClipboard = '';
 
 class Boundary {
 	constructor(x, y, w, h) {
@@ -34,12 +35,19 @@ const drawGroup = (x, y, w, h, cols, gap, noText=false) => {
 	const startX = x;
 	for (const c of C.keys) {
 		const bound = new Boundary(x - w * 0.5 + gap * 0.5, y - h * 0.5 + gap * 0.5, w - gap, h - gap);
-		const text = `C.${c}\n${C[c]}`;
+		const text = `C.${c}`;//`C.${c}\n${C[c]}`;
 		if (bound.hovered) {
 			UI.setCursor(Cursor.pointer);
 			UI.applyCursor(Stage.canvas);
 			if (Input.mouseDown(0)) {
-				Utils.copyToClipboard(text);
+				if (Input.keyHold(KeyCode.Control)) {
+					myClipboard += `\n${text}`;
+					Utils.copyToClipboard(myClipboard);
+				}
+				else {
+					myClipboard = text;
+					Utils.copyToClipboard(text);
+				}
 			}
 		}
 		Draw.setColor(C[c]);
